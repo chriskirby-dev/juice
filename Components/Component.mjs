@@ -1,21 +1,19 @@
-import Styles from '../Style/Styles.mjs';
-import ObjUtil from '../Util/Object.mjs'
-import Emitter from '../Event/Emitter.mjs';
-import Util, { type } from '../Util/Core.mjs';
+import Styles from "../Style/Styles.mjs";
+import ObjUtil from "../Util/Object.mjs";
+import Emitter from "../Event/Emitter.mjs";
+import Util, { type } from "../Util/Core.mjs";
 import Observe from "../Dom/Observe/Observe.mjs";
 import VirtualDom from "../VirtualDom/VirtualDom.mjs";
-import Attributes from '../Dom/Attributes.mjs';
-
-    import '../Dom/Extend.mjs';
+import Attributes from "../Dom/Attributes.mjs";
+import "../Dom/Extend.mjs";
 
 //Default Configuration
 const DEFAULT_CONFIG = {
     debug: false,
     shadow: true,
     closed: false,
-    linkedAttrs: [],
     properties: {},
-    renderable: true
+    renderable: true,
 };
 
 const Custom = {};
@@ -53,15 +51,19 @@ const defaultComponentStyle = `
     }
 `;
 
+/* Simple Template Creator
+ *  Takes in styles and html and outputs both to structured html code
+ */
 class ComponentTemplate {
-
     dom;
     #styles = [defaultComponentStyle];
     #html = [];
     changed = true;
+    config = {};
 
-    constructor() {
-        this.dom = document.createElement('template');
+    constructor(config = {}) {
+        this.config = config;
+        this.dom = document.createElement("template");
     }
 
     addStyle(...styles) {
@@ -82,13 +84,14 @@ class ComponentTemplate {
         return this.#html.join(" \n ").trim();
     }
 
-    compile() {
-
+    compile(options = {}) {
         this.dom.innerHTML = `<div id="style-box" class="component--styles vdom-noupdate">${this.style}<slot name="style"></slot></div>`;
-        this.dom.innerHTML += `<slot name="before-html"></slot><div class="component--html" ref="html" >${this.html}</div><slot name="after-html"></slot>`;
-
+        this.dom.innerHTML += `
+        ${this.config.before ? `<slot name="before-html"></slot>` : ``}
+        <div class="component--html" ref="html" >${this.html}</div>
+        ${this.config.after ? `<slot name="after-html"></slot>` : ``}
+        `;
         this.changed = false;
-
     }
 
     clone() {
@@ -99,12 +102,10 @@ class ComponentTemplate {
 
 //HTML Element Extend Class Creator
 function ComponentCompiler(name, BaseHTMLElement) {
-
     //app.log('ComponentCompiler', name, BaseHTMLElement.name, BaseHTMLElement );
 
     return {
         [name]: class extends BaseHTMLElement {
-
             static template = null;
 
             static index = 0;
@@ -114,6 +115,8 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             static instances = [];
 
+            static allowedStates = [""];
+
             /**
              * emitter: [boolean]
              * properties: {
@@ -122,48 +125,50 @@ function ComponentCompiler(name, BaseHTMLElement) {
              *      type: 'number'
              *  }
              * }
-             * 
+             *
              */
             static config = {};
 
             static defaultTemplateData = {};
 
+            //Static Initialization
+
             static initialize() {
                 //Merge Default Config with Component static Config
-                ObjUtil.merge(DEFAULT_CONFIG, this.config, false);
+                const cfgs = [DEFAULT_CONFIG, this.config];
+                if (this.tag && window.JUICE_CONFIG?.components[this.tag]) {
+                    cfgs.push(window.JUICE_CONFIG.components[this.tag]);
+                }
+                this.config = ObjUtil.merge(DEFAULT_CONFIG, this.config, false);
 
                 //Merge Default Config with Component static Configs
                 const _configs = [DEFAULT_CONFIG];
                 if (this.baseConfig) _configs.push(this.baseConfig);
                 if (this.config) _configs.push(this.config);
-                console.log(_configs);
                 this.config = ObjUtil.merge(..._configs, true);
                 console.log(this.config);
                 if (this.debug) console.log(this.name, this.config);
 
-                this.template = new ComponentTemplate();
-
-
-                if(this.baseStyle){
+                //Create new Component Template
+                this.template = new ComponentTemplate(this.config);
+                //If baseStyle is set then add it to template
+                if (this.baseStyle) {
                     this.template.addStyle(...(Util.isArray(this.baseStyle) ? this.baseStyle : [this.baseStyle]));
                 }
 
-
                 //Setup template styles
                 if (this.style) {
-                    
                     //Prepend Styles to Shadow Template
                     this.template.addStyle(...(Util.isArray(this.style) ? this.style : [this.style]));
                     if (this._style) this.template.addStyle(this._style);
-
                 } else {
                     //If not shadow Append Styles to current scope
-                    const styleSheet = new Styles(...style).asSheet('dom-component-sheet');
-                    document.getElementsByTagName('head')[0].appendChild(styleSheet);
+                    const styleSheet = new Styles(...style).asSheet("dom-component-sheet");
+                    document.getElementsByTagName("head")[0].appendChild(styleSheet);
                 }
 
-
-                //remove initialize function so it is not ran again 
+                //remove initialize function so it is not ran again
+                this.initialized = true;
                 this.initialize = null;
             }
 
@@ -171,8 +176,8 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 get: function (customElement, prop, receiver) {
                     if (customElement[prop]) return customElement[prop];
                     return "";
-                }
-            }
+                },
+            };
 
             // Override to set custom html to component as string or literal
             static html(data = {}) {
@@ -198,13 +203,13 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 return {
                     all: [],
                     attributes: [],
-                    properties: []
+                    properties: [],
                 };
             }
 
             //Returns root Dom of Component Either Component Element, Shadow Dom or set custom _root property
             get root() {
-                return (this._root || this.shadowDom || this);
+                return this._root || this.shadowDom || this;
             }
 
             refs = {};
@@ -221,9 +226,9 @@ function ComponentCompiler(name, BaseHTMLElement) {
             _index = null;
             rendered = false;
             #config;
+            _state = { current: null };
 
             constructor() {
-
                 super();
 
                 //Increment Component Index
@@ -231,26 +236,31 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 //Set Instance Accessable Index Prop
                 this._index = this.constructor.index;
 
-                this._id = this.tagName.toLowerCase() + '-' + this._index;
+                this._id = this.tagName.toLowerCase() + "-" + this._index;
 
                 CUSTOM_INSTANCES[this._id] = this;
-                console.dir(this.constructor.initialize);
+
                 //Initialize Static Component Only on first time called.
                 if (this.constructor.initialize) this.constructor.initialize();
 
                 //Get Static Config Obj
                 this.#config = Object.freeze(this.constructor.config);
 
-                
+                if (this.#config.useInternals) {
+                    this.internals = this.attachInternals();
+                }
+
                 if (this.#config.shadow) {
                     try {
                         //Attached Shadow Dom
-                        const shadowConfig = { mode: this.#config.closed ? 'closed' : 'open' };
+                        const shadowConfig = { mode: this.#config.closed ? "closed" : "open" };
                         if (this.delegatesFocus) shadowConfig.delegatesFocus = true;
                         this.shadowDom = this.attachShadow(shadowConfig);
                     } catch (e) {
                         //Shadow Dom Not Supported
-                        console.error('Shadow Dom not supported in this browser. You must set configuration prop shadow to false.');
+                        console.error(
+                            "Shadow Dom not supported in this browser. You must set configuration property shadow to false."
+                        );
                     }
                 }
                 //Bind Emitter to element if config set true
@@ -264,30 +274,29 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     }
                 }
 
-                this._style = this.style;
+                // this._style = this.style;
 
                 this.constructor.instances.push(this);
-
             }
 
             get disabled() {
-                return this.hasAttribute('disabled');
+                return this.hasAttribute("disabled");
             }
 
             set disabled(isDisabled) {
                 if (isDisabled) {
-                    this.setAttribute('disabled', '');
+                    this.setAttribute("disabled", "");
                 } else {
-                    this.removeAttribute('disabled');
+                    this.removeAttribute("disabled");
                 }
             }
 
-            #style(tag = 'default') {
+            #style(tag = "default") {
                 if (!this.#styles[tag]) {
                     //If style tag does not exist create a empty one
-                    this.#styles[tag] = document.createElement('style');
-                    this.#styles[tag].id = 'style--' + tag;
-                    const styleBox = (this.shadowDom || this).querySelector('.component--styles');
+                    this.#styles[tag] = document.createElement("style");
+                    this.#styles[tag].id = "style--" + tag;
+                    const styleBox = (this.shadowDom || this).querySelector(".component--styles");
                     (styleBox || this.shadowDom || this).appendChild(this.#styles[tag]);
                 }
                 //Return Created Style Tag
@@ -297,7 +306,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
             get styles() {
                 const self = this;
                 return {
-                    clear: function (tag = 'default') {
+                    clear: function (tag = "default") {
                         const styleTag = self.#style(tag);
                         if (styleTag.styleSheet) {
                             styleTag.styleSheet.cssText = "";
@@ -306,37 +315,41 @@ function ComponentCompiler(name, BaseHTMLElement) {
                             styleTag.appendChild(document.createTextNode(""));
                         }
                     },
-                    add: function (styles, tag = 'default') {
+                    add: function (styles, tag = "default") {
                         const styleTag = self.#style(tag);
-                        const styleContent = Util.type(styles, 'string') ? styles : new Styles(...(Util.type(styles, 'array') ? styles : [styles])).asText();
+                        const styleContent = Util.type(styles, "string")
+                            ? styles
+                            : new Styles(...(Util.type(styles, "array") ? styles : [styles])).asText();
                         if (styleTag.styleSheet) {
                             styleTag.styleSheet.cssText += styleContent;
                         } else {
                             styleTag.appendChild(document.createTextNode(styleContent));
                         }
                     },
-                    replace: function (styles, tag = 'default') {
+                    replace: function (styles, tag = "default") {
                         const styleTag = self.#style(tag);
-                        const styleContent = Util.type(styles, 'string') ? styles : new Styles(...(Util.type(styles, 'array') ? styles : [styles])).asText();
+                        const styleContent = Util.type(styles, "string")
+                            ? styles
+                            : new Styles(...(Util.type(styles, "array") ? styles : [styles])).asText();
                         if (styleTag.styleSheet) {
                             styleTag.styleSheet.cssText = styleContent;
                         } else {
                             styleTag.innerHTML = "";
                             styleTag.appendChild(document.createTextNode(styleContent));
                         }
-                    }
-                }
+                    },
+                };
             }
 
             /**
              * Stash method calls made before element is connected
              * @method #stash Private
-             * @param opperation  
-             * @param args 
+             * @param opperation
+             * @param args
              */
 
             #stash(opperation, ...args) {
-                if (this.debug) app.log('Stash', this.constructor.name, opperation, args);
+                if (this.debug) app.log("Stash", this.constructor.name, opperation, args);
                 this.#_stash.push([opperation, args]);
             }
 
@@ -349,8 +362,8 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 // debug('UNSTASH',this.constructor.name, this.#_stash );
                 while (this.#_stash.length > 0) {
                     const stashed = this.#_stash.shift();
-                    if (this.debug) app.log('unStash', this.constructor.name, ...stashed);
-                    if (this[stashed[0]]) this[stashed[0]](...stashed[1])
+                    if (this.debug) app.log("unStash", this.constructor.name, ...stashed);
+                    if (this[stashed[0]]) this[stashed[0]](...stashed[1]);
                 }
             }
 
@@ -358,23 +371,36 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 this.#defined[prop] = value;
             }
 
+            set state(value) {
+                if (!this.constructor.allowedStates.includes(value)) {
+                    throw new Error("State not allowed for component");
+                }
+                this._state.last = this._state.current;
+                this._state.current = value;
+                if (this.onStateChange) this.onStateChange(value, this._state.last);
+            }
+
+            get state() {
+                return this._state.current;
+            }
+
             /**
              * Initialize Observable Property
              * @method #setObservable
-             * @param property 
-             * @param value 
+             * @param property
+             * @param value
              */
 
             #setObservable(property, value = null) {
-
                 //Check Config Properties Obj for Property Configs
                 const config = this.#config.properties[property] || {};
                 let aliases = [];
 
-                if (property.includes('-')) {
+                if (property.includes("-")) {
                     //If property is dashed create alias for it in camelCase
-                    let alias = property.split('-');
-                    alias = alias.shift() + alias.map(alias => alias.charAt(0).toUpperCase() + alias.slice(1)).join('');
+                    let alias = property.split("-");
+                    alias =
+                        alias.shift() + alias.map((alias) => alias.charAt(0).toUpperCase() + alias.slice(1)).join("");
                     aliases.push(alias);
                 }
 
@@ -387,7 +413,6 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.#defined[property] = value;
                 }
 
-
                 if (this[property] !== undefined) {
                     //If property is already set get value and delete from component
                     value = this[property];
@@ -397,7 +422,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 // debug('setObservable', this.constructor.name, property, value);
 
-                if (this.debug) console.log('setObservable', this.constructor.name, property, value);
+                if (this.debug) console.log("setObservable", this.constructor.name, property, value);
 
                 //Define Property to instance
                 Object.defineProperty(this, property, {
@@ -405,7 +430,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         return this.#defined[property];
                     },
                     set: (value) => {
-                        if (value == 'null') value = null;
+                        if (value == "null") value = null;
                         // app.log(this.#defined[property], value);
                         //If value is same return
                         if (this.#defined[property] === value) return;
@@ -417,12 +442,12 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         this.#defined[property] = value;
 
                         //If Property Attr is Linked Update it.
-                        if (config.linked || this.#config.linkedAttrs.indexOf(property) !== -1) {
+                        if (config.linked) {
                             if (value !== null) this.setAttribute(property, value);
                         }
 
                         if (!this.#defined.connected) {
-                            return this.#stash('_onPropertyChanged', property, old, value, config);
+                            return this.#stash("_onPropertyChanged", property, old, value, config);
                         } else {
                             if (!this.onBeforePropertyChanged || this.onBeforePropertyChanged(property, old, value)) {
                                 this._onPropertyChanged(property, old, value, config);
@@ -430,15 +455,17 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         }
 
                         return true;
-                    }
+                    },
                 });
 
                 if (aliases.length) {
                     //Route all aliases to the property
-                    aliases.forEach(alias => {
+                    aliases.forEach((alias) => {
                         Object.defineProperty(this, alias, {
                             get: () => this[property],
-                            set: (value) => { this[property] = value }
+                            set: (value) => {
+                                this[property] = value;
+                            },
                         });
                     });
                 }
@@ -450,43 +477,40 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 if (value && config.linked && !this.hasAttribute(property)) {
                     //Create Set Attr event to complete when ready
-                    this.#stash('setAttribute', property, value);
+                    this.#stash("setAttribute", property, value);
                 }
             }
 
             _onPropertyChanged(property, old, value, config) {
-
-                if (this.debug) app.log('onPropertyChanged', this.constructor.name, property, old, value, config);
+                if (this.debug) app.log("onPropertyChanged", this.constructor.name, property, old, value, config);
 
                 if (this.onPropertyChanged) this.onPropertyChanged(property, old, value);
 
-                this.dispatchEvent(new CustomEvent('propertychange', {
-                    detail: { property: property, value: value, old: old }
-                }));
+                this.dispatchEvent(
+                    new CustomEvent("propertychange", {
+                        detail: { property: property, value: value, old: old },
+                    })
+                );
 
                 if (config.after) {
-                    if (typeof config.after == 'string' && this[config.after]) {
+                    if (typeof config.after == "string" && this[config.after]) {
                         this[config.after]();
-                    } else if (typeof config.after == 'function') {
+                    } else if (typeof config.after == "function") {
                         const fn = config.after.bind(this);
                         fn();
                     }
-
                 }
                 if (config.forceRender) {
                     //Force render the component
                     this.render();
                 }
-
-
-
             }
 
             /**
-            *  @method connectedCallback
-            *  Invoked each time the custom element is appended into a document-connected element. 
-            *  This will happen each time the node is moved, and may happen before the element's contents have been fully parsed.
-            */
+             *  @method connectedCallback
+             *  Invoked each time the custom element is appended into a document-connected element.
+             *  This will happen each time the node is moved, and may happen before the element's contents have been fully parsed.
+             */
 
             connectedCallback() {
                 if (this.onCreate) this.onCreate();
@@ -499,26 +523,22 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         //Clone Template and append to dom
                         const clone = this.constructor.template.clone();
                         this.root.appendChild(clone);
-                        this.#content = this.root.querySelector('.component--html');
-                        //Initialize VDOM by parsing the component html 
+                        this.#content = this.root.querySelector(".component--html");
+                        //Initialize VDOM by parsing the component html
                         this.#vdom = VirtualDom.parseDom(this.#content);
-
                     }
 
-                    if (this.debug) app.log(this.constructor.name, 'CONNECTED');
+                    if (this.debug) app.log(this.constructor.name, "CONNECTED");
 
-                    if (type(this.resize, 'function')) {
-                        debug('Observing Resize', this.constructor.name);
+                    if (type(this.resize, "function")) {
+                        debug("Observing Resize", this.constructor.name);
                         Observe.size(this.#content).change((w, h) => this.resize(w, h));
                     }
 
-                    if (type(this.onPosition, 'function')) {
+                    if (type(this.onPosition, "function")) {
                         debug(Observe.position(this));
                         Observe.position(this).change((x, y) => this.onPosition(x, y));
-
-
                     }
-
 
                     if (!this.constructor.deferRender && this.rendered == false) this.render();
                     //Called on first connection try.
@@ -528,14 +548,13 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         //Call onReady on next tick
                         if (this.onReady) this.onReady();
                         this.ready = true;
-                        this.dispatchEvent(new Event('ready'));
+                        this.dispatchEvent(new Event("ready"));
                         if (this.parentElement?.onCustomChildReady) {
                             this.parentElement.onCustomChildReady(this);
                         } else if (this.$.inShadow?.onCustomChildReady) {
                             this.$.shadowHost.onCustomChildReady(this);
                         }
-                        if (this.ref('html'))
-                            this.ref('html').classList.add('connected');
+                        if (this.ref("html")) this.ref("html").classList.add("connected");
                     }, 0);
                 }
 
@@ -547,13 +566,12 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 this.#unstash();
 
                 if (this.onConnect) this.onConnect();
-                this.dispatchEvent(new Event('connect'));
+                this.dispatchEvent(new Event("connect"));
 
                 if (this.$.customParent && this.$.customParent._onCustomChildConnect) {
                     //If elements parent is a custom element.then broadcast child connect.
                     this.$.customParent._onCustomChildConnect(this);
                 }
-
             }
 
             customChildren = [];
@@ -566,25 +584,25 @@ function ComponentCompiler(name, BaseHTMLElement) {
             }
 
             /**
-            *  @method disconnectedCallback
-            *  Invoked each time the custom element is disconnected from the document's DOM
-            */
+             *  @method disconnectedCallback
+             *  Invoked each time the custom element is disconnected from the document's DOM
+             */
 
             disconnectedCallback() {
                 this.#defined.connected = false;
-                this.dispatchEvent(new Event('disconnect'));
+                this.dispatchEvent(new Event("disconnect"));
                 if (this.onDisconnect) return this.onDisconnect();
             }
 
             /**
              * Get Element ref from template
              * @method ref
-             * @param name 
+             * @param name
              * @returns Dom Element
              */
 
             ref(name) {
-                return this['#$' + name];
+                return this["#$" + name];
             }
 
             exportRefs() {
@@ -592,12 +610,12 @@ function ComponentCompiler(name, BaseHTMLElement) {
             }
 
             /**
-            *  @method adoptedCallback
-            *  Invoked each time the custom element is moved to a new document.
-            */
+             *  @method adoptedCallback
+             *  Invoked each time the custom element is moved to a new document.
+             */
 
             adoptedCallback() {
-                this.dispatchEvent(new Event('adopted'));
+                this.dispatchEvent(new Event("adopted"));
                 if (this.onAdopted) return this.onAdopted();
             }
 
@@ -608,33 +626,43 @@ function ComponentCompiler(name, BaseHTMLElement) {
             _bindEvent(event, element, handler) {
                 const self = this;
                 let args = [];
-                if (handler.includes('(')) {
-                    args = handler.split('(').pop().split(')').shift().split(',').map(arg => arg.replace(/['"]/g, '').trim());
+                if (handler.includes("(")) {
+                    args = handler
+                        .split("(")
+                        .pop()
+                        .split(")")
+                        .shift()
+                        .split(",")
+                        .map((arg) => arg.replace(/['"]/g, "").trim());
                     //  debug(args);
-                    handler = handler.split('(').shift();
+                    handler = handler.split("(").shift();
                 }
-                let handlerFn = this[handler] ? this[handler].bind(this) : function () { };
+                let handlerFn = this[handler] ? this[handler].bind(this) : function () {};
 
-                element.classList.add('events-set');
+                element.classList.add("events-set");
 
-                element.addEventListener(event, (e) => {
-                    //Allow this context in callbacks
-                    const respArgs = args.map(arg => {
-                        if (arg === 'this') return element;
-                        if (typeof arg == 'string' && arg.indexOf('this.') === 0) return element[arg.replace('this.', '')];
-                        return arg;
-                    });
-                    handlerFn = handlerFn.bind(self);
-                    return handlerFn(e, ...respArgs);
-                }, false);
-
+                element.addEventListener(
+                    event,
+                    (e) => {
+                        //Allow this context in callbacks
+                        const respArgs = args.map((arg) => {
+                            if (arg === "this") return element;
+                            if (typeof arg == "string" && arg.indexOf("this.") === 0)
+                                return element[arg.replace("this.", "")];
+                            return arg;
+                        });
+                        handlerFn = handlerFn.bind(self);
+                        return handlerFn(e, ...respArgs);
+                    },
+                    false
+                );
             }
 
             setRef(ref, el) {
-                this['#$' + ref] = el;
+                this["#$" + ref] = el;
             }
 
-            slot(name = 'default') {
+            slot(name = "default") {
                 return this.#slots[name] || null;
             }
 
@@ -649,7 +677,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.#content.innerHTML = "";
                 }
 
-                if (this.debug) console.warn(this.constructor.name, 'RENDERING');
+                if (this.debug) console.warn(this.constructor.name, "RENDERING");
                 if (this.beforeFirstRender && this.rendered == 0) this.beforeFirstRender();
                 //Scope static html fn to currentscope
                 const boundHTML = this.constructor.html.bind(this);
@@ -657,7 +685,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 //debug(this.#content);
                 //debug(Attributes.extract(this.#content));
                 const attributes = new Attributes(Attributes.extract(this.#content)).toString();
-                const className = this.#content ? this.#content.className : 'component--html';
+                const className = this.#content ? this.#content.className : "component--html";
 
                 const html = `<div ref="html" ${attributes} >${boundHTML(dataProxy)}</div>`;
                 let virtual = VirtualDom.parseHTML(html);
@@ -671,42 +699,43 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 this.#vdom = virtual;
 
-                const refs = this.root.querySelectorAll('[ref]');
+                const refs = this.root.querySelectorAll("[ref]");
                 for (let i = 0; i < refs.length; i++) {
-                    const ref = refs[i].getAttribute('ref');
+                    const ref = refs[i].getAttribute("ref");
                     this.#refs[Util.String.camel(ref)] = refs[i];
-                    if (!this['#$' + ref]) this['#$' + ref] = refs[i];
-                    refs[i].removeAttribute('ref');
+                    if (!this["#$" + ref]) this["#$" + ref] = refs[i];
+                    refs[i].removeAttribute("ref");
                 }
 
-                const slots = this.root.querySelectorAll('slot');
+                const slots = this.root.querySelectorAll("slot");
                 for (let i = 0; i < slots.length; i++) {
-                    this.#slots[slots[i].name || 'default'] = slots[i];
+                    this.#slots[slots[i].name || "default"] = slots[i];
                 }
 
-
-                const onEvents = this.root.querySelectorAll('[event]:not(.events-set)');
+                const onEvents = this.root.querySelectorAll("[event]:not(.events-set)");
                 for (let i = 0; i < onEvents.length; i++) {
-                    const eventHandle = onEvents[i].getAttribute('event');
-                    if (eventHandle.includes('::')) {
-                        const [event, call] = eventHandle.split('::');
+                    const eventHandle = onEvents[i].getAttribute("event");
+                    if (eventHandle.includes("::")) {
+                        const [event, call] = eventHandle.split("::");
                         this._bindEvent(event, onEvents[i], call);
                     } else {
-                        console.error(this.constructor.name, 'Event Auto Handel must include event and method', eventHandle);
+                        console.error(
+                            this.constructor.name,
+                            "Event Auto Handel must include event and method",
+                            eventHandle
+                        );
                     }
                 }
 
-
-                const onClicks = this.root.querySelectorAll('[click]:not(.events-set)');
+                const onClicks = this.root.querySelectorAll("[click]:not(.events-set)");
                 for (let i = 0; i < onClicks.length; i++) {
-                    const clickHandle = onClicks[i].getAttribute('click');
-                    this._bindEvent('click', onClicks[i], clickHandle);
+                    const clickHandle = onClicks[i].getAttribute("click");
+                    this._bindEvent("click", onClicks[i], clickHandle);
                 }
-
 
                 this.rendered++;
 
-                this.dispatchEvent(new CustomEvent('rendered'));
+                this.dispatchEvent(new CustomEvent("rendered"));
                 if (this.afterRender) this.afterRender();
             }
 
@@ -727,7 +756,6 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 if (reflect) model.reflection(this, reflect);
                 //Bind Model instance to component
                 if (this.onModelAdded) {
-
                     const onModelAdded = this.onModelAdded.bind(this);
                     onModelAdded(model);
                 }
@@ -747,7 +775,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             withReflected(...models) {
                 for (let i = 0; i < models.length; i++) {
-                    if (!Util.type(models[i], 'array')) models[i] = [models[i]];
+                    if (!Util.type(models[i], "array")) models[i] = [models[i]];
                     let [model, props] = models[i];
                     this.#models[model._static.name] = model;
                     model.reflection(this, props);
@@ -758,7 +786,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             /**
              * @method compileData
-             * @returns 
+             * @returns
              */
 
             compileData() {
@@ -766,13 +794,14 @@ function ComponentCompiler(name, BaseHTMLElement) {
             }
 
             /**
-            *  @method attributeChangedCallback
-            *  Invoked each time one of the custom element's attributes is added, removed, or changed.
-            *  Which attributes to notice change for is specified in a static get observedAttributes
-            */
+             *  @method attributeChangedCallback
+             *  Invoked each time one of the custom element's attributes is added, removed, or changed.
+             *  Which attributes to notice change for is specified in a static get observedAttributes
+             */
 
             attributeChangedCallback(property, old, value) {
-                if (this.debug) console.log(this.constructor.name, property, 'old:', old, 'value', value == '' ? 'empty' : value);
+                if (this.debug)
+                    console.log(this.constructor.name, property, "old:", old, "value", value == "" ? "empty" : value);
                 //If values are the same return
                 if (old === value) return;
 
@@ -780,21 +809,19 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 const config = this.#config.properties[property] || {};
                 //If config type is set set var type from string
                 if (value === null) {
-                    if (this.hasAttribute(property))
-                        this.removeAttribute(property);
+                    if (this.hasAttribute(property)) this.removeAttribute(property);
 
                     if (!this.#defined.connected) {
-                        this.#stash('onAttributeDeleted', property);
+                        this.#stash("onAttributeDeleted", property);
                     } else {
                         if (this.onAttributeDeleted) this.onAttributeDeleted(property);
                     }
-
                 }
 
                 if (old === null && this.onAttributeAdded) {
                     if (this.hasAttribute(property)) {
                         if (!this.#defined.connected) {
-                            this.#stash('onAttributeAdded', property);
+                            this.#stash("onAttributeAdded", property);
                         } else {
                             if (this.onAttributeAdded) this.onAttributeAdded(property);
                         }
@@ -803,22 +830,21 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 if (config.type) {
                     switch (config.type) {
-                        case 'int':
-                        case 'number':
+                        case "int":
+                        case "number":
                             value = Number(value);
                             break;
-                        case 'boolean':
-                            if (value == '0' || value == 'false' || value == 0) {
+                        case "boolean":
+                            if (value == "0" || value == "false" || value == 0) {
                                 value = false;
-                            } else if (value == '1' || value == 'true' || value == 1) {
+                            } else if (value == "1" || value == "true" || value == 1) {
                                 value = true;
                             }
                             break;
-                        case 'json':
-                            if (typeof value == 'string')
-                                value = JSON.parse(value);
+                        case "json":
+                            if (typeof value == "string") value = JSON.parse(value);
                             break;
-                        case 'exists':
+                        case "exists":
                             value = this.hasAttribute(property);
                             break;
                     }
@@ -830,47 +856,41 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 }
 
                 if (!this.#defined.connected) {
-                    return this.#stash('attributeChangedCallback', property, old, value);
+                    return this.#stash("attributeChangedCallback", property, old, value);
                 }
 
-                if (this.debug) app.log('onAttributeChanged', this.constructor.name, property, old, value, config);
+                if (this.debug) app.log("onAttributeChanged", this.constructor.name, property, old, value, config);
 
                 if (this.onAttributeChanged) this.onAttributeChanged(property, old, value);
                 // if( this.render && !this.defer ) this.render();
             }
-
-
-        }
+        },
 
         //END Custom Class
-
     }[name];
-
 }
 
 Custom.Compiler = ComponentCompiler;
 
 Custom.has = function (name) {
     return Defined[name] ? true : false;
-}
+};
 
 function createComponent(name, Extends) {
     Object.defineProperty(Custom, name, {
         get: () => {
             if (Defined[name]) return Defined[name];
-            else Defined[name] = ComponentCompiler(name, Extends)
+            else Defined[name] = ComponentCompiler(name, Extends);
             return Defined[name];
-
         },
-        set: () => false
+        set: () => false,
     });
-
-
 }
 
-createComponent('HTMLElement', HTMLElement);
-createComponent('Canvas', HTMLCanvasElement);
-createComponent('UL', HTMLUListElement);
-createComponent('Anchor', HTMLAnchorElement);
+createComponent("HTMLElement", HTMLElement);
+createComponent("Canvas", HTMLCanvasElement);
+createComponent("UL", HTMLUListElement);
+createComponent("Anchor", HTMLAnchorElement);
+createComponent("Label", HTMLLabelElement);
 
 export default Custom;
