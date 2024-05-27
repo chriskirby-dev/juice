@@ -1,3 +1,37 @@
+export class Cursor {
+    index = -1;
+    constructor(arr) {
+        this.arr = arr;
+        this.index = 0;
+    }
+
+    first(moveCursor) {
+        if (moveCursor) this.index = 0;
+        return this.arr[0];
+    }
+
+    current() {
+        return this.arr[this.index];
+    }
+
+    next() {
+        return this.arr[this.index++];
+    }
+
+    hasNext() {
+        return this.index < this.arr.length;
+    }
+
+    last(moveCursor) {
+        if (moveCursor) this.index = this.arr.length - 1;
+        return this.arr[this.arr.length - 1];
+    }
+
+    reset() {
+        this.index = 0;
+    }
+}
+
 class ArrayUtil {
     static diff(a, b) {
         return {
@@ -65,6 +99,10 @@ class ArrayUtil {
 
     static hasFunction(arr) {
         return arr.map((item) => typeof item == "function").filter((bool) => bool == true).length > 0;
+    }
+
+    static equalValues(arr) {
+        return arr.every((v) => v === arr[0]);
     }
 }
 

@@ -37,7 +37,13 @@ class FormInput extends Component.HTMLElement {
     }
 
     static get style() {
-        return [{}];
+        return [
+            {
+                ":host": {
+                    marginBottom: "1rem",
+                },
+            },
+        ];
     }
 
     static html() {
@@ -85,6 +91,7 @@ class FormInput extends Component.HTMLElement {
     onConnect() {}
 
     buildNative() {
+        console.log("buildNative", this.constructor.nativeInput);
         if (this.constructor.nativeInput) {
             const nativeConfig = this.constructor.nativeInput;
             const native = document.createElement(nativeConfig.tag);
@@ -101,19 +108,51 @@ class FormInput extends Component.HTMLElement {
         }
     }
 
-    onFirstConnect() {
-        if (this.hasAttribute("name")) {
-            this.name = this.getAttribute("name");
-            console.log(this.name);
-            if (!this.hasAttribute("id")) {
-                this.id = "input--" + this.name;
+    onChildren(childNodes) {
+        console.log("onChildren", childNodes);
+        if (!childNodes || !childNodes.length) {
+            this.buildNative();
+        } else {
+            this.native = childNodes.filter(
+                (node) =>
+                    ["input", "select", "textarea"].includes(node.tagName.toLowerCase()) ||
+                    node.querySelector("input, select, textarea")
+            );
+            console.log(this.native);
+            if (this.native.length) {
+                if (this.native.length > 1) {
+                    return this.onMultipleNativeInput();
+                }
+                this.onNativeInput();
+            } else {
+                this.buildNative();
             }
         }
+    }
 
-        this.native = this.querySelector("input, select, textarea");
-        if (!this.native) {
-            this.buildNative();
+    onMultipleNativeInput() {
+        const map = {};
+        for (let i = 0; i < this.native.length; i++) {
+            const native = this.native[i];
+            if (native.tagName.toLowerCase() == "label") {
+                const id = native.getAttribute("for");
+                if (!map[id]) map[id] = {};
+                map[id].label = native.innerText.trim();
+                if (native.querySelector("input, select, textarea"))
+                    this.native.push(native.querySelector("input, select, textarea"));
+            } else if (["input"].includes(native.tagName.toLowerCase())) {
+                const id = native.getAttribute("id");
+                if (!map[id]) map[id] = {};
+                map[id].input = native;
+                map[id].name = native.getAttribute("name");
+                map[id].type = native.getAttribute("type");
+            }
         }
+        console.log(map);
+    }
+
+    onNativeInput() {
+        const multiple = this.native.length > 1;
 
         this.nativeTag = this.native.tagName.toLowerCase();
 
@@ -128,6 +167,17 @@ class FormInput extends Component.HTMLElement {
                 this.dispatchEvent(new CustomEvent("input", { detail: e.target.value }));
             });
         }
+        console.log(this.native);
+    }
+
+    onFirstConnect() {
+        if (this.hasAttribute("name")) {
+            this.name = this.getAttribute("name");
+            console.log(this.name);
+            if (!this.hasAttribute("id")) {
+                this.id = "input--" + this.name;
+            }
+        }
 
         if (this.parentNode.classList.contains("row")) {
             const childLen = this.parentNode.children.length;
@@ -135,8 +185,6 @@ class FormInput extends Component.HTMLElement {
                 this.style.width = `calc( ${100 / childLen}% - ${childLen}rem )`;
             }
         }
-
-        console.log(this.native);
     }
 }
 

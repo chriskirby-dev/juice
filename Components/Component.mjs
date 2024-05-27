@@ -572,6 +572,30 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     //If elements parent is a custom element.then broadcast child connect.
                     this.$.customParent._onCustomChildConnect(this);
                 }
+
+                if (this.onChildren) {
+                    //If onChildren is set then watch for child node changes
+                    this.childTO = setTimeout(() => {
+                        this.onChildren(null);
+                        clearTimeout(this.childTO);
+                    }, 0);
+
+                    this.mutationObserver = new MutationObserver((mutations) => {
+                        const added = [];
+                        for (const mutation of mutations) {
+                            // Could test for `mutation.type` here, but since we only have
+                            // set up one observer type it will always be `childList`
+                            added.push(...mutation.addedNodes);
+                        }
+                        if (added.length) clearTimeout(this.childTO);
+                        this.onChildren(added.filter((el) => el.nodeType === Node.ELEMENT_NODE));
+                    });
+
+                    // Watch the Light DOM for child node changes
+                    this.mutationObserver.observe(this, {
+                        childList: true,
+                    });
+                }
             }
 
             customChildren = [];

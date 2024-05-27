@@ -1,0 +1,5 @@
+class VDomTree {
+    index = [];
+
+    constructor() {}
+}
