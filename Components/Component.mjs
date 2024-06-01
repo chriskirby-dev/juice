@@ -723,9 +723,9 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 this.#vdom = virtual;
 
-                const refs = this.root.querySelectorAll("[ref]");
+                const refs = this.root.querySelectorAll("[id]");
                 for (let i = 0; i < refs.length; i++) {
-                    const ref = refs[i].getAttribute("ref");
+                    const ref = refs[i].getAttribute("id");
                     this.#refs[Util.String.camel(ref)] = refs[i];
                     if (!this["#$" + ref]) this["#$" + ref] = refs[i];
                     refs[i].removeAttribute("ref");
