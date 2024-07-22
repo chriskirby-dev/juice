@@ -13,6 +13,21 @@ export function diff(a, b) {
     return Object.keys(diff).length === 0 ? null : diff;
 }
 
+export function change(a, b) {
+    const diff = {};
+    //Gert all keys in both objects as unique array
+    const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])];
+
+    for (let prop of keys) {
+        if (a.hasOwnProperty(key) && b.hasOwnProperty(key)) {
+            //Both have property
+            if (a[prop] === b[prop]) continue;
+            diff[prop] = [a[prop], b[prop]];
+        }
+    }
+    return diff;
+}
+
 export function setEnumerability(target, props = [], enumerable = true, enumRest = false) {
     const descriptors = Object.getOwnPropertyDescriptors(target);
 
@@ -55,24 +70,25 @@ class ObjectUtil {
 
         // Merge two objects
         function mergeTwoObjects(obj1, obj2) {
+            const merged = { ...obj1 };
             for (let key in obj2) {
                 if (obj2.hasOwnProperty(key)) {
                     // If both properties are objects, merge them recursively
                     if (
-                        obj1[key] !== undefined &&
-                        typeof obj1[key] === "object" &&
+                        merged[key] !== undefined &&
+                        typeof merged[key] === "object" &&
                         typeof obj2[key] === "object" &&
-                        !Array.isArray(obj1[key]) &&
+                        !Array.isArray(merged[key]) &&
                         !Array.isArray(obj2[key])
                     ) {
-                        obj1[key] = mergeTwoObjects(obj1[key], obj2[key]);
+                        merged[key] = mergeTwoObjects(merged[key], obj2[key]);
                     } else {
                         // Otherwise, overwrite obj1's property with obj2's property
-                        obj1[key] = obj2[key];
+                        merged[key] = obj2[key];
                     }
                 }
             }
-            return obj1;
+            return merged;
         }
 
         // Start with the first two objects and merge them
