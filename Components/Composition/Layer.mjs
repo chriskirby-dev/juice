@@ -110,6 +110,7 @@ class Layer extends Component.HTMLElement {
                 if (value == "canvas") {
                     this.getCanvas();
                 } else if (value == "custom") {
+                } else if (value == "container") {
                 }
                 break;
         }

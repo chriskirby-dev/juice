@@ -1,0 +1,461 @@
+@use "sass:color";
+@import '../vars';
+
+
+$non-text-types: '[type="radio"], [type="checkbox"], [type="submit"]';
+$all-input-types: 'input, select, textarea';
+
+$input-autofill: "input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active";
+
+
+#{$input-autofill}{
+    -webkit-box-shadow: 0 0 0 30px #FFF inset !important;
+    outline: 1px solid $lt-gray;
+    color: $dark-gray;
+}
+
+/* Custon Fields */
+form{ 
+    user-search{
+        margin:1rem 0;
+    }
+
+    > *:last-child{
+        margin-bottom:0;
+    }
+}
+
+
+.field{
+    border: 1px solid var(--input-border);
+    .input-wrapper{
+        position:relative;
+    }
+    field-status{
+        position:absolute;
+        right:5px;
+        top:5px;
+    }
+    .errors{
+        display: none !important;
+        position:absolute;
+        bottom: 0;
+        z-index:1000;
+        background:#FFF;
+        color:$red;
+        color:#FFF;
+        padding:7px 10px;
+        padding-left:20px;
+        display:block;
+        border-radius:0;
+        > div{
+            position:absolute;
+            height:100%;
+            width:40px;
+            overflow:hidden;
+            right:100%;
+            bottom:0;
+            display:none;
+            &:before{
+                content: "";
+                display:block;
+                position:absolute;
+                left:0;
+                bottom:0;
+                width: 0;
+                height: 0;
+                border-style: solid;
+                border-width: 0 0 200px 200px;
+                border-color: transparent transparent #FFF transparent;
+            }
+        }
+        ul{
+            margin:0;
+            padding:0;
+        }
+        li{
+            white-space:nowrap;
+            font-size:0.7rem;
+            display:block;
+            color:$red;
+            font-weight: bold;
+            &:last-child{
+                margin-bottom:0 !important;
+            }
+        }
+        &.left{
+            right:auto;
+            left:0;
+        }
+        &.right{
+            right:0;
+            left:auto;
+        }
+        &.top{
+            bottom: calc( 100% + 10px );
+            top:auto;
+        }
+        &.bottom{
+            top: calc( 100% + 10px );
+            bottom:auto;
+        }
+    }
+    
+    input:not(#{$non-text-types}),
+    textarea,
+    select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        line-height: 1.6;
+        padding-top:1.5rem !important;
+        padding-left:0.8rem;
+        padding-bottom:0.25rem;
+        &:focus{
+            & ~ .errors{
+                display:block;
+            }
+        }
+    }
+
+    select{
+        
+        option{
+            padding:0.5rem;
+        }
+    }
+    
+  
+    &:hover{
+        .errors{
+            display:block;
+        }
+    }
+}
+
+.field {
+
+    width: 100%;
+    &:not(.type-checkbox){
+    min-width: 15ch;
+    }
+    
+    border: 1px solid var(--field-border);
+    border-radius: 0.25em;
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1.1;
+
+    
+
+    &.error {
+        label{
+        
+        }
+        input {
+            outline: 2px solid $red;
+            border:0;
+        }
+
+        input:focus {
+            outline: 1px solid $red;
+            border:0;
+        }
+        
+        #{$input-autofill}{
+            -webkit-box-shadow: 0 0 0 30px $red inset !important;
+            -webkit-text-fill-color: #FFF !important;
+            outline: 1px solid $dark-gray;
+            border:0;
+        }
+
+        .field-errors{
+            position:absolute;
+            margin:0;
+            padding:0;
+            display:inline-block;
+            margin-left: 20px;
+            .field-error {
+                font-size: $text-sm;
+                color: $error-color;
+                display:block;
+            }
+        }
+        
+
+    }
+
+    &.valid.changed {
+        input {
+            outline: 1px solid $success-color;
+        }
+    }
+
+    &:last-child {
+        padding-bottom: 0;
+    }
+
+    &.type-text {
+    
+
+    }
+    &.type-select {
+        width: 100%;
+        align-items: center;
+        label{
+            z-index:101;
+        }
+        select{
+            position: relative;
+            width: 100%;
+            z-index:100;
+            grid-area: select;
+             * {
+                height: 30px;
+            }
+            option{
+                display:block;
+                padding:0.5rem;
+                background-color:#FFF;
+                line-height:1.4;
+                min-height:35px;
+                &:hover{
+                    background-color: #415058;
+                    color:#FFF;
+                }
+            }
+        }
+        &.group-action{
+            margin:0;
+        }
+        form-select{
+            box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 3px, rgba(0, 0, 0, 0.10) 0px 1px 2px;
+            form-option{
+                
+            }
+        }
+        &::after{
+            content: "";
+            width: 0.8em;
+            height: 0.5em;
+            background-color: var(--select-arrow);
+            clip-path: polygon(100% 0%, 0 0%, 50% 100%);
+            position:relative;
+            z-index:10;
+            grid-area: select;
+            justify-self: end;
+        }
+    }
+    &.type-color{
+        label{
+           
+        }
+        input{
+            height:55px;
+            width:80px;
+            padding-right:0.5rem;
+        }
+    }
+    &.type-textarea {
+        position: relative;
+        width: 100%;
+    }
+    &.type-checkbox {
+        padding-top:10px;
+        white-space: nowrap;
+        [type='checkbox'] {
+            position:absolute;
+            height: 25px;
+            width:25px;
+            margin-right:1rem;
+            background-image: url("data:image/svg+xml,<svg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'><path d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/></svg>");
+        }
+
+        [type='checkbox']:checked {
+            background-image: url("data:image/svg+xml,<svg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'><path d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/></svg>");
+        }
+
+        label{
+            display:inline-block;
+            position:relative;
+            padding-top:0;
+            padding-left:10px;
+            line-height: 25px;
+           padding-bottom:0.5rem;
+        }
+
+        .label-txt{
+            padding-left:40px;
+            display:block;
+        }
+
+        .checked-label-txt{
+            padding-left:40px;
+            display:none;
+        } 
+        label:has(.checked-label-txt){
+            [type='checkbox']:checked + .label-txt{
+                display:none;
+            } 
+
+            [type='checkbox']:checked + .label-txt + .checked-label-txt{
+                display:inline-block;
+            } 
+        }
+    }
+    &.token_2fa{
+        min-width:130px;
+    }
+    &.required{
+        label{
+            &:after{
+                content: " *";
+                color: $red;
+            }
+        }
+    }
+    datalist{
+        width:1000px;
+    }
+}
+
+.pac-container{
+    .pac-item{
+        padding:0.25rem;
+        font-size:0.85rem;
+        cursor:pointer;
+        .pac-icon{
+            width: 30px;
+            height: 30px;
+            &.pac-icon-marker{
+                background-image: url(/img/icons/location.svg);
+                background-position:center center;
+                background-size:contain;
+                background-repeat:none;
+                margin:0;
+                margin-right:0.5rem;
+            }
+        }
+        .pac-item-query{
+            font-size:1rem;
+            padding-right:1rem;
+            .pac-matched{
+
+            }
+        }
+        &:hover{
+            background: #415058;
+            color:#FFF;
+            .pac-icon{
+                &.pac-icon-marker{
+                    background-image: url(/img/icons/location-lt.svg);
+                }
+            }
+            .pac-item-query{
+                color:#FFF;
+                .pac-matched{
+                    color:#FFF;
+                }
+            }
+        }
+    }
+    &:after{
+        content: "" !important;
+        content: "" !IMPORTANT;
+        background-image: none !important;
+        background-image: none !IMPORTANT;
+        display:none !important;
+    }
+}
+
+
+.field{
+
+    &.type-select{
+        &.country{
+            min-width:170px;
+        }
+        &.user-name-title{
+            min-width:100px;
+        }
+    }
+}
+
+form-field{
+    &[type="select"]{
+
+    }
+    &[type="checkbox"]{
+        
+    }
+    &[type="radio"]{
+        
+    }
+    &[type="textarea"]{
+        
+    }
+}
+
+form-option{
+    span{
+
+    }
+
+    p{
+        font-size:0.8rem;
+        margin-bottom:0.2rem;
+    }
+    &.has-descr{
+        line-height:1.2;
+        span{
+            line-height:1.2;
+        }
+        p{
+            display:block;
+        }
+    }
+}
+
+m-metadata-form{
+    &[subject="Project"]{
+
+        border: 1px solid var(--input-border);
+        border-radius: var(--input-border-radius);
+        background: var(--input-bg);
+    }
+}
+
+
+.field{
+    &.small{
+        font-size: 0.9rem;
+        margin:0.25rem 0;
+
+        label{
+            padding:0;
+            font-size:0.8rem;
+            position:relative;
+        }
+        input{
+            padding:0 0.5rem;
+            position:relative;
+        }
+    }
+    &.inline{
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items:center;
+        label{
+            padding-right:1rem;
+        }
+    }
+}
+
+fieldset  fieldset{
+    background-color: var(--color-lt-gray);
+}
+
+fieldset fieldset fieldset{
+    background-color: #FFF;
+}

@@ -32,7 +32,7 @@ export class Cursor {
     }
 }
 
-class ArrayUtil {
+class ArrUtil {
     static diff(a, b) {
         return {
             added: b.filter((i) => !a.includes(i)),
@@ -106,4 +106,4 @@ class ArrayUtil {
     }
 }
 
-export default ArrayUtil;
+export default ArrUtil;

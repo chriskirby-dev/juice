@@ -1,5 +1,5 @@
 export class ThrottleController {
-    constructor(accelerationRate = 0.001, deceleratonRate = 0.5, options) {
+    constructor(accelerationRate = 0.001, deceleratonRate = 0.5, options = {}) {
         this.power = 0;
         this.value = 0;
         this.acceleration = 0;
@@ -7,6 +7,8 @@ export class ThrottleController {
         this.decelerationRate = deceleratonRate;
         this.isPressed = false;
         this.options = options;
+        this.idle = options.idle || 0;
+        this.update(0);
     }
 
     press(amount = 1) {
@@ -30,7 +32,7 @@ export class ThrottleController {
             if (this.power > 1) this.power = 1;
         } else {
             this.power -= this.decelerationRate * delta;
-            if (this.power < 0) this.power = 0;
+            if (this.power < this.idle) this.power = this.idle;
         }
     }
 }
@@ -106,3 +108,38 @@ export class RampDown extends Ramp {
         super(accumulator, max, min, -1);
     }
 }
+
+export class RampedValue {
+    direction = 0;
+
+    constructor(value = 0, acceleration, deceleration, options = {}) {
+        this.acceleration = acceleration;
+        this.deceleration = deceleration;
+        this.min = options.min || 0;
+        this.max = options.max || Infinity;
+        this.value = value;
+    }
+
+    reset() {
+        this.value = 0;
+    }
+
+    update(delta) {
+        if (direction == 1) {
+            this.value += delta;
+            if (this.value < this.max) this.value += this.acceleration;
+        } else if (direction == -1) {
+            this.value -= delta;
+            if (this.value < this.min) this.value = this.min;
+        } else if (direction == 0) {
+            this.value -= delta;
+            if (this.value < this.min) this.value = this.min;
+        }
+    }
+
+    get value() {
+        return this._value;
+    }
+}
+
+class RampController {}

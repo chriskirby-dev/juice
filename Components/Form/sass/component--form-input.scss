@@ -1,0 +1,154 @@
+@import 'vars';
+
+$all-input-types: 'input, select, textarea';
+
+:host{
+    width:100%;
+}
+
+#{$all-input-types}{
+    &:active {
+        outline: 1px solid #d65d1c;
+    }
+    &:focus {
+        outline: 1px solid var(--input-focus);
+    }
+    &:invalid {
+        outline: 1px solid var(--color-error);
+    }
+}
+
+
+label{
+    border: 1px solid transparent;
+    position:absolute;
+    top:0;
+    left:0;
+    padding-top:0.5rem;
+    padding-left:0.8rem;
+    padding-right:0.8rem;
+    display: block;
+    cursor: pointer;
+    font-size:0.9rem;
+    font-weight:bold;
+    transition:0.4s ease;
+    white-space:nowrap;
+    .error{
+        display:none;
+        padding-left:1rem;
+        color: $error-color;
+    }
+}
+
+
+.input{
+    &.has-label{
+        input{
+        padding-top: 1.5rem !important;
+        }
+    }
+}
+
+input::placeholder{
+    color: #f9f9f9;
+}
+
+input::placeholder[disabled]{
+    color: #f9f9f970;
+}
+
+
+input:placeholder-shown:not(:focus)+label{
+    padding-top:1rem;
+    font-size:1.2rem;
+    font-weight:normal;
+}
+
+
+:host([required]) label:after {
+    content: " *";
+    color: var(--color-red)
+    
+}
+
+.error-tags{
+    position:absolute;
+    z-index:100;
+    right:1rem;
+    top:5px;
+    .e-tag{
+        border-radius:6.5px;
+        color:#FFF;
+        font-size:0.7rem;
+        background:var(--color-red);
+        display:inline-block;
+        padding:0 5px;
+        margin-left:0.5rem;
+        line-height:1.3;
+    }
+}
+
+
+
+.loading-wrapper{
+    position: absolute;
+    right:0;
+    top:0;
+    height:100%;
+    width:40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-right: 1rem;
+    color: var(--color-blue)
+}
+
+
+.status-wrapper{
+
+    border-top-right-radius: var(--input-border-radius);
+    overflow:hidden;
+    height: 30px;
+    width:30px;
+    position: absolute;
+    right:0;
+    top:0;
+
+    .status{
+        position:absolute;
+        top:0;
+        right:0;
+        z-index:100;
+        width:30px;
+        height:30px;
+        overflow:hidden;
+        color: #FFF;
+        status-icon{
+            position:absolute;
+
+            top:0;
+            right:0;
+            z-index:500;
+            transform-origin: center center;
+            transform: scale(0);
+            transition: transform 0.3s ease 0s;
+        }
+        .bg{
+            position:absolute;
+            width:100%;
+            height:100%;
+            left:100%;
+            transition:left 0.4s ease 0.5s;
+            &:before{
+                content:"";
+                display:block;
+                width:100%;
+                height:140%;
+                left:50%;
+                transform-origin: left top;
+                transform: rotate(-45deg);
+                background-color: $dark-gray;
+            }
+        }
+    }
+}

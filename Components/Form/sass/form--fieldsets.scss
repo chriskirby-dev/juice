@@ -1,0 +1,16 @@
+.fieldset--address{
+    .field[class*="-address2"]{
+        width:70px;
+    }
+
+    .field[class*="-zip"]{
+        width:70px;
+    }
+
+    .field{
+        &[class*="-state"]{
+            width:220px;
+            min-width:220px;
+        }
+    }
+}

@@ -1,8 +1,41 @@
 import Component from "./Component.mjs";
 
+/**
+ * @class FormInput
+ * @extends {Component.HTMLElement}
+ * @description A custom form input component
+ * @property {string} name - The name of the input
+ * @property {string} value - The value of the input
+ * @property {string} placeholder - The placeholder text of the input
+ * @property {boolean} disabled - Whether or not the input is disabled
+ * @property {boolean} readonly - Whether or not the input is readonly
+ * @property {string} type - The type of input (text, password, etc.)
+ * @property {string} nativeTag - The native tag of the input (input, select, textarea)
+ * @property {HTMLElement} native - The native input element
+ * @property {string} label - The label of the input
+ * @property {string} id - The id of the input
+ * @property {boolean} required - Whether or not the input is required
+ * @property {boolean} willValidate - Whether or not the input will validate
+ * @property {string} validationMessage - The validation message of the input
+ * @property {boolean} checkValidity - Whether or not the input is valid
+ * @property {boolean} validity - Whether or not the input is valid
+ * @property {boolean} form - The form element of the input
+ * @description
+ * When the component is connected, it will check if it has a native tag or not.
+ * If it does, it will get the name and id of the input and set it as a property.
+ * If it doesn't, it will create a native input element and set it as a property.
+ * It will also add a change event listener to the native input element.
+ * When the input changes, it will dispatch a change event with the new value.
+ * When the input is blurred, it will dispatch a blur event.
+ * When the input is focused, it will dispatch a focus event.
+ * When the input is valid, it will dispatch a valid event.
+ * When the input is invalid, it will dispatch an invalid event.
+ * @example
+ * <form-input name="username" value="John Doe"></form-input>
+ */
+
 class FormInput extends Component.HTMLElement {
     static tag = "form-input";
-
     static type = "input";
 
     static formAssociated = true;
@@ -91,98 +124,115 @@ class FormInput extends Component.HTMLElement {
     onConnect() {}
 
     buildNative() {
-        console.log("buildNative", this.constructor.nativeInput);
-        if (this.constructor.nativeInput) {
-            const nativeConfig = this.constructor.nativeInput;
-            const native = document.createElement(nativeConfig.tag);
-            for (let attr in nativeConfig.attributes) {
-                const value = nativeConfig.attributes[attr].includes("{{")
-                    ? this[nativeConfig.attributes[attr].replace(/[\{\}]/g, "")]
-                    : nativeConfig.attributes[attr].includes("[")
-                    ? this.getAttribute(nativeConfig.attributes[attr].replace(/[\[\]}]/g, ""))
-                    : nativeConfig.attributes[attr];
-                native.setAttribute(attr, value);
-            }
-            this.appendChild(native);
-            this.native = native;
+        if (!this.constructor.nativeInput) return;
+
+        const nativeConfig = this.constructor.nativeInput;
+        const native = document.createElement(nativeConfig.tag);
+
+        for (const attribute in nativeConfig.attributes) {
+            const value = nativeConfig.attributes[attribute].includes("{{")
+                ? this[nativeConfig.attributes[attribute].replace(/[\{\}]/g, "")]
+                : nativeConfig.attributes[attribute].includes("[")
+                ? this.getAttribute(nativeConfig.attributes[attribute].replace(/[\[\]}]/g, ""))
+                : nativeConfig.attributes[attribute];
+
+            native.setAttribute(attribute, value);
         }
+
+        this.appendChild(native);
+        this.native = native;
     }
 
     onChildren(childNodes) {
-        console.log("onChildren", childNodes);
-        if (!childNodes || !childNodes.length) {
-            this.buildNative();
+        const nativeInputs = childNodes.filter(
+            (node) =>
+                ["input", "select", "textarea"].includes(node.tagName.toLowerCase()) ||
+                node.querySelector("input, select, textarea")
+        );
+
+        if (nativeInputs.length > 1) {
+            this.onMultipleNativeInput(nativeInputs);
+        } else if (nativeInputs.length === 1) {
+            this.onNativeInput(nativeInputs[0]);
         } else {
-            this.native = childNodes.filter(
-                (node) =>
-                    ["input", "select", "textarea"].includes(node.tagName.toLowerCase()) ||
-                    node.querySelector("input, select, textarea")
-            );
-            console.log(this.native);
-            if (this.native.length) {
-                if (this.native.length > 1) {
-                    return this.onMultipleNativeInput();
-                }
-                this.onNativeInput();
-            } else {
-                this.buildNative();
-            }
+            this.buildNative();
         }
     }
 
     onMultipleNativeInput() {
-        const map = {};
-        for (let i = 0; i < this.native.length; i++) {
-            const native = this.native[i];
-            if (native.tagName.toLowerCase() == "label") {
-                const id = native.getAttribute("for");
-                if (!map[id]) map[id] = {};
-                map[id].label = native.innerText.trim();
-                if (native.querySelector("input, select, textarea"))
-                    this.native.push(native.querySelector("input, select, textarea"));
-            } else if (["input"].includes(native.tagName.toLowerCase())) {
-                const id = native.getAttribute("id");
-                if (!map[id]) map[id] = {};
-                map[id].input = native;
-                map[id].name = native.getAttribute("name");
-                map[id].type = native.getAttribute("type");
+        const inputsById = {};
+
+        for (const nativeElement of this.native) {
+            const elementTag = nativeElement.tagName.toLowerCase();
+
+            if (elementTag === "label") {
+                const id = nativeElement.getAttribute("for");
+
+                if (!inputsById[id]) {
+                    inputsById[id] = {};
+                }
+
+                inputsById[id].label = nativeElement.innerText.trim();
+
+                const inputElement = nativeElement.querySelector("input, select, textarea");
+
+                if (inputElement) {
+                    inputsById[id].input = inputElement;
+                }
+            } else if (elementTag === "input") {
+                const id = nativeElement.getAttribute("id");
+
+                if (!inputsById[id]) {
+                    inputsById[id] = {};
+                }
+
+                inputsById[id].input = nativeElement;
+                inputsById[id].name = nativeElement.getAttribute("name");
+                inputsById[id].type = nativeElement.getAttribute("type");
             }
         }
-        console.log(map);
     }
 
     onNativeInput() {
-        const multiple = this.native.length > 1;
+        const isMultiple = this.native.length > 1;
 
-        this.nativeTag = this.native.tagName.toLowerCase();
+        const nativeTag = this.native[0].tagName.toLowerCase();
 
-        if (this.nativeTag === "select") {
-            if (this.hasAttribute("value")) {
-                this.native.querySelector('option[value="' + this.getAttribute("value") + '"]').selected = true;
+        if (nativeTag === "select") {
+            const value = this.getAttribute("value");
+
+            if (value) {
+                const option = this.native[0].querySelector(`option[value="${value}"]`);
+
+                if (option) {
+                    option.selected = true;
+                }
             }
-            this.native.addEventListener("change", (e) => {
-                this.dispatchEvent(new CustomEvent("change", { detail: e.target.value }));
+
+            this.native[0].addEventListener("change", (event) => {
+                this.dispatchEvent(new CustomEvent("change", { detail: event.target.value }));
             });
-            this.native.addEventListener("input", (e) => {
-                this.dispatchEvent(new CustomEvent("input", { detail: e.target.value }));
+
+            this.native[0].addEventListener("input", (event) => {
+                this.dispatchEvent(new CustomEvent("input", { detail: event.target.value }));
             });
         }
-        console.log(this.native);
     }
 
     onFirstConnect() {
-        if (this.hasAttribute("name")) {
-            this.name = this.getAttribute("name");
-            console.log(this.name);
-            if (!this.hasAttribute("id")) {
-                this.id = "input--" + this.name;
-            }
+        const { name: inputName, id: inputId } = this.attributes;
+
+        if (inputName) {
+            this.name = inputName.value;
+            this.id = inputId ? inputId.value : `input--${this.name}`;
         }
 
         if (this.parentNode.classList.contains("row")) {
-            const childLen = this.parentNode.children.length;
-            if (childLen > 1) {
-                this.style.width = `calc( ${100 / childLen}% - ${childLen}rem )`;
+            const parentChildren = this.parentNode.children;
+            const childCount = parentChildren.length;
+
+            if (childCount > 1) {
+                this.style.width = `calc(${100 / childCount}% - ${childCount}rem)`;
             }
         }
     }
@@ -277,6 +327,7 @@ class FormOption extends Component.HTMLElement {
 }
 
 customElements.define(FormOption.tag, FormOption);
+
 class FormLabel extends Component.HTMLElement {
     static tag = "form-label";
     static type = "label";

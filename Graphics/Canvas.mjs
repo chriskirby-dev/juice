@@ -264,6 +264,35 @@ export class Canvas {
         this.ctx.putImageData(buffer, x, y, sourceX, sourceY, width, height);
     }
 
+    get buffer() {
+        return {
+            create: () => {
+                if (!this.ctx) this.getContext("2d");
+                this._buffer = this.ctx.createImageData(this.width, this.height);
+            },
+            write: (canvas = this.ctx.canvas) => {
+                if (!this._buffer) this.buffer.create();
+                this._buffer.drawImage(canvas, 0, 0);
+            },
+            clear: () => {
+                this._buffer = null;
+            },
+            reset: () => {
+                if (!this._buffer) this.buffer.create();
+                this._buffer.data.fill(0);
+            },
+            get: () => {
+                return this._buffer;
+            },
+            set: (data, i) => {
+                this._buffer.data.set(data, i);
+            },
+            apply: () => {
+                this.ctx.putImageData(this._buffer, 0, 0);
+            },
+        };
+    }
+
     addText(text, options) {
         let font, x, y, max;
         let align = "left";
@@ -338,6 +367,10 @@ export class Canvas {
         this.ctx.putImageData(data, x, y);
     }
 
+    toImageURL(type = "image/png") {
+        return this.native.toDataURL(type);
+    }
+
     build() {
         const { options } = this;
         let id, canvas, width, height;
@@ -374,6 +407,7 @@ export class Canvas {
         canvas.id = id;
 
         this.native = canvas;
+        this.visible = this.ctx;
 
         if (options.container && !options.offscreen) {
             this.appendTo(options.container);

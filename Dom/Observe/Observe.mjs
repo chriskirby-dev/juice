@@ -1,4 +1,4 @@
-import Resize from "./Resize.mjs";
+import ResizeObserver from "./Resize.mjs";
 import PositionObserver from "./Position.mjs";
 import Mutation from "./Mutation.mjs";
 import ChildObserver from "./Children.mjs";
@@ -7,7 +7,7 @@ import ObserveTarget from "./Target.mjs";
 
 class Observe {
     static resize(el, callback) {
-        const resize = new Resize(el);
+        const resize = new ResizeObserver(el);
         if (callback) return resize.change(callback);
         return resize;
     }

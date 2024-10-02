@@ -53,12 +53,29 @@ class AnimationStage extends Component.HTMLElement {
                     height: "100%",
                     zIndex: 100,
                 },
+                "#background": {
+                    display: "block",
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                },
+                "#background > *": {
+                    display: "block",
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    left: 0,
+                    top: 0,
+                },
             },
         ];
     }
 
     static html(data = {}) {
-        return `<slot></slot>`;
+        return `
+        <div id="background"></div>
+        <slot></slot>
+        `;
     }
 
     beforeCreate() {
@@ -82,9 +99,29 @@ class AnimationStage extends Component.HTMLElement {
         this.position.add(x, y);
     }
 
+    update() {
+        if (this.backgrounds.length) {
+            this.backgrounds.forEach((background) => {
+                if (background.animate && background.update) {
+                    background.update();
+                }
+            });
+        }
+    }
+
+    render() {
+        if (this.backgrounds.length) {
+            this.backgrounds.forEach((background) => {
+                if (background.animate && background.render) {
+                    background.render();
+                }
+            });
+        }
+    }
+
     onAttributeChanged(property, prevous, value) {
         if (!this.root) return;
-        console.log(this.root, property, value);
+
         switch (property) {
             case "width":
                 this.styles.update(":host", { width: value + "px" }, "size");
@@ -119,14 +156,22 @@ class AnimationStage extends Component.HTMLElement {
         }
     }
 
+    backgrounds = [];
+
+    addBackground(element, options = {}) {
+        this.ref("background").appendChild(element);
+        this.backgrounds.push({
+            element: element,
+            ...options,
+        });
+    }
+
     update(data) {}
 
     render(data) {
         if (this.viewer) {
             if (this.position.dirty) {
-                console.log(this.position.toArray());
                 const translate = `translate3d(${this.position.x}px, ${this.position.y}px,0)`;
-                console.log(translate);
                 this.style.transform = translate;
             }
         }
@@ -135,6 +180,9 @@ class AnimationStage extends Component.HTMLElement {
     onCustomChildReady(child) {
         /// if (!child) return;
         console.log("child connected", child, child.animate);
+        if (this.viewer) {
+            this.viewer.onAssetAdded(child);
+        }
         if (this._timeline) {
             this._timeline.addAnimator(child);
         }

@@ -10,7 +10,8 @@ class PropertyArray {
         return this.values.length / this.props.length;
     }
 
-    set(a = [], i = 0) {
+    set(a = [], i = 0, offset = 0) {
+        i = i * this.spread + offset;
         if (i < 0 || i >= this.values.length) throw new RangeError(`Index ${i} out of bounds which is ${this.count}`);
         this.values.set(a, i);
     }
@@ -23,8 +24,9 @@ class PropertyArray {
     }
 
     get(i = 0) {
-        if (i < 0 || i >= this.values.length) throw new RangeError(`Index ${i} out of bounds which is ${this.count}`);
-        return Array.from(this.values.slice(i, i + this.spread));
+        if (i < 0 || i >= this.length) throw new RangeError(`Index ${i} out of bounds which is ${this.count}`);
+        const start = i * this.spread;
+        return this.values.subarray(start, start + this.spread);
     }
 
     getMap(i = 0) {
@@ -35,19 +37,19 @@ class PropertyArray {
     }
 
     forEach(cb) {
-        for (let i = 0; i < this.values.length; i += this.spread) {
+        for (let i = 0; i < this.length; i++) {
             cb(this.get(i), i, this);
         }
     }
 
     map(cb) {
-        for (let i = 0; i < this.length; i += this.spread) {
+        for (let i = 0; i < this.length; i++) {
             this.set(cb(this.get(i), i, this), i);
         }
     }
 
     async *read() {
-        for (let i = 0; i < this.length; i += this.spread) {
+        for (let i = 0; i < this.length; i++) {
             yield { index: i, value: this.get(i) };
         }
     }

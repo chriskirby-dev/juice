@@ -41,28 +41,56 @@ const consoleStyles = {
     RESET: "\x1B[0m",
 };
 
-function parseStackLine(line) {
-    console.log(line);
-    const stackRegex = /^(?:\s*at\s+)?(?:([\w$.]+)\s*\()?(?:(.*?)(?::(\d+):(\d+))?\s*\)?|\[.*?\])$/;
-    const matches = line.match(stackRegex);
-    //console.log(matches);
-    let resp = undefined;
-    if (matches) {
-        let file = matches[2];
-        let method = matches[1];
-        resp = {};
-        if (file && file.includes("(")) {
-            const parts = file.split(/[\(\)]/g);
-            method = parts[0] + "()";
-            file = parts[1];
+class Log {
+    get parseTrace() {
+        this.log = [];
+        this.debug = false;
+    }
+}
+
+class ConsoleMessage {
+    static parse(raw) {
+        const stackRegex = /^(?:\s*at\s+)?(?:([\w$.]+)\s*\()?(?:(.*?)(?::(\d+):(\d+))?\s*\)?|\[.*?\])$/;
+        const matches = raw.trim().match(stackRegex);
+        let resp;
+        if (matches) {
+            resp = {};
+            let file = matches[2];
+            let method = matches[1];
+            if (file && file.includes("(")) {
+                const parts = file.split(/[\(\)]/g);
+                method = parts[0] + "()";
+                resp.file = parts[1];
+            }
+            if (method) resp.method = method === "Object.<anonymous>" ? "(anonymous)" : method;
+            if (matches[3]) resp.line = parseInt(matches[3]);
+            if (matches[4]) resp.column = parseInt(matches[4]);
         }
-        if (method) resp.method = method === "Object.<anonymous>" ? "(anonymous)" : method;
-        if (file) resp.file = file;
-        if (matches[3]) resp.line = matches[3];
-        if (matches[4]) resp.column = matches[4];
+        return resp;
     }
 
-    return resp;
+    static file(line) {
+        if (!line) return null;
+        const parsed = ConsoleMessage.parse(line);
+        return {
+            name: "Test Name",
+            get file() {
+                if (parsed.file) {
+                    return {
+                        path: parsed.file,
+                        basename: parsed.file.split("/").pop(),
+                        method: parsed.method,
+                        line: parsed.line,
+                        column: parsed.column,
+                        raw: line,
+                    };
+                } else {
+                    return line;
+                }
+            },
+        };
+        return FileMessage;
+    }
 }
 
 root.stackTrace = function stackTrace(parsed = false) {
@@ -72,7 +100,7 @@ root.stackTrace = function stackTrace(parsed = false) {
     const stackArray = stack.split("\n").slice(4);
     //console.log(stackArray);
     // Remove the first two lines which are the error message and this function call
-    return parsed ? stackArray.map(parseStackLine) : stackArray;
+    return parsed ? stackArray.map(ConsoleMessage.parse) : stackArray;
 };
 
 root.caller = function caller() {
@@ -95,12 +123,12 @@ root.log = () => {
         const _caller = caller()
             .map((line) => {
                 let str = "";
-                if (line.line)
-                    str += `${consoleStyles.BLUE}line:${consoleStyles.WHITE}${line.line} ${consoleStyles.BLUE}col: ${consoleStyles.WHITE}${line.column}`;
-                //if (line.column) str += ` ${consoleStyles.BLUE} col:${consoleStyles.WHITE}${line.column}`;
-                if (line.method) str += `${consoleStyles.BLUE} method:${consoleStyles.WHITE} ${line.method}`;
+                if (line.file) str += `${consoleStyles.BLUE} file:  ${consoleStyles.WHITE} ${line.file}`;
+                if (line.method) str += `${consoleStyles.BLUE}     method:${consoleStyles.WHITE} ${line.method}`;
 
-                if (line.file) str += `\n ${consoleStyles.BLUE} file:  ${consoleStyles.WHITE} ${line.file}`;
+                if (line.line)
+                    str += `${consoleStyles.BLUE} line:${consoleStyles.WHITE}${line.line} ${consoleStyles.BLUE}col: ${consoleStyles.WHITE}${line.column}`;
+                //if (line.column) str += ` ${consoleStyles.BLUE} col:${consoleStyles.WHITE}${line.column}`;
 
                 return str;
             })

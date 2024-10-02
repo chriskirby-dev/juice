@@ -9,13 +9,16 @@ export class Particle {
     constructor(options = {}) {
         //Set Initial Properties
         this.type = options.type || "circle";
-        this.position = new Vector2D(options.x || 0, options.y || 0);
+        this.start = { x: options.x, y: options.y };
+        this.position = new Vector2D(0, 0);
         this.age = options.age || 0;
         this.lifetime = options.lifetime || 10;
         this.size = new AnimationValue(options.size || 0);
-        this.color = options.color || `#FFFFFF`;
+        this.color = options.color || "#FFF";
         this.opacity = new AnimationValue(options.opacity || 1);
         this.rotation = options.rotation || 0;
+        this.vars = options.vars || {};
+        if (options.floor) this.floor = options.floor;
 
         if (this.steps) {
             this.stepper = new AnimationStepper(steps);
@@ -24,6 +27,14 @@ export class Particle {
         this.options = options;
 
         this.build();
+    }
+
+    get x() {
+        return this.start.x + this.position.x;
+    }
+
+    get y() {
+        return this.start.y + this.position.y;
     }
 
     update(delta) {
@@ -43,11 +54,17 @@ export class Particle {
                 this.body.classList.add("particle");
                 this.body.style.position = "absolute";
                 this.body.style.zIndex = 100;
-                this.body.style.background = this.color;
-                this.body.style.width = `${this.size.value}px`;
-                this.body.style.height = `${this.size.value}px`;
+                // this.body.style.background = "transparent";
+
                 this.body.style.opacity = `${this.opacity.value}`;
+                this.body.style.top = `${this.start.y}px`;
+                this.body.style.left = `${this.start.x}px`;
                 this.body.classList.add(options.type);
+                this.vars["--size"] = this.size.value + "px";
+                this.vars["--color"] = this.color;
+                for (let name in this.vars) {
+                    this.body.style.setProperty(name, this.vars[name]);
+                }
                 if (options.type === "circle") {
                     this.body.style.borderRadius = "50%";
                 }
@@ -98,8 +115,7 @@ export class AnimationParticle extends Particle {
         if (this.position.dirty) this.body.style.transform = `translate(${this.position.x}px, ${this.position.y}px)`;
 
         if (this.size.dirty) {
-            this.body.style.width = `${this.size.value}px`;
-            this.body.style.height = `${this.size.value}px`;
+            this.body.style.setProperty("--size", `${this.size.value}px`);
         }
     }
 }
@@ -139,7 +155,17 @@ export class ParticleEmitter {
     last = 0;
 
     constructor(source, options = {}) {
-        this.source = source;
+        const _source = document.createElement("div");
+        _source.className = "particle-source";
+        _source.style.position = "absolute";
+        _source.style.top = 0;
+        _source.style.left = 0;
+        _source.style.width = "100%";
+        _source.style.height = "100%";
+        source.appendChild(_source);
+
+        this.source = _source;
+
         const rect = source.getBoundingClientRect();
         this.width = rect.width;
         this.height = rect.height;

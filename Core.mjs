@@ -4,11 +4,15 @@ import "./Dev/Log.mjs";
 import { copyProperties } from "./Util/Class.mjs";
 export const root = window || global;
 
+import JuiceStorage from "./inc/Storage.mjs";
+import JuiceQueues from "./inc/Queues.mjs";
+
 function parseFilePath(path) {
     return {
         name: path.split("/").pop(),
         path,
         dir: path.substr(0, path.lastIndexOf("/")),
+        ext: path.split(".").pop(),
     };
 }
 
@@ -17,12 +21,63 @@ export function currentFile(meta) {
     return parseFilePath(_url);
 }
 
-export const juice = {
-    resolve: import.meta.resolve,
-    root: root,
-    currentFile,
-};
+root.currentFile = currentFile;
 
+class Juice {
+    constructor() {
+        this.root = root;
+        this.resolve = import.meta.resolve;
+        this.currentFile = currentFile;
+        this.queues = new JuiceQueues();
+        this.storage = new JuiceStorage();
+    }
+
+    storage(bucket) {
+        if (!this._storage) {
+            let buckets = localStorage.getItem("juice:storage:buckets");
+            if (buckets) {
+                buckets = JSON.parse(buckets);
+            } else {
+                buckets = [];
+            }
+
+            this._storage = {
+                buckets,
+            };
+        }
+        localStorage;
+    }
+
+    expose() {
+        (window || global).juice = this;
+    }
+
+    load(url, options = {}) {
+        const parsed = parseFilePath(file);
+
+        function fileContentsLoaded(contents) {
+            if (options.cache) {
+            }
+        }
+
+        switch (parsed.ext) {
+            case "css":
+                fetch(url)
+                    .then((r) => r.text())
+                    .then(fileContentsLoaded);
+                break;
+            case "js":
+                break;
+                break;
+            case "html":
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+export const juice = new Juice();
 root.juice = juice;
 
 import _config from "./Configuration.mjs";

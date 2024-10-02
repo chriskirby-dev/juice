@@ -5,7 +5,9 @@ import Util, { type } from "../Util/Core.mjs";
 import { camelCase } from "../Util/String.mjs";
 import Observe from "../Dom/Observe/Observe.mjs";
 import VirtualDom from "../VirtualDom/VirtualDom.mjs";
+import VDom from "../VirtualDom/VDom.mjs";
 import Attributes from "../Dom/Attributes.mjs";
+import SyncedValue from "../DataTypes/SyncedValue.mjs";
 import "../Dom/Extend.mjs";
 
 //Default Configuration
@@ -35,7 +37,6 @@ const defaultComponentStyle = `
     :host{
         position:relative;
         display:block;
-        z-index:100;
     }
     :host(.container) .component--html{
         container: component / inline-size;
@@ -56,7 +57,6 @@ const defaultComponentStyle = `
  *  Takes in styles and html and outputs both to structured html code
  */
 class ComponentTemplate {
-    dom;
     #styles = [defaultComponentStyle];
     #html = [];
     changed = true;
@@ -64,12 +64,17 @@ class ComponentTemplate {
 
     constructor(config = {}) {
         this.config = config;
-        this.dom = document.createElement("template");
     }
 
     addStyle(...styles) {
-        this.#styles = this.#styles.concat(styles);
+        this.#styles.push(...styles);
         this.changed = true;
+    }
+
+    async loadStyle(url) {
+        return fetch(url)
+            .then((r) => r.text())
+            .then((css) => this.addStyle(css));
     }
 
     get style() {
@@ -77,7 +82,7 @@ class ComponentTemplate {
     }
 
     addHTML(...html) {
-        this.#html = this.#html.concat(html);
+        this.#html.push(...html);
         this.changed = true;
     }
 
@@ -89,17 +94,13 @@ class ComponentTemplate {
         const { config } = this;
         const type = config.template || "default";
 
-        switch (type) {
-            case "minimal":
-                this.dom.innerHTML = `<div id="style-box" class="component--styles vdom-noupdate">${this.style}</div>${this.html}`;
-            default:
-                this.dom.innerHTML = `<div id="style-box" class="component--styles vdom-noupdate">${this.style}<slot name="style"></slot></div>`;
-                this.dom.innerHTML += `
-                ${this.config.before ? `<slot name="before-html"></slot>` : ``}
-                <div id="html" class="component--html"  >${this.html}</div>
-                ${this.config.after ? `<slot name="after-html"></slot>` : ``}
-                `;
-        }
+        this.dom = document.createElement("template");
+        this.dom.innerHTML = `
+            <div id="style-box" class="component--styles vdom-noupdate">${this.style}</div>
+            <div id="html" class="component--html" >
+                ${this.html}
+            </div>
+        `;
         this.changed = false;
     }
 
@@ -150,27 +151,34 @@ function ComponentCompiler(name, BaseHTMLElement) {
              * @return {void} This function does not return anything.
              */
             static initialize() {
-                //Merge Default Config with Component static Config
-                const userConfig = {};
-                if (this.tag && window.JUICE_CONFIG?.components[this.tag]) {
-                    userConfig = window.JUICE_CONFIG.components[this.tag];
-                }
+                const defaultConfig = DEFAULT_CONFIG;
+                const componentConfig = this.config || {};
+                const userConfig = window.JUICE_CONFIG?.components[this.tag] || {};
+                const baseConfig = this.baseConfig || {};
 
-                //Merge Default Config with Component static Configs
-                this.config = ObjUtil.merge(DEFAULT_CONFIG, userConfig, this.baseConfig || {}, this.config || {}, true);
-                if (this.debug) console.log(this.name, this.config);
+                this.config = ObjUtil.merge(defaultConfig, userConfig, baseConfig, componentConfig, true);
 
-                //Create new Component Template
                 this.template = new ComponentTemplate(this.config);
+                const styleProperties = ["baseStyle", "style", "_style"];
 
-                //Setup template styles
-                const staticStyleProperties = ["baseStyle", "style", "_style"];
-                staticStyleProperties.forEach((property) => {
-                    if (this[property])
-                        this.template.addStyle(...(Util.isArray(this[property]) ? this[property] : [this[property]]));
+                styleProperties.forEach((property) => {
+                    const value = this[property];
+                    if (value) {
+                        if (Util.isArray(value)) {
+                            this.template.addStyle(...value);
+                        } else if (type(value, "object")) {
+                            this.template.addStyle(value);
+                        } else if (type(value, "string")) {
+                            if (value.includes("}")) {
+                                this.template.addStyle(value);
+                            } else if (!value.includes(" ")) {
+                                //Process as Link
+                            }
+                        }
+                        this.template.addStyle(...(Util.isArray(value) ? value : [value]));
+                    }
                 });
 
-                //remove initialize function so it is not ran again
                 this.initialized = true;
                 this.initialize = null;
             }
@@ -192,14 +200,17 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 return null;
             }
 
-            // Override in order to listen to attribute changes
+            // Override to listen to attribute changes
             static get observedAttributes() {
-                return (this.observed.all || []).concat(this.observed.attributes || []);
+                return this.observed.all?.concat(this.observed.attributes) || [];
             }
 
-            //Any properties listed will invoke onPropertyChanged callback
+            /**
+             * List of properties that will invoke onPropertyChanged when changed
+             * @type {string[]}
+             */
             static get observedProperties() {
-                return (this.observed.all || []).concat(this.observed.properties || []);
+                return [...(this.observed.all || []), ...(this.observed.properties || [])];
             }
 
             static get observed() {
@@ -224,21 +235,45 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 return this.constructor;
             }
 
+            _ = { styleVars: {} };
+
+            // Stores references to elements that have been created
+            // by the component
             refs = {};
-            #slots = {};
+
+            // Stores the result of the `defined` method
             _defined = {};
-            #refs = {};
+
+            // Stores an array of properties that have changed
             changed = [];
-            #_stash = [];
-            #data = {};
-            #styles = {};
-            #content = null;
-            #vdom;
-            #models = {};
+
+            // Stores the index of the component
             _index = null;
+
+            // Stores whether or not the component has been rendered
             rendered = false;
-            #config;
+
+            // Stores the state of the component
             _state = { current: null };
+
+            // Stores the resize action
+            RESIZE_ACTION = "none";
+
+            config;
+
+            #content;
+
+            #vdom;
+
+            #styles = {};
+
+            #stashed = [];
+
+            #refs = {};
+
+            #slots = {};
+
+            #renderers = [];
 
             constructor() {
                 super();
@@ -256,17 +291,17 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 if (this.constructor.initialize) this.constructor.initialize();
 
                 //Get Static Config Obj
-                this.#config = Object.freeze(this.constructor.config);
+                this.config = Object.freeze(this.constructor.config);
 
-                if (this.#config.useInternals) {
+                if (this.config.useInternals) {
                     //Attach Form internals
                     this.internals = this.attachInternals();
                 }
 
-                if (this.#config.shadow) {
+                if (this.config.shadow) {
                     try {
                         //Attached Shadow Dom
-                        const shadowConfig = { mode: this.#config.closed ? "closed" : "open" };
+                        const shadowConfig = { mode: this.config.closed ? "closed" : "open" };
                         if (this.delegatesFocus) shadowConfig.delegatesFocus = true;
                         this.shadowDom = this.attachShadow(shadowConfig);
                     } catch (e) {
@@ -278,9 +313,9 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 }
 
                 //Bind Emitter to element if config set true
-                if (this.#config.emitter) Emitter.bind(this);
+                if (this.config.emitter) Emitter.bind(this);
                 //Set debug
-                if (this.#config.debug) this.debug = true;
+                if (this.config.debug) this.debug = true;
                 //Before Crreate Callback
                 if (this.beforeCreate) this.beforeCreate();
                 //Initialize Observable Properties
@@ -288,7 +323,11 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.static.observedProperties.forEach((prop) => this.#setObservable(prop));
                 }
 
-                this.htmlFactory = this.constructor.html.bind(this);
+                ["beforeHTML", "html", "afterHTML"].map((placement) => {
+                    if (this.constructor[placement]) {
+                        this.#renderers.push(this.constructor[placement].bind(this));
+                    }
+                });
 
                 //Add to Instance Index
                 this.constructor.instances.push(this);
@@ -303,7 +342,11 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.root.appendChild(clone);
                     this.#content = this.root.querySelector(".component--html");
                     //Initialize VDOM by parsing the component html
-                    this.#vdom = VirtualDom.parseDom(this.#content);
+                    //this.#vdom = VirtualDom.parseDom(this.#content);
+                    this.#vdom = new VDom(this.#content, {
+                        container: this.#content,
+                        containerAsRoot: true,
+                    });
                     this.#styles.default = new StyleSheet("default", this.root.querySelector("style"));
                 }
 
@@ -324,40 +367,60 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 }
             }
 
+            setStyleVar(key, value) {
+                this.ref("html").style.setProperty(key, value);
+            }
+
+            setStyleVars(vars) {
+                Object.assign(this._.styleVars, vars); //this.ref("html").style.setProperty(key, value);
+            }
+
+            writeStyleVars(vars) {
+                const root = this.shadowRoot.host;
+                if (vars) Object.assign(this._.styleVars, vars);
+                root.style.cssText = Object.entries(this._.styleVars)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(";");
+
+                //alert(this.ref("html").style.cssText);
+            }
+
             /**
              * A function to manage styles for the component.
              *
-             * @param {string} tag - The tag of the style sheet to manage (default is "default")
+             * @param {string} sheetName - The tag of the style sheet to manage (default is "default")
              * @return {Object} An object with methods to clear, add, update, and replace styles
              */
             get styles() {
                 const self = this;
 
-                function getSheet(tag = "default") {
-                    let sheet = self.#styles[tag];
-                    if (!sheet) {
+                function getStyleSheet(sheetName = "default") {
+                    let styleSheet = self.#styles[sheetName];
+                    if (!styleSheet) {
                         //If style tag does not exist create a empty one
-                        sheet = new StyleSheet("style--" + tag);
-                        const styleBox = (self.shadowDom || self).querySelector(".component--styles");
-                        (styleBox || self.shadowDom || self).appendChild(sheet.create());
-                        self.#styles[tag] = sheet;
+                        styleSheet = new StyleSheet(`style--${sheetName}`);
+                        const stylesContainer = (self.shadowDom || self).querySelector(".component--styles");
+                        (sheetName == "global" ? document.head : stylesContainer || self.shadowDom || self).appendChild(
+                            styleSheet.create()
+                        );
+                        self.#styles[sheetName] = styleSheet;
                     }
-                    return sheet;
+                    return styleSheet;
                 }
 
                 return {
-                    clear: function (tag = "default") {
-                        getSheet(tag).clear();
+                    clear: function (sheetName = "default") {
+                        getStyleSheet(sheetName).clear();
                     },
-                    add: function (styles, tag = "default") {
-                        getSheet(tag).add(styles);
+                    add: function (styles, sheetName = "default") {
+                        getStyleSheet(sheetName).add(styles);
                     },
-                    update(selector, properties, tag = "default") {
-                        getSheet(tag).update(selector, properties);
+                    update(selector, properties, sheetName = "default") {
+                        getStyleSheet(sheetName).update(selector, properties);
                     },
-                    replace: function (styles, tag = "default") {
-                        getSheet(tag).clear();
-                        getSheet(tag).add(styles);
+                    replace: function (styles, sheetName = "default") {
+                        getStyleSheet(sheetName).clear();
+                        getStyleSheet(sheetName).add(styles);
                     },
                 };
             }
@@ -371,7 +434,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             #stash(opperation, ...args) {
                 if (this.debug) console.log("Stash", this.constructor.name, opperation, args);
-                this.#_stash.push([opperation, args]);
+                this.#stashed.push([opperation, args]);
             }
 
             /**
@@ -380,9 +443,9 @@ function ComponentCompiler(name, BaseHTMLElement) {
              */
 
             #unstash() {
-                // debug('UNSTASH',this.constructor.name, this.#_stash );
-                while (this.#_stash.length > 0) {
-                    const stashed = this.#_stash.shift();
+                // debug('UNSTASH',this.constructor.name, this.#stashed );
+                while (this.#stashed.length > 0) {
+                    const stashed = this.#stashed.shift();
                     if (this.debug) console.log("unStash", this.constructor.name, ...stashed);
                     if (this[stashed[0]]) this[stashed[0]](...stashed[1]);
                 }
@@ -393,14 +456,16 @@ function ComponentCompiler(name, BaseHTMLElement) {
             }
 
             #state = { current: "initial" };
-            //Component State Getter/Setter
+            // Component state getter/setter
             set state(value) {
                 if (this.constructor.allowedStates && !this.constructor.allowedStates.includes(value)) {
-                    throw new Error("State not allowed for component");
+                    throw new Error(`State '${value}' not allowed for component`);
                 }
-                this.#state.last = this._state.current;
+
+                const previous = this.#state.current;
                 this.#state.current = value;
-                if (this.onStateChange) this.onStateChange(value, this.#state.last);
+
+                if (this.onStateChange) this.onStateChange(value, previous);
                 this.dispatchEvent(new CustomEvent("statechange", { detail: { state: value } }));
             }
 
@@ -420,79 +485,62 @@ function ComponentCompiler(name, BaseHTMLElement) {
             }
 
             #setObservable(property, value = null) {
-                //Check Config Properties Obj for Property Configs
-                const config = this.#config.properties[property] || {};
-                let aliases = [];
+                const config = this.config.properties[property] || {};
 
-                if (property.includes("-")) {
-                    //If property is dashed create alias for it in camelCase
-                    let alias = camelCase(property);
-                    aliases.push(alias);
+                let routes = [{ route: property, parent: this._defined }];
+                const synced = new SyncedValue();
+
+                if (config.route !== undefined) {
+                    if (!Array.isArray(config.route)) config.route = [config.route];
+                    routes = config.route.map((path) => {
+                        if (path.includes(".")) {
+                            const parts = path.split(".");
+                            const route = parts.pop();
+                            const parent = parts.reduce((acc, part) => acc && acc[part], this);
+                            return { route, parent };
+                        } else {
+                            return { route: path, parent: this };
+                        }
+                    });
                 }
-
-                let route = property,
-                    parent = this._defined;
-                // console.trace(config.route);
-                if (config.route !== undefined && config.route.includes(".")) {
-                    const parts = config.route.split(".");
-                    route = parts.pop();
-                    //  console.log(config);
-                    //   console.trace(parts);
-                    parent = parts.reduce((acc, part) => acc && acc[part], this);
-                }
-
-                //   console.log(this[route], parent, route, property);
 
                 if (this[property] !== undefined) {
-                    //If property is already set get value and delete from component
-                    console.log("Property already set", property);
                     value = this[property];
-                    parent[route] = value;
+                    routes.forEach((r) => (r.parent[r.route] = value));
                     delete this[property];
                 }
 
-                if (!parent[route]) {
-                    if (value !== null) {
-                        //If value is passed set it
-                        parent[route] = value;
-                    } else if (config.default !== undefined && (value === null || value == config.default)) {
-                        //If value is not passed and default is set in property config set default
-                        value = config.default;
-                        parent[route] = value;
+                value = value || config.default || null;
+
+                routes.forEach((r) => {
+                    if (!r.parent[r.route]) {
+                        r.parent[r.route] = value;
                     }
-                }
+                });
 
-                // debug('setObservable', this.constructor.name, property, value);
-
-                if (this.debug) console.log("setObservable", this.constructor.name, property, value);
-
-                //Define Property to instance
                 Object.defineProperty(this, property, {
                     get: () => {
-                        return parent[route];
+                        return routes[0].parent[routes[0].route];
                     },
-                    set: (value) => {
-                        if (value == "null") value = null;
-                        // console.log(this._defined[property], value);
-                        //If value is same return
-                        if (parent[route] === value) return;
-                        //Value has changed mark in changed array
+                    set: (newValue) => {
+                        if (newValue === "null") newValue = null;
+                        if (routes[0].parent[routes[0].route] === newValue) return;
                         if (this.changed.indexOf(property) === -1) this.changed.push(property);
-                        //Grab previous value
-                        const old = parent[route];
-                        //Set New Value
-                        parent[route] = value;
+                        const oldValue = routes[0].parent[routes[0].route];
+                        routes.forEach((r) => (r.parent[r.route] = newValue));
 
-                        //If Property Attr is Linked Update it.
-                        if (config.linked && value !== null) {
-                            this.setAttribute(property, value);
+                        if (config.linked && newValue !== null) {
+                            this.setAttribute(property, newValue);
                         }
 
                         if (!this._defined.connected) {
-                            return this.#stash("_onPropertyChanged", property, old, value, config);
+                            return this.#stash("_onPropertyChanged", property, oldValue, newValue, config);
                         } else {
-                            if (!this.onBeforePropertyChanged || this.onBeforePropertyChanged(property, old, value)) {
-                                this._onPropertyChanged(property, old, value, config);
+                            if (
+                                !this.onBeforePropertyChanged ||
+                                this.onBeforePropertyChanged(property, oldValue, newValue)
+                            ) {
+                                this._onPropertyChanged(property, oldValue, newValue, config);
                             }
                         }
 
@@ -500,136 +548,144 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     },
                 });
 
-                if (aliases.length) {
-                    //Route all aliases to the property
-                    aliases.forEach((alias) => {
-                        Object.defineProperty(this, alias, {
-                            get: () => this[property],
-                            set: (value) => {
-                                this[property] = value;
-                            },
-                        });
+                const aliases = property
+                    .split("-")
+                    .map((part, index) => (index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+                    .join("");
+                if (aliases !== property) {
+                    Object.defineProperty(this, aliases, {
+                        get: () => this[property],
+                        set: (value) => {
+                            this[property] = value;
+                        },
                     });
                 }
 
-                if (value !== null) {
-                    //Set Value to start things off
-                    this[property] = value;
-                }
-
-                if (value && config.linked && !this.hasAttribute(property)) {
-                    //Create Set Attr event to complete when ready
+                if (value !== null && config.linked && !this.hasAttribute(property)) {
                     this.#stash("setAttribute", property, value);
                 }
             }
 
-            dirty(...props) {
-                if (props.length) return props.some((p) => this.changed.includes(p));
-                return this.changed.length > 0;
+            dirty(...properties) {
+                return properties.length
+                    ? properties.some((property) => this.changed.includes(property))
+                    : this.changed.length > 0;
             }
 
-            clean(...props) {
-                if (props.length) return props.forEach((p) => this.changed.splice(this.changed.indexOf(p), 1));
-                this.changed = [];
+            clean(...properties) {
+                if (properties.length) {
+                    for (const property of properties) {
+                        const index = this.changed.indexOf(property);
+                        if (index > -1) {
+                            this.changed.splice(index, 1);
+                        }
+                    }
+                } else {
+                    this.changed = [];
+                }
             }
 
-            //Handle Property Changes
-            _onPropertyChanged(property, old, value, config) {
-                if (this.debug) console.log("onPropertyChanged", this.constructor.name, property, old, value, config);
+            // Handle property changes
+            async _onPropertyChanged(property, oldValue, newValue, config) {
+                if (this.onPropertyChanged) await this.onPropertyChanged(property, oldValue, newValue);
 
-                if (this.onPropertyChanged) this.onPropertyChanged(property, old, value);
-
-                //Dispatch Property Change Event
+                // Dispatch property change event
                 this.dispatchEvent(
                     new CustomEvent("propertychange", {
-                        detail: { property: property, value: value, old: old },
+                        detail: { property, oldValue, newValue },
                     })
                 );
 
-                //if After function is set in property Config
+                // If "after" function is set in property config
                 if (config.after) {
-                    if (typeof config.after == "string" && this[config.after]) {
-                        this[config.after]();
-                    } else if (typeof config.after == "function") {
-                        const fn = config.after.bind(this);
-                        fn();
-                    }
+                    const after = typeof config.after === "string" ? this[config.after] : config.after;
+                    if (typeof after === "function") await after.call(this);
                 }
 
-                //if render s set in property config
+                // If "render" is set in property config
                 if (config.render) {
-                    //Force render the component
-                    this.#render();
+                    // Force render the component
+                    clearTimeout(this.renderTO);
+                    this.renderTO = setTimeout(() => {
+                        this.#render();
+                    }, 0);
                 }
             }
 
-            /**
-             *  @method connectedCallback
-             *  Invoked each time the custom element is appended into a document-connected element.
-             *  This will happen each time the node is moved, and may happen before the element's contents have been fully parsed.
-             */
-
-            connectedCallback() {
-                console.log("CONNECTED", this);
-                //If Ready below code already ran
-                if (!this.ready) {
-                    //If Component has a template prepare for initialization
-
-                    if (this.debug) debug(this.constructor.name, "CONNECTED");
-
-                    //If component has resize method create resize observer
-                    if (type(this.onResize, "function")) {
-                        debug("Observing Resize", this.constructor.name);
-                        this.onResize = this.onResize.bind(this);
-                        Observe.resize(this.#content).change((w, h) => this.onResize(w, h));
-                    }
-
-                    //If component has onPosition method create position observer
-                    if (type(this.onPosition, "function")) {
-                        debug("Observing Position", this.constructor.name);
-                        this.onPosition = this.onPosition.bind(this);
-                        Observe.position(this).change((x, y) => this.onPosition(x, y));
-                    }
-
-                    //Check for defer render
-                    if (!this.constructor.deferRender && this.rendered == false) this.#render();
-
-                    if (this.onBeforeConnect) this.onBeforeConnect();
-
-                    //Called on first connection try.
-                    if (this.onFirstConnect) this.onFirstConnect();
-
-                    setTimeout(() => {
-                        //Call onReady on next tick
-                        if (this.onReady) this.onReady();
-                        this.ready = true;
-                        this.dispatchEvent(new Event("ready"));
-                        if (this.parentElement?.onCustomChildReady) {
-                            this.parentElement.onCustomChildReady(this);
-                        } else if (this.getRootNode().host?.onCustomChildReady) {
-                            this.getRootNode().host.onCustomChildReady(this);
-                        }
-
-                        if (this.ref("html")) this.ref("html").classList.add("connected");
-                    }, 0);
+            #resize(width, height) {
+                const resizeAction = this.RESIZE_ACTION;
+                console.log("resize");
+                switch (resizeAction) {
+                    case "width":
+                        this.width = width;
+                        break;
+                    case "height":
+                        this.height = height;
+                        break;
+                    case "fill":
+                        this.width = width;
+                        this.height = height;
+                        break;
+                    case "fill:pow2":
+                        this.width = Math.pow(2, Math.ceil(Math.log2(width)));
+                        this.height = Math.pow(2, Math.ceil(Math.log2(height)));
+                        break;
+                    case "none":
+                        break;
+                    default:
+                        this.width = width;
+                        this.height = height;
                 }
 
-                if (this.onConnect) this.onConnect();
+                if (typeof this.onResize === "function") {
+                    this.onResize(this.width, this.height, resizeAction);
+                }
+            }
 
-                this._defined.connected = true;
-                //Unstash all stashed events
+            _onFirstConnect() {
+                // Initialize the component
+                if (!this.constructor.deferRender && !this.rendered) this.#render();
 
-                //Run all stashed events
-                this.#unstash();
-
-                if (this.onConnect) this.onConnect();
-                this.dispatchEvent(new Event("connect"));
-
-                if (this.parentNode._onCustomChildConnect) {
-                    //If elements parent is a custom element.then broadcast child connect.
-                    this.parentNode._onCustomChildConnect(this);
+                // Set up resize observer if component has a resize method
+                if (type(this.onResize, "function") || this.RESIZE_ACTION !== "none") {
+                    this.mutationObserver = new MutationObserver(() =>
+                        this.#resize(this.offsetWidth, this.offsetHeight)
+                    );
+                    this.mutationObserver.observe(this, {
+                        attributes: true,
+                    });
                 }
 
+                // Set up position observer if component has an onPosition method
+                if (type(this.onPosition, "function")) {
+                    this.positionObserver = new MutationObserver(() => {
+                        const x = this.offsetLeft;
+                        const y = this.offsetTop;
+                        this.onPosition(x, y);
+                    });
+                    this.positionObserver.observe(this, {
+                        attributes: true,
+                        childList: true,
+                        subtree: true,
+                    });
+                }
+
+                // Call onReady on next tick
+                setTimeout(() => {
+                    if (this.onReady) this.onReady();
+                    this.ready = true;
+                    this.dispatchEvent(new Event("ready"));
+
+                    if (this.parentElement?.onCustomChildReady) {
+                        this.parentElement.onCustomChildReady(this);
+                    } else if (this.getRootNode().host?.onCustomChildReady) {
+                        this.getRootNode().host.onCustomChildReady(this);
+                    }
+
+                    if (this.ref("html")) this.ref("html").classList.add("connected");
+                }, 0);
+
+                // Call onSlotChange on slotchange event
                 if (this.onSlotChange) {
                     const onSlotChange = this.onSlotChange.bind(this);
                     function setupSlotListener(slot) {
@@ -643,34 +699,63 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     Array.from(this.root.querySelectorAll("slot")).forEach((slot) => setupSlotListener(slot));
                 }
 
+                // Call onChildren when children change
                 if (this.onChildren) {
-                    //Broadcast all child element updates
-                    //If onChildren is set then watch for child node changes
-                    this.childTO = setTimeout(() => {
-                        this.onChildren(null);
-                        clearTimeout(this.childTO);
-                    }, 0);
-
                     this.mutationObserver = new MutationObserver((mutations) => {
                         const added = [];
                         for (const mutation of mutations) {
-                            // Could test for `mutation.type` here, but since we only have
-                            // set up one observer type it will always be `childList`
-                            added.push(...mutation.addedNodes);
+                            if (mutation.type === "childList") {
+                                added.push(...mutation.addedNodes);
+                            }
                         }
                         if (added.length) clearTimeout(this.childTO);
                         this.onChildren(added.filter((el) => el.nodeType === Node.ELEMENT_NODE));
                     });
 
-                    // Watch the Light DOM for child node changes
                     this.mutationObserver.observe(this, {
                         childList: true,
                     });
+
+                    this.onChildren(Array.from(this.children));
+                }
+
+                if (this.onFirstConnect) this.onFirstConnect();
+            }
+
+            /**
+             *  @method connectedCallback
+             *  Invoked each time the custom element is appended into a document-connected element.
+             *  This will happen each time the node is moved, and may happen before the element's contents have been fully parsed.
+             */
+
+            connectedCallback() {
+                if (!this._defined.connected) {
+                    this._defined.connected = true;
+
+                    if (this.onBeforeConnect) this.onBeforeConnect();
+
+                    if (this.onConnect) this.onConnect();
+                    this.dispatchEvent(new CustomEvent("connect"));
+                    if (this.parentNode._onCustomChildConnect) {
+                        this.parentNode._onCustomChildConnect(this);
+                    }
+
+                    if (!this.ready) {
+                        this._onFirstConnect();
+                        this.#unstash();
+                    }
                 }
             }
 
             customChildren = [];
 
+            /**
+             *  @method _onCustomChildConnect
+             *  Invoked when a custom child element is connected to this custom element.
+             *  This will happen each time the child element is appended into this element.
+             *  This will happen before the element's contents have been fully parsed.
+             *  @param {Object} child - the custom child element that was connected
+             */
             _onCustomChildConnect(child) {
                 this.customChildren.push(child);
                 if (this.onCustomChildConnect) {
@@ -718,39 +803,24 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 @ _bindEvent
             */
 
-            _bindEvent(event, element, handler) {
-                const self = this;
-                let args = [];
-                if (handler.includes("(")) {
-                    args = handler
-                        .split("(")
-                        .pop()
-                        .split(")")
-                        .shift()
-                        .split(",")
-                        .map((arg) => arg.replace(/['"]/g, "").trim());
-                    //  debug(args);
-                    handler = handler.split("(").shift();
-                }
-                let handlerFn = this[handler] ? this[handler].bind(this) : function () {};
-
-                element.classList.add("events-set");
+            _bindEvent(event, element, handlerName) {
+                const handlerFn = this[handlerName] || (() => {});
+                const args = handlerName
+                    .split("(")[1]
+                    .split(")")[0]
+                    .split(",")
+                    .map((arg) => arg.replace(/['"]/g, "").trim());
 
                 element.addEventListener(
                     event,
-                    (e) => {
-                        //Allow this context in callbacks
-                        const respArgs = args.map((arg) => {
-                            if (arg === "this") return element;
-                            if (typeof arg == "string" && arg.indexOf("this.") === 0)
-                                return element[arg.replace("this.", "")];
-                            return arg;
-                        });
-                        handlerFn = handlerFn.bind(self);
-                        return handlerFn(e, ...respArgs);
-                    },
+                    (event) =>
+                        handlerFn.bind(this)(
+                            event,
+                            ...args.map((arg) => (arg === "this" ? element : element[arg.replace("this.", "")]))
+                        ),
                     false
                 );
+                element.classList.add("events-set");
             }
 
             setRef(ref, el) {
@@ -781,24 +851,19 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 //Extrsact Wrapper attributes
                 const attributes = new Attributes(Attributes.extract(this.#content)).toString();
-                const className = this.#content ? this.#content.className : "component--html";
 
-                const html = `<div id="html" ${attributes} >${this.htmlFactory(dataProxy)}</div>`;
-                let virtual = VirtualDom.parseHTML(html);
-
-                if (this.beforeRender) virtual = this.beforeRender(virtual);
-
-                const patch = VirtualDom.diff(this.#vdom, virtual);
-
-                if (this.debug) debug(this.#content.innerHTML);
-                patch(this.#content);
-
-                this.#vdom = virtual;
+                this.#vdom.render(
+                    this.#renderers
+                        .map((renderer) => {
+                            return renderer(dataProxy);
+                        })
+                        .join("\n")
+                );
 
                 this.content = this.#content;
 
                 if (this.rendered == 0) {
-                    const refs = this.root.querySelectorAll("[id]");
+                    const refs = this.root.querySelectorAll("[id]:not(.ref)");
                     for (let i = 0; i < refs.length; i++) {
                         this.#refs[refs[i].getAttribute("id")] = refs[i];
                         refs[i].removeAttribute("ref");
@@ -888,78 +953,67 @@ function ComponentCompiler(name, BaseHTMLElement) {
              *  Which attributes to notice change for is specified in a static get observedAttributes
              */
 
-            attributeChangedCallback(property, old, value) {
-                if (this.debug)
-                    console.log(this.constructor.name, property, "old:", old, "value", value == "" ? "empty" : value);
-                //If values are the same return
-                if (old === value) return;
+            attributeChangedCallback(property, oldValue, newValue) {
+                const { type, unit, linked } = this.config.properties[property] || {};
 
-                //GEt property config
-                const config = this.#config.properties[property] || {};
-                //If config type is set set var type from string
-                if (value === null) {
+                if (oldValue === newValue) return;
+
+                if (newValue === null) {
                     if (this.hasAttribute(property)) this.removeAttribute(property);
 
                     if (!this._defined.connected) {
                         this.#stash("onAttributeDeleted", property);
-                    } else {
-                        if (this.onAttributeDeleted) this.onAttributeDeleted(property);
+                    } else if (this.onAttributeDeleted) {
+                        this.onAttributeDeleted(property);
                     }
                 }
 
-                if (old === null && this.onAttributeAdded) {
+                if (oldValue === null && this.onAttributeAdded) {
                     if (this.hasAttribute(property)) {
                         if (!this._defined.connected) {
                             this.#stash("onAttributeAdded", property);
                         } else {
-                            if (this.onAttributeAdded) this.onAttributeAdded(property);
+                            this.onAttributeAdded(property);
                         }
                     }
                 }
 
-                if (config.unit && typeof value == "string") {
-                    console.log(value);
-                    if (config.unit == "percent" && value.includes("%")) {
-                        value = Number(value.replace("%", "")) / 100;
+                if (unit && typeof newValue === "string") {
+                    if (unit === "percent" && newValue.includes("%")) {
+                        newValue = Number(newValue.replace("%", "")) / 100;
                     }
                 }
 
-                if (config.type) {
-                    switch (config.type) {
-                        case "int":
-                            value = parseInt(value);
-                        case "number":
-                            value = Number(value);
-                            break;
-                        case "boolean":
-                            if (["0", "false", 0].includes(value)) {
-                                value = false;
-                            } else if (["1", "true", 1].includes(value)) {
-                                value = true;
-                            }
-                            break;
-                        case "json":
-                            if (typeof value == "string") value = JSON.parse(value);
-                            break;
-                        case "exists":
-                            value = this.hasAttribute(property);
-                            break;
-                    }
+                switch (type) {
+                    case "int":
+                        newValue = parseInt(newValue);
+                    case "number":
+                        newValue = Number(newValue);
+                        break;
+                    case "boolean":
+                        if (["0", "false", 0].includes(newValue)) {
+                            newValue = false;
+                        } else if (["1", "true", 1].includes(newValue)) {
+                            newValue = true;
+                        }
+                        break;
+                    case "json":
+                        if (typeof newValue === "string") newValue = JSON.parse(newValue);
+                        break;
+                    case "exists":
+                        newValue = this.hasAttribute(property);
+                        break;
                 }
 
-                //Set Property if linked
-                if (config.linked && value !== undefined) {
-                    this[property] = value;
+                if (linked && newValue !== undefined) {
+                    this[property] = newValue;
                 }
 
                 if (!this._defined.connected) {
-                    return this.#stash("attributeChangedCallback", property, old, value);
+                    return this.#stash("attributeChangedCallback", property, oldValue, newValue);
                 }
 
-                if (this.debug) console.log("onAttributeChanged", this.constructor.name, property, old, value, config);
-
-                if (this.onAttributeChanged) this.onAttributeChanged(property, old, value);
-                // if( this.render && !this.defer ) this.render();
+                if (this.onAttributeChanged) this.onAttributeChanged(property, oldValue, newValue);
             }
         },
 

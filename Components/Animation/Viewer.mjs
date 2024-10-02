@@ -11,12 +11,13 @@ export class AnimationViewer extends Component.HTMLElement {
     static allowedStates = ["initial", "actve", "inactve", "complete"];
 
     animationComponent = true;
+    animationViewer = true;
 
     static config = {
         properties: {
             width: { default: 100, type: "number", unit: "percent" },
             height: { default: 100, type: "number", unit: "percent" },
-            fps: { default: 10, type: "number", unit: "frames per second", linked: true },
+            fps: { default: 60, type: "number", unit: "frames per second", linked: true },
             state: { default: "initial", type: "string", allowed: AnimationViewer.allowedStates },
             follow: { default: false, type: "string" },
             debug: { default: false, type: "exists", linked: true },
@@ -60,6 +61,23 @@ export class AnimationViewer extends Component.HTMLElement {
     constructor() {
         super();
         this.camera = new Camera(this);
+        if (!this.timeline) {
+            this.timeline = new Timeline(this, { defer: true, fps: this.fps });
+
+            this.timeline.update = (time) => {
+                this.update(time);
+
+                this.camera.update();
+            };
+
+            this.timeline.render = (time) => {
+                this.render(time);
+
+                this.camera.render();
+            };
+
+            this.timeline.complete = () => {};
+        }
     }
 
     get center() {
@@ -92,23 +110,46 @@ export class AnimationViewer extends Component.HTMLElement {
 
         stage.onViewerConnect(this);
 
-        this.addAnimation(stage);
+        //this.onAssetAdded(stage);
         console.log("Stage Added");
+
+        this.dispatchEvent(new CustomEvent("stageconnect", { detail: { stage } }));
     }
 
     onTargetConnect(target) {
         this.target = target;
     }
 
+    onChildren(children) {
+        console.log("VIEWER CHILDREN", children);
+        if (children) {
+            children.forEach((asset) => {
+                if (asset.animate) {
+                    this.onAssetAdded(asset);
+                }
+            });
+        }
+    }
+
+    onCustomChildReady(child) {
+        if (child.animate) {
+        }
+    }
+
     cache = { stage_rect: "" };
 
     update(time) {
-        this.stats.update(time);
-        const stageRect = this.stage.getBoundingClientRect();
-        const stageRectValue = `T: ${stageRect.top}, L: ${stageRect.left}, W: ${stageRect.width}, H: ${stageRect.height}`;
-        this.stats.stage_rect = stageRectValue;
+        if (this.stage) {
+            const stageRect = this.stage.getBoundingClientRect();
+            const stageRectValue = `T: ${stageRect.top}, L: ${stageRect.left}, W: ${stageRect.width}, H: ${stageRect.height}`;
+            this.stats.stage_rect = stageRectValue;
+        }
+
         const viewSizeValue = `W: ${this.width}, H: ${this.height}`;
-        this.stats.view_size = viewSizeValue;
+        if (this.stats) {
+            this.stats.update(time);
+            this.stats.view_size = viewSizeValue;
+        }
     }
 
     render() {}
@@ -124,14 +165,14 @@ export class AnimationViewer extends Component.HTMLElement {
             this.onStageConnect(child);
         } else if (child instanceof AnimationBody) {
             console.log("AnimationBody");
-            this.addAnimation(child);
+            this.onAssetAdded(child);
         } else if (child instanceof AnimationSprite) {
             console.log("AnimationSprite");
-            this.addAnimation(child);
+            this.onAssetAdded(child);
         } else if (["animation-stage", "animation-body", "animation-sprite"].includes(child.tagName.toLowerCase())) {
-            this.addAnimation(child);
+            this.onAssetAdded(child);
         } else if (child.animationComponent) {
-            this.addAnimation(child);
+            this.onAssetAdded(child);
         }
     }
 
@@ -145,13 +186,19 @@ export class AnimationViewer extends Component.HTMLElement {
     }
 
     animations = [];
-    addAnimation(asset) {
+    onAssetAdded(asset) {
         console.log("Add Animation", asset);
         this.index.push(asset.id);
         this.animatedAssets.push(asset);
         asset.viewer = this;
 
-        if (asset.animated) this.timeline.addAnimator(asset);
+        if (asset instanceof AnimationStage) {
+            console.log("AnimationStage");
+
+            return this.onStageConnect(asset);
+        }
+
+        if (asset.animate) this.timeline.addAnimator(asset);
 
         if (asset.onAnimationConnect) asset.onAnimationConnect(this);
 
@@ -177,28 +224,48 @@ export class AnimationViewer extends Component.HTMLElement {
             this.stats = stats;
         }
 
-        if (!this.timeline) {
-            this.timeline = new Timeline(this, { fps: this.fps });
-
-            this.timeline.update = (time) => {
-                this.update(time);
-
-                this.camera.update();
-            };
-
-            this.timeline.render = (time) => {
-                this.render(time);
-
-                this.camera.render();
-            };
-
-            this.timeline.complete = () => {};
-
-            this.onTimelineReady(this.timeline);
-        }
+        this.onTimelineReady(this.timeline);
     }
 
     onTimelineReady() {}
+
+    /***
+     * ANIMATION LAYERS
+     */
+
+    namedLayers = {};
+    addLayer(name, options = {}) {
+        if (!options.index) index = this.layers.length;
+        const layers = this.layers;
+        const layer = document.createElement("animation-layer");
+        if (options.type) layer.setAttribute("type", options.type);
+        if (name) layer.setAttribute("name", name);
+        if (options.index) layer.setAttribute("index", options.index);
+        if (options.width) layer.setAttribute("width", options.width);
+        if (options.height) layer.setAttribute("height", options.height);
+        this.insertBefore(layer, this.layers[index]);
+        this.layers.splice(index, 0, layer);
+        if (name) {
+            this.namedLayers[name] = layer;
+        }
+    }
+
+    appendLayer(name, options = {}) {
+        options.index = this.layers.length;
+        return this.addLayer(name, options);
+    }
+
+    prependLayer(name, options = {}) {
+        options.index = 0;
+        return this.addLayer(name, options);
+    }
+
+    layer(indexOrName = 0) {
+        if (typeof indexOrName == "string") {
+            return this.namedLayers[indexOrName];
+        }
+        return this.layers[indexOrName];
+    }
 }
 
 customElements.define(AnimationViewer.tag, AnimationViewer);

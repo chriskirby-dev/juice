@@ -18,6 +18,20 @@ function parsePath(path) {
     return keys;
 }
 
+export function getDotPath(obj, path) {
+    return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+}
+
+export function setDotPath(obj, path, value) {
+    const parts = path.split(".");
+    const lastPart = parts.pop(); // Get the last part (e.g., "c")
+    const target = parts.reduce((acc, part) => acc && acc[part], obj); // Drill down to the second last object
+
+    if (target) {
+        target[lastPart] = value; // Set the value
+    }
+}
+
 class DotNotation {
     constructor(object) {
         this.root = object;

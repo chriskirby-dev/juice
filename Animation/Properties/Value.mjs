@@ -11,8 +11,16 @@ export class AnimationValue {
         if (v !== undefined && v !== null) this._value = v;
     }
 
-    get value() {
+    reset() {
+        this.value = 0;
+    }
+
+    getValue() {
         return this._value;
+    }
+
+    get value() {
+        return this.getValue();
     }
 
     set value(v) {
@@ -35,6 +43,10 @@ export class AnimationValue {
             this.history.unshift(this._value);
             if (this.history.length > this.HISTORY_LENGTH) this.history.pop();
         }
+    }
+
+    is(v) {
+        return this._value === v;
     }
 
     get dirty() {

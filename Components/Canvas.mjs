@@ -45,6 +45,10 @@ class CanvasComponent extends Component.HTMLElement {
                     width: "100%",
                     height: "100%",
                 },
+                ':host([resize="false"])': {
+                    width: "auto",
+                    height: "auto",
+                },
                 canvas: {
                     display: "block",
                     position: "absolute",
@@ -135,7 +139,6 @@ class CanvasComponent extends Component.HTMLElement {
                     const red = pixelData[i];
                     const green = pixelData[i + 1];
                     const blue = pixelData[i + 2];
-
                     lastY = y;
 
                     // Throw an error if invalid pixel data is encountered.
@@ -199,7 +202,7 @@ class CanvasComponent extends Component.HTMLElement {
                 resolve();
             } else {
                 // Reject the Promise with an error if the provided image is not of type Image
-                reject(new Error("Image is not of type Image"));
+                reject(new Error("Image is not of type Image" + typeof image));
             }
         });
     }
@@ -229,6 +232,9 @@ class CanvasComponent extends Component.HTMLElement {
                 return this._buffer;
             },
             set: (data, i) => {
+                if (i > this._buffer.data.length) {
+                    return;
+                }
                 this._buffer.data.set(data, i);
             },
             apply: () => {
@@ -238,8 +244,16 @@ class CanvasComponent extends Component.HTMLElement {
     }
 
     getContext(type = "2d") {
+        let scope = null;
+        if (type.includes(":")) {
+            const [type, scope] = type.split(":");
+        }
         this.contextType = type;
-        this.ctx = (this.prerender ? this.offscreen : this.native).getContext(type);
+        if (scope) {
+            this.ctx = this[scope].getContext(type);
+        } else {
+            this.ctx = (this.prerender ? this.offscreen : this.native).getContext(type);
+        }
         return this.ctx;
     }
 
@@ -254,11 +268,17 @@ class CanvasComponent extends Component.HTMLElement {
     renderBypass() {}
 
     onFirstConnect() {
-        const { width, height } = this.getBoundingClientRect();
-        this.width = width;
-        this.height = height;
+        let { width, height } = this.getBoundingClientRect();
 
         this.native = this.ref("native");
+        this.native.width = this.width;
+        this.native.height = this.height;
+
+        if (this.offscreen) {
+            this.offscreen.width = this.width;
+            this.offscreen.height = this.height;
+        }
+
         if (this.hasAttribute("prerender")) {
             this.setupPrerender();
         }
@@ -300,12 +320,23 @@ class CanvasComponent extends Component.HTMLElement {
 
     onPropertyChanged(property, prevous, value) {
         if (property === "width" || property === "height") {
-            this.native[property] = value;
+            if (this.native) this.native[property] = value;
             if (this.offscreen) this.offscreen[property] = value;
         } else if (property == "prerender") {
             this.prerender = value;
             if (value) this.setupPrerender();
         }
+    }
+
+    toImageURL(type = "image/png") {
+        return this.native.toDataURL(type);
+    }
+
+    toImage(useTag) {
+        if (!useTag) return this.toImageURL();
+        const image = new Image();
+        image.src = this.toImageURL();
+        return image;
     }
 }
 

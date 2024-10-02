@@ -6,3 +6,5 @@ import "./Sprite.mjs";
 import "./Stats.mjs";
 import "./Container.mjs";
 import "./Loop.mjs";
+import "./Marker.mjs";
+import "./ParticleWorld.mjs";

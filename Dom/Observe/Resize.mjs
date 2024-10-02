@@ -11,7 +11,7 @@ class ResizeObserverFactory {
     }
 
     observe(el, worker) {
-        el.classList.add('observed');
+        el.classList.add("observed");
         el._resizeObserverIndex = this.index;
         this.observer.observe(el);
         this.workers[this.index] = worker;
@@ -28,7 +28,6 @@ class ResizeObserverFactory {
     initialize() {
         this.observer = new ResizeObserver((entries) => {
             for (let entry of entries) {
-             
                 let width, height;
                 let target = entry.target;
                 const index = target._resizeObserverIndex;
@@ -44,9 +43,8 @@ class ResizeObserverFactory {
                     width = entry.contentRect.width;
                     height = entry.contentRect.height;
                 }
-            
-                if(worker.update) worker.update(width, height);
-                
+
+                if (worker.update) worker.update(width, height);
             }
         });
     }

@@ -45,6 +45,23 @@ export function greaterThenOrEqual(a, b) {
     return a >= b;
 }
 
+export function isNumber(value) {
+    return typeof value === "number" && Number.isFinite(value);
+}
+
+export function type(value, type) {
+    if (type === "number") {
+        return isNumber(value);
+    } else if (type === "string") {
+        return typeof value === type;
+    } else if (type === "array") {
+        return Array.isArray(value);
+    } else if (type === "object") {
+        return typeof value === "object";
+    }
+    return typeof value === type;
+}
+
 class Assert {
     static operators = operators;
 
