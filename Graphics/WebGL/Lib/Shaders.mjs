@@ -1,7 +1,15 @@
 import { VariableTypes } from "./Variable.mjs";
-import Shader from "./Shader.mjs";
+import { Shader } from "./Shader.mjs";
 
-export const ShaderTypes = Shader.ShaderTypes;
+export const ShaderTypes = {
+    VERTEX: "VERTEX_SHADER",
+    FRAGMENT: "FRAGMENT_SHADER",
+    has(shaderType) {
+        return Object.values(ShaderTypes).includes(shaderType);
+    },
+};
+
+import ShaderBuilder from "./ShaderBuilder.mjs";
 
 /**
  * 
@@ -44,6 +52,11 @@ x, y, z, w
 */
 
 export class Shaders {
+    static VERTEX_TYPE = ShaderTypes.VERTEX;
+    static FRAGMENT_TYPE = ShaderTypes.FRAGMENT;
+    static COMPUTE_TYPE = ShaderTypes.COMPUTE;
+    static GEOMETRY_TYPE = ShaderTypes.GEOMETRY;
+
     vertex;
     fragment;
     varying = {};
@@ -53,13 +66,19 @@ export class Shaders {
         this.webgl = webgl;
         this.gl = webgl.gl;
         this.version = webgl.version;
-        this.vertex = new Shader(Shader.ShaderTypes.VERTEX, { webgl, version: this.version });
-        this.fragment = new Shader(Shader.ShaderTypes.FRAGMENT, { webgl, version: this.version });
+        this.vertex = new Shader(ShaderTypes.VERTEX, { webgl, version: this.version });
+        this.fragment = new Shader(ShaderTypes.FRAGMENT, { webgl, version: this.version });
     }
 
     get(SHADER_TYPE) {
         if (SHADER_TYPE === ShaderTypes.VERTEX) return this.vertex;
         if (SHADER_TYPE === ShaderTypes.FRAGMENT) return this.fragment;
+    }
+
+    onProgram(program) {
+        this.program = program;
+        this.vertex.onProgramLoaded(program);
+        this.fragment.onProgramLoaded(program);
     }
 
     getVar(shader, name) {}
@@ -94,6 +113,17 @@ export class Shaders {
         this.fragment.addVariable("varying", name, type, options);
     }
 
+    /*************  ✨ Codeium Command ⭐  *************/
+    /**
+     * Builds the shaders and returns an object with the vertex and fragment
+     * shaders. The object returned has the following properties:
+     *
+     * - vertex: The vertex shader as a string.
+     * - fragment: The fragment shader as a string.
+     *
+     * @returns {Object} An object with the vertex and fragment shaders.
+     */
+    /******  d225aa5a-4a07-4f2d-8786-f71497c588d7  *******/
     build() {
         return {
             vertex: this.vertex.build(),

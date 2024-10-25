@@ -7,10 +7,10 @@ class Program {
     }
 
     buffers = {};
-    constructor(width, height, gl) {
-        if (gl) this.gl = gl;
-        this.vertexShader = vertexShader;
-        this.fragmentShader = fragmentShader;
+    constructor(webgl) {
+        if (gl) this.gl = webgl.gl;
+        this.vertexShader = null;
+        this.fragmentShader = null;
         this.build();
     }
 
@@ -35,6 +35,12 @@ class Program {
         if (value) gl.bufferData(gl[TYPE], new Float32Array(value), gl[options.usage]);
         this.buffers[name] = buffer;
         return buffer;
+    }
+
+    attach(vertex, fragment) {
+        this.vertexShader = vertex;
+        this.fragmentShader = fragment;
+        return this;
     }
 
     build() {

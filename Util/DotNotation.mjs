@@ -32,6 +32,12 @@ export function setDotPath(obj, path, value) {
     }
 }
 
+export function parseDotPath(path, obj) {
+    const parent = path.slice(0, path.lastIndexOf("."));
+    const property = path.slice(parent.length + 1);
+    return { parent: obj ? getDotPath(obj, parent) : parent, property };
+}
+
 class DotNotation {
     constructor(object) {
         this.root = object;

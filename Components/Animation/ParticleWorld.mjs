@@ -1,17 +1,184 @@
 import Component from "../Component.mjs";
 import Canvas from "../../Graphics/Canvas.mjs";
 import CanvasBuffer from "../../Graphics/Canvas/Buffer.mjs";
-
+import * as vForm from "../../Form/VirtualBuilder.mjs";
 import ParticleWorld from "../../Animation/Particles/World.mjs";
 import VirtualDom from "../../VirtualDom/VirtualDom.mjs";
-import Form from "../Form/Form.mjs";
+import Form from "../../Form/Form.mjs";
 import formsCSS from "../../../../css/forms.css?inline";
-import { random, randomInt, round, floor } from "../../Util/Math.mjs";
+import { random, randomInt, round, floor, randomBetween } from "../../Util/Math.mjs";
 import PropertyArray from "../../DataTypes/PropertyArray.mjs";
 import { getDotPath, setDotPath } from "../../Util/DotNotation.mjs";
 import ParticlesGL from "../../Graphics/WebGL/Particles.mjs";
+const formVdom = vForm.container({}, [
+    vForm.fieldset("Force Options", [vForm.vector("force", [0, 0, 0], ["X", "Y", "Z"], { label: "Forces" })]),
+    vForm.fieldset("Repel Options", [
+        vForm.row("", [
+            vForm.checkbox("repel", 0, { attributes: { "data-type": "int" } }),
+            vForm.button("Set Repel Point", { "data-type": "int" }, function (target) {
+                console.dir(target);
+                const shadow = target.shadowRoot;
+                const repelPointX = target.parentNode.parentNode.querySelector("#repelPointx");
+                const repelPointY = target.parentNode.parentNode.querySelector("#repelPointy");
+
+                console.log(repelPointX, repelPointY);
+                function onMouseClick(e) {
+                    repelPointX.value = e.pageX / (window.innerWidth / 2) - 1;
+                    repelPointY.value = e.pageY / (window.innerHeight / 2) - 1 * -1;
+                    repelPointX.dispatchEvent(new Event("change"));
+                    repelPointY.dispatchEvent(new Event("change"));
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("click", onMouseClick);
+                }
+
+                function onMouseMove(e) {
+                    repelPointX.value = e.pageX / (window.innerWidth / 2) - 1;
+                    repelPointY.value = e.pageY / (window.innerHeight / 2) - 1;
+                    repelPointX.dispatchEvent(new Event("change"));
+                    repelPointY.dispatchEvent(new Event("change"));
+                }
+
+                window.addEventListener("mousemove", onMouseMove);
+                setTimeout(() => {
+                    window.addEventListener("click", onMouseClick);
+                }, 0);
+            }),
+        ]),
+        vForm.vector("repelPoint", [0, 0, 0], ["X", "Y", "Z"], { label: "Repel Point" }),
+        vForm.range("repelPoint[3]", 0, {
+            label: "Radius",
+            min: 0.001,
+            max: 2,
+            step: 0.001,
+            value: 0.5,
+            size: 10,
+            labelInline: true,
+        }),
+        vForm.select("repelParams[x]", 0, {
+            label: "Dimentions",
+            value: 2,
+            options: { "2D": 2.0, "3D": 3.0 },
+        }),
+
+        vForm.number("repelParams[z]", 0, {
+            label: "Z",
+            value: 0.5,
+            step: 0.001,
+            value: 0.5,
+        }),
+    ]),
+    vForm.fieldset("Orbit Options", [
+        vForm.row("", [
+            vForm.checkbox("orbit", 1, { attributes: { "data-type": "int" } }),
+            vForm.button("Set Orbit Point", { "data-type": "int" }, function (target) {
+                console.dir(target);
+                const shadow = target.shadowRoot;
+                const orbitPointX = target.parentNode.parentNode.querySelector("#orbitPoint0");
+                const orbitPointY = target.parentNode.parentNode.querySelector("#orbitPoint1");
+
+                console.log(orbitPointX, orbitPointY);
+                function onMouseClick(e) {
+                    orbitPointX.value = e.pageX / (window.innerWidth / 2) - 1;
+                    orbitPointY.value = (e.pageY / (window.innerHeight / 2) - 1) * -1;
+                    orbitPointX.dispatchEvent(new Event("change"));
+                    orbitPointY.dispatchEvent(new Event("change"));
+
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("click", onMouseClick);
+                }
+
+                function onMouseMove(e) {
+                    orbitPointX.value = e.pageX / (window.innerWidth / 2) - 1;
+                    orbitPointY.value = (e.pageY / (window.innerHeight / 2) - 1) * -1;
+                    orbitPointX.dispatchEvent(new Event("change"));
+                    orbitPointY.dispatchEvent(new Event("change"));
+                }
+
+                window.addEventListener("mousemove", onMouseMove);
+                setTimeout(() => {
+                    window.addEventListener("click", onMouseClick);
+                }, 0);
+            }),
+        ]),
+        vForm.row(
+            "Orbit Point",
+            [
+                vForm.number("orbitPoint[0]", 0, {
+                    labelInline: true,
+                    label: "X",
+                    min: -1,
+                    max: 1,
+                    step: 0.001,
+                    inline: true,
+                }),
+                vForm.number("orbitPoint[1]", 0, {
+                    labelInline: true,
+                    label: "Y",
+                    min: -1,
+                    max: 1,
+                    step: 0.001,
+                    inline: true,
+                }),
+                vForm.number("orbitPoint[2]", 0, {
+                    labelInline: true,
+                    label: "Z",
+                    min: -1,
+                    max: 1,
+                    step: 0.001,
+                    inline: true,
+                }),
+            ],
+            { inline: true }
+        ),
+        vForm.range("orbitPoint[3]", 0, {
+            label: "Radius",
+            min: 0.001,
+            max: 2,
+            step: 0.001,
+            value: 0.5,
+            size: 10,
+            labelInline: true,
+        }),
+        vForm.select("uOrbitParams[x]", 0, {
+            label: "Dimentions",
+            value: 3.0,
+            options: { "2D": 2.0, "3D": 3.0 },
+        }),
+
+        vForm.number("uOrbitParams[z]", 0, {
+            label: "Z",
+            value: 0.5,
+            step: 0.001,
+            value: 0.5,
+        }),
+    ]),
+]);
 
 const CONTROL_SCHEMA = {
+    repelGroup: {
+        type: "fieldset",
+    },
+    repel: {
+        type: "checkbox",
+        label: "Repel",
+        value: 1,
+        checked: false,
+        attributes: {
+            "data-type": "int",
+        },
+    },
+    "repelParams[x]": {
+        label: "Dimentions",
+        value: 2,
+        type: "select",
+        options: ["2", "3"],
+    },
+    orbit: {
+        type: "checkbox",
+        label: "Orbit",
+        value: true,
+        checked: false,
+    },
     spawnrate: {
         type: "range",
         label: "Spawn Rate",
@@ -45,11 +212,20 @@ const CONTROL_SCHEMA = {
     },
 };
 
+const PARTICLE_CONFIG = {
+    maxParticles: 500,
+    density: 0,
+    randomness: 1,
+    mask: null,
+    env: {
+        forces: [],
+    },
+};
+
 class ParticleWorldComponent extends Component.HTMLElement {
     static tag = "particle-world";
 
     animate = true;
-    setup;
     count = 0;
 
     RESIZE_ACTION = "fill";
@@ -100,16 +276,6 @@ class ParticleWorldComponent extends Component.HTMLElement {
         ];
     }
 
-    setup = {
-        maxParticles: 400,
-        density: 0,
-        randomness: 1,
-        mask: null,
-        env: {
-            forces: [],
-        },
-    };
-
     static html() {
         if (this.hasAttribute("renderer")) {
             this.renderer = this.getAttribute("renderer");
@@ -137,21 +303,18 @@ class ParticleWorldComponent extends Component.HTMLElement {
     }
 
     showControls() {
-        const controlForm = Form.fromSchema(CONTROL_SCHEMA, this.ref("control-form"));
+        console.log(formVdom);
+        const controlForm = Form.fromVDom(formVdom, this.ref("control-form"));
         let refreshTO;
         controlForm.on("input", (name, value) => {
-            setDotPath(this.setup, name, value);
-            clearTimeout(refreshTO);
-            refreshTO = setTimeout(() => {
-                this.build();
-            }, 500);
+            console.log(name, value);
+            setDotPath(PARTICLE_CONFIG, name, value);
+            console.log(this.particleViewer);
+            this.particleViewer.setValue(name, value);
         });
         controlForm.on("change", (name, value) => {
-            setDotPath(this.setup, name, value);
-            clearTimeout(refreshTO);
-            refreshTO = setTimeout(() => {
-                this.build();
-            }, 500);
+            setDotPath(PARTICLE_CONFIG, name, value);
+            this.particleViewer.setValue(name, value);
         });
     }
 
@@ -164,18 +327,7 @@ class ParticleWorldComponent extends Component.HTMLElement {
      */
     /******  cf5945ac-0717-453c-af14-28be8ea0e20f  *******/
     beforeCreate() {
-        this.setup = {
-            maxParticles: 1200,
-            emitRate: 10,
-            density: 0,
-            randomness: 1,
-            mask: null,
-            env: {
-                forces: [],
-            },
-        };
-
-        const { maxParticles } = this.setup;
+        const { maxParticles } = PARTICLE_CONFIG;
         this.positions = new Float32Array(maxParticles * 3); // (x, y) positions
         this.velocities = new Float32Array(maxParticles * 3); // (vx, vy) velocities
         this.sizes = new Float32Array(maxParticles); // Particle sizes
@@ -186,29 +338,8 @@ class ParticleWorldComponent extends Component.HTMLElement {
     }
 
     update(time) {
-        if (this.viewer) this.viewer.update(time.delta);
-
-        for (let i = 0; i < this.count; i++) {
-            const p = i * 3;
-            let x = this.positions[p];
-            let y = this.positions[p + 1];
-            const z = this.positions[p + 2];
-
-            const radius = this.orbits[p];
-            let angle = this.orbits[p + 1];
-            const speed = this.orbits[p + 2];
-
-            angle += speed;
-
-            x = this.spawnPoint.x + radius * Math.cos(angle);
-            y = this.spawnPoint.y + radius * Math.sin(angle);
-
-            this.positions[p] = round(x);
-            this.positions[p + 1] = round(y);
-
-            this.orbits[p + 1] = angle;
-        }
-        console.log("Updated", this.count);
+        // if (this.particleViewer) this.particleViewer.update(time.delta);
+        // console.log("Updated", this.count);
     }
 
     render() {
@@ -229,10 +360,10 @@ class ParticleWorldComponent extends Component.HTMLElement {
     }
 
     build() {
-        const { randomness, maxParticles } = this.setup;
+        const { randomness, maxParticles } = PARTICLE_CONFIG;
         const spawnPoint = { x: Math.floor(this.width / 2), y: Math.floor(this.height / 2) };
         for (let i = 0; i < maxParticles; i++) {
-            const position = [spawnPoint.x + randomInt(50), spawnPoint.y + randomInt(50), randomInt(this.depth)];
+            const position = [randomBetween(-1, 1), randomBetween(-1, 1), randomBetween(-1, 1)];
             const orbits = [100 + random(200), random(Math.PI * 2), 0.01 + random(0.02)];
             this.orbits.set(orbits, i * 3);
             this.positions.set(position, i * 3);
@@ -263,22 +394,17 @@ class ParticleWorldComponent extends Component.HTMLElement {
     onFirstConnect() {
         this.showControls();
 
-        if (this.renderer == "canvas" || this.renderer == "webgl") {
-            const canvas = this.ref("renderer");
-            canvas.width = this.width;
-            canvas.height = this.height;
-            this.canvas = canvas;
-            if (this.renderer == "webgl") {
-                this.ctx = canvas.getContext("webgl");
-                const { maxParticles, emitRate } = this.setup;
-                this.viewer = new ParticlesGL(this.ctx, maxParticles, emitRate);
-            } else {
-                this.ctx = canvas.getContext("2d");
-            }
-        }
-
-        if (this.renderer == "dom") {
-            const stage = this.ref("renderer");
+        const canvas = this.ref("renderer");
+        canvas.width = this.width;
+        canvas.height = this.height;
+        this.canvas = canvas;
+        if (this.renderer == "webgl") {
+            // this.ctx = canvas.getContext("webgl2");
+            const { maxParticles, emitRate } = PARTICLE_CONFIG;
+            this.particleViewer = new ParticlesGL(this.canvas, maxParticles, emitRate);
+            this.particleViewer.start();
+        } else {
+            this.ctx = canvas.getContext("2d");
         }
     }
 

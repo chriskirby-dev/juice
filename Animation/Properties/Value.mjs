@@ -7,8 +7,16 @@ export class AnimationValue {
         this._value = 0;
         this.history = [];
         if (options.debug) this.debug = true;
+        if (options.type) this.type = options.type;
         this.HISTORY_LENGTH = options.history || 1;
         if (v !== undefined && v !== null) this._value = v;
+
+        if (this.type) {
+            const type = this.type.charAt(0).toUpperCase() + this.type.slice(1);
+            this.setter = this[`_set${type}Type`];
+        } else {
+            this.setter = this._setValue;
+        }
     }
 
     reset() {
@@ -23,10 +31,25 @@ export class AnimationValue {
         return this.getValue();
     }
 
+    _setTyped(v) {
+        this._value = v;
+    }
+
+    _setIntType(v) {
+        if (!Number.isInteger(v)) {
+            v = Math.floor(v);
+        }
+        this._value = v;
+    }
+
+    _setValue(v) {
+        this._value = v;
+    }
+
     set value(v) {
         //If value is locked OR has not changed return
         if (this.locked || this._value === v) return;
-        this._value = v;
+        return this.setter(v);
     }
 
     valueOf() {
@@ -45,7 +68,7 @@ export class AnimationValue {
         }
     }
 
-    is(v) {
+    equals(v) {
         return this._value === v;
     }
 

@@ -2,6 +2,50 @@ import { type } from "../../Util/Core.mjs";
 import { lerp } from "../../Util/Geometry.mjs";
 import CircularBuffer from "../../DataTypes/CircularBuffer.mjs";
 
+export class VectoX extends Float32Array {
+    static dimentions = ["x", "y", "z", "w"];
+
+    parse(...args) {
+        if (args.length === 1) {
+            args = args[0];
+        }
+
+        if (type(args, "array")) {
+            if (args.length === 2) {
+                return new this(args[0], args[1]);
+            } else if (args.length === 3) {
+                return new this(args[0], args[1], args[2]);
+            } else if (args.length === 4) {
+                return new this(args[0], args[1], args[2], args[3]);
+            }
+        }
+
+        for (let i = 0; i < args.length; i++) {
+            this[i] = args[i];
+        }
+    }
+
+    constructor(...args) {
+        let options = {};
+        if (args[args.length - 1] instanceof Object) {
+            options = args.pop();
+        }
+        super(args.length);
+        this.history = new CircularBuffer(options.history || 3);
+
+        for (let i = 0; i < args.length; i++) {
+            this[i] = args[i];
+            this.initProperty(i, args[i]);
+        }
+    }
+
+    initProperty(i, value) {
+        const accessor = this.constructor.dimentions[i];
+        Object.defineProperty(this, accessor, { get: () => this[i], enumerable: true });
+    }
+
+    //TODO: Add Other Vector Methods set, clone, add, sub, mul, div, dot, cross, length, normalize, lerp
+}
 export class Vector2D extends Float32Array {
     static parse(arg1, arg2) {
         //Handle x, y
@@ -271,19 +315,19 @@ export class Vector3D extends Float32Array {
     set x(x) {
         if (x == this[0]) return;
         this[0] = x;
-        this.dirt.push("x");
+        if (!this.dirt.includes("x")) this.dirt.push("x");
     }
 
     set y(y) {
         if (y == this[1]) return;
         this[1] = y;
-        this.dirt.push("y");
+        if (!this.dirt.includes("y")) this.dirt.push("y");
     }
 
     set z(z) {
         if (z == this[2]) return;
         this[2] = z;
-        this.dirt.push("z");
+        if (!this.dirt.includes("z")) this.dirt.push("z");
     }
 
     save() {
@@ -307,7 +351,7 @@ export class Vector3D extends Float32Array {
             const extermItems = new Set(props);
             this.dirt = this.dirt.filter((item) => !extermItems.has(item));
         } else {
-            delete this.dirty;
+            this.dirt = [];
         }
     }
 
@@ -316,7 +360,7 @@ export class Vector3D extends Float32Array {
     }
 
     toArray() {
-        return this;
+        return [this[0], this[1], this[2]];
     }
 
     toString() {
@@ -354,6 +398,223 @@ export class Vector3D extends Float32Array {
     }
 }
 
+export class Vector4D extends Float32Array {
+    /**
+     * Parses a Vector4D from the given arguments.
+     * If the argument is an array of length 4, it is used directly.
+     * If the argument is an object with x, y, z, and w properties, they are used.
+     * If the argument is a Vector4D instance, its coordinates are cloned.
+     * Otherwise, a new Vector4D is created with the given x, y, z, and w values.
+     * If no arguments are given, a new Vector4D is created with all values set to 0.
+     * @param {number|Vector4D|Array<number>|Object} x - The x value, or an array/object with x,y,z,w values.
+     * @param {number} [y] - The y value.
+     * @param {number} [z] - The z value.
+     * @param {number} [w] - The w value.
+     * @returns {Float32Array} The parsed Vector4D coordinates.
+     */
+    static parse(x, y, z, w) {
+        if (typeof x == "number") return new Vector4D([x, y || 0, z || 0, w || 0]);
+        if (x instanceof Vector4D) return x.slice();
+        if (Array.isArray(x)) return new Vector4D(x);
+        if (typeof x === "object" && "x" in x) return new Float32Array([x.x, x.y || 0, x.z || 0, x.w || 0]);
+        if (arguments.length === 0) return new Vector4D([0, 0, 0, 0]);
+        throw new TypeError(
+            "Invalid argument: expected an array of length 4, a Vector4D object, or an object with x, y, z, and w properties"
+        );
+    }
+
+    constructor(arg1, arg2, arg3, arg4, options = {}) {
+        super(4);
+        this.dirt = [];
+        this.options = options;
+        this.set(arg1, arg2, arg3, arg4);
+        this.save();
+    }
+
+    set(arg1, arg2, arg3, arg4) {
+        if (typeof arg1 == "number") {
+            this[0] = arg1;
+            this[1] = arg2 || 0;
+            this[2] = arg3 || 0;
+            this[3] = arg4 || 0;
+        } else if (arg1 instanceof Vector4D) {
+            this[0] = arg1[0];
+            this[1] = arg1[1];
+            this[2] = arg1[2];
+            this[3] = arg1[3];
+        } else {
+            const coords = Vector4D.parse(arg1, arg2, arg3, arg4);
+            this[0] = coords[0];
+            this[1] = coords[1];
+            this[2] = coords[2];
+            this[3] = coords[3];
+        }
+    }
+
+    add(x, y, z, w) {
+        if (typeof x == "number") {
+            this[0] += x;
+            this[1] += y || 0;
+            this[2] += z || 0;
+            this[3] += w || 0;
+        } else {
+            const coords = Vector4D.parse(x, y, z, w);
+            this[0] += coords[0];
+            this[1] += coords[1];
+            this[2] += coords[2];
+            this[3] += coords[3];
+        }
+    }
+
+    subtract(x, y, z, w) {
+        if (arguments.length == 4) {
+            this[0] -= x;
+            this[1] -= y;
+            this[2] -= z;
+            this[3] -= w;
+        } else {
+            const coords = Vector4D.parse(x, y, z, w);
+            this[0] -= coords[0];
+            this[1] -= coords[1];
+            this[2] -= coords[2];
+            this[3] -= coords[3];
+        }
+    }
+
+    lerpTo(x, y, z, w, amt) {
+        if (arguments.length == 5) {
+            this[0] = lerp(this[0], x, amt);
+            this[1] = lerp(this[1], y, amt);
+            this[2] = lerp(this[2], z, amt);
+            this[3] = lerp(this[3], w, amt);
+        } else if (arguments.length == 2) {
+            amt = y;
+            const coords = Vector4D.parse(x);
+            this[0] = lerp(this[0], coords[0], amt);
+            this[1] = lerp(this[1], coords[1], amt);
+            this[2] = lerp(this[2], coords[2], amt);
+            this[3] = lerp(this[3], coords[3], amt);
+        }
+    }
+
+    diff(x, y, z, w) {
+        if (arguments.length === 1) {
+            const coords = Vector4D.parse(x);
+            return new Vector4D(this[0] - coords[0], this[1] - coords[1], this[2] - coords[2], this[3] - coords[3]);
+        } else {
+            return new Vector4D(this[0] - x, this[1] - y, this[2] - z, this[3] - w);
+        }
+    }
+
+    get x() {
+        return this[0];
+    }
+
+    get y() {
+        return this[1];
+    }
+
+    get z() {
+        return this[2];
+    }
+
+    get w() {
+        return this[3];
+    }
+
+    set x(x) {
+        if (x == this[0]) return;
+        this[0] = x;
+        this.dirt.push("x");
+    }
+
+    set y(y) {
+        if (y == this[1]) return;
+        this[1] = y;
+        this.dirt.push("y");
+    }
+
+    set z(z) {
+        if (z == this[2]) return;
+        this[2] = z;
+        this.dirt.push("z");
+    }
+
+    set w(w) {
+        if (w == this[3]) return;
+        this[3] = w;
+        this.dirt.push("w");
+    }
+
+    save() {
+        this.saved = [this[0], this[1], this[2], this[3]];
+        if (this.options.history && this.options.history > 0) {
+            this.history.unshift(this.saved);
+        }
+        this.clean();
+    }
+
+    dirty(...props) {
+        if (props.length) {
+            return props.some((prop) => this.dirt.includes(prop));
+        } else {
+            return this.dirt.length > 0;
+        }
+    }
+
+    clean(...props) {
+        if (props.length) {
+            const extermItems = new Set(props);
+            this.dirt = this.dirt.filter((item) => !extermItems.has(item));
+        } else {
+            delete this.dirty;
+        }
+    }
+
+    toObject() {
+        return { x: this[0], y: this[1], z: this[2], w: this[3] };
+    }
+
+    toArray() {
+        return [this[0], this[1], this[2], this[3]];
+    }
+
+    toString() {
+        return `Vector4D(x=${this.x}, y=${this.y}, z=${this.z}, w=${this.w})`;
+    }
+
+    hasValue() {
+        return this[0] !== 0 || this[1] !== 0 || this[2] !== 0 || this[3] !== 0;
+    }
+
+    copy() {
+        return new Vector4D(this);
+    }
+
+    invert() {
+        return new Vector4D(-this[0], -this[1], -this[2], -this[0]);
+    }
+
+    min(x, y, z, w) {
+        this._min = Vector4D.parse(x, y, z, w);
+    }
+
+    max(x, y, z, w) {
+        this._max = Vector4D.parse(x, y, z, w);
+    }
+
+    clamp() {
+        this[0] = clamp(this[0], this._min.x, this._max.x);
+        this[1] = clamp(this[1], this._min.y, this._max.y);
+        this[2] = clamp(this[2], this._min.z, this._max.z);
+        this[3] = clamp(this[3], this._min.w, this._max.w);
+    }
+
+    getChanges() {
+        return this.diff(this.saved);
+    }
+}
+
 class AnimationVector2D extends Vector2D {
     constructor(arg1, arg2, options = {}) {
         super(arg1, arg2, options);
@@ -383,6 +644,8 @@ class Vector {
                     return new Vector2D(args[0]);
                 }
             }
+        } else if (args.length === 3) {
+            return new Vector3D(...args);
         }
     }
 }

@@ -1,3 +1,5 @@
+import { checkGLError } from "./Helper.mjs";
+import VariableSettings from "../Variables/VariableSettings.mjs";
 /**
  * 
 Variable Type	Purpose	            Stage(s) Used	                    Data Scope	Data Changes	Example
@@ -77,135 +79,6 @@ gl.uniform1i (samplerUniformLoc,   v);
 gl.uniform1iv(samplerUniformLoc, [v]);
 */
 
-export const VariableSettings = {
-    float: {
-        setFn: "uniform1f",
-        args: 1,
-        type: "float",
-        argType: "FLOAT",
-    },
-    vec2: {
-        setFn: "uniform2f",
-        args: 2,
-        type: ["float", "float"],
-        argType: "FLOAT",
-    },
-    vec3: {
-        setFn: "uniform3f",
-        args: 3,
-        type: ["float", "float", "float"],
-        argType: "FLOAT",
-    },
-    vec4: {
-        setFn: "uniform4f",
-        args: 4,
-        type: ["float", "float", "float", "float"],
-        argType: "FLOAT",
-    },
-    mat2: {
-        setFn: "uniformMatrix2fv",
-        args: 1,
-        type: "float[]",
-        argType: "FLOAT",
-    },
-    mat3: {
-        setFn: "uniformMatrix3fv",
-        args: 1,
-        type: "float[]",
-        argType: "FLOAT",
-    },
-    mat4: {
-        setFn: "uniformMatrix4fv",
-        args: 1,
-        type: "float[]",
-        argType: "FLOAT",
-    },
-    int: {
-        setFn: "uniform1i",
-        args: 1,
-        type: "int",
-        argType: "INT",
-    },
-    ivec2: {
-        setFn: "uniform2i",
-        args: 2,
-        type: ["int", "int"],
-        argType: "INT",
-    },
-    ivec3: {
-        setFn: "uniform3i",
-        args: 3,
-        type: ["int", "int", "int"],
-        argType: "INT",
-    },
-    ivec4: {
-        setFn: "uniform4i",
-        args: 4,
-        type: ["int", "int", "int", "int"],
-        argType: "INT",
-    },
-    sampler2D: {
-        setFn: "uniform1i",
-        args: 1,
-        type: "int",
-        argType: "INT",
-    },
-    samplerCube: {
-        setFn: "uniform1i",
-        args: 1,
-        type: "int",
-        argType: "INT",
-    },
-    uint: {
-        setFn: "uniform1ui",
-        args: 1,
-        type: "uint",
-        argType: "UNSIGNED_INT",
-    },
-    uvec2: {
-        setFn: "uniform2ui",
-        args: 2,
-        type: ["uint", "uint"],
-        argType: "UNSIGNED_INT",
-    },
-    uvec3: {
-        setFn: "uniform3ui",
-        args: 3,
-        type: ["uint", "uint", "uint"],
-        argType: "UNSIGNED_INT",
-    },
-    uvec4: {
-        setFn: "uniform4ui",
-        args: 4,
-        type: ["uint", "uint", "uint", "uint"],
-        argType: "UNSIGNED_INT",
-    },
-    bool: {
-        setFn: "uniform1i",
-        args: 1,
-        type: "int",
-        argType: "INT",
-    },
-    bvec2: {
-        setFn: "uniform2i",
-        args: 2,
-        type: ["int", "int"],
-        argType: "INT",
-    },
-    bvec3: {
-        setFn: "uniform3i",
-        args: 3,
-        type: ["int", "int", "int"],
-        argType: "INT",
-    },
-    bvec4: {
-        setFn: "uniform4i",
-        args: 4,
-        type: ["int", "int", "int", "int"],
-        argType: "INT",
-    },
-};
-
 export const VariableTypes = {
     FLOAT: "float",
     FLOAT_VEC2: "vec2",
@@ -238,12 +111,14 @@ export class Variable {
     static OUT = "out";
     static INOUT = "inout";
 
-    static qualifiers = ["const", "attribute", "uniform", "varying", "in", "out", "inout"];
+    static qualifiers = ["in", "const", "attribute", "uniform", "varying", "out", "inout"];
 
     _location;
-    buffer;
+    _feedbackLocation;
+    _buffer;
+    _feedbackBuffer;
 
-    setter = null;
+    settings = null;
 
     constructor(qualifier, type, name, options = {}) {
         this.qualifier = qualifier;
@@ -256,60 +131,164 @@ export class Variable {
             this.gl = this.webgl.gl;
         }
 
+        if (options.value) {
+            this._value = options.value;
+        }
+
         if (VariableSettings[this.type]) {
             this.settings = VariableSettings[this.type];
+        }
+
+        if (this.options.feedback) {
+            this.isFeedback = true;
+        }
+    }
+
+    bind(gl, program) {
+        this.gl = gl;
+        this.program = program;
+        console.log("On Program", this.name, this._value);
+        if (this._value !== undefined) {
+            const v = this._value;
+            this._value = null;
+            this.value = v;
         }
     }
 
     declare() {
-        return `${this.qualifier} ${this.type} ${this.name};`;
+        let loc = "";
+        if (this.options.location !== undefined) {
+            loc = `layout(location = ${this.options.location}) `;
+            this._location = this.options.location;
+        }
+        return `${loc}${this.qualifier} ${this.type} ${this.name};`;
+    }
+
+    feedbackLocation() {
+        if (this._feedbackLocation) return this._feedbackLocation;
+        const { gl } = this;
     }
 
     get location() {
         if (!this.program) this.program = this.webgl.program;
-        if (this._location) return this._location;
+        if (this._location !== undefined) return this._location;
         const { gl } = this;
         switch (this.qualifier) {
-            case StorageQualifier.ATTRIBUTE:
-            case StorageQualifier.IN:
+            case Variable.UNIFORM:
+                this._location = gl.getUniformLocation(this.program, this.name);
+
+                break;
+            case Variable.VARYING:
+                this._location = gl.getUniformLocation(this.program, this.name);
+                break;
+            default:
                 this._location = gl.getAttribLocation(this.program, this.name);
-                return this._location;
-                break;
-            case StorageQualifier.UNIFORM:
-                this._location = gl.getUniformLocation(this.program, this.name);
-                return this._location;
-                break;
-            case StorageQualifier.VARYING:
-                this._location = gl.getUniformLocation(this.program, this.name);
-                return this._location;
-                break;
         }
-        this._location = gl.getAttribLocation(this.program, this.name);
+        /// console.log(this.name, this._location);
+        return this._location;
     }
 
     set(data) {
         const { gl } = this;
         this.value = data;
+
         if (this.setter) {
             gl[this.setter](this.program, this.location, data);
         }
     }
 
-    createBuffer(value) {
-        if (value) this.value = value;
-        if (this.buffer) return this.buffer;
+    set value(value) {
+        if (value === this._value) return;
+        this._value = value;
+        this.upload();
+    }
+
+    set deferredValue(value) {
+        this._value = value;
+    }
+
+    upload() {
+        if (this.qualifier === Variable.UNIFORM) {
+            if (this.settings) {
+                let v = this._value;
+                if (this.settings.generate) {
+                    v = this.settings.generate(this._value);
+                }
+                // console.log(this.name, this.settings.setFn, this._value);
+                this.gl[this.settings.setFn](this.location, ...(Array.isArray(v) ? v : [v]));
+            }
+        } else if (this.qualifier === Variable.IN) {
+            this.uploadBuffer();
+        }
+        checkGLError(this.gl);
+    }
+
+    get value() {
+        return this._value;
+    }
+
+    get buffer() {
+        if (this._buffer) {
+            return this._buffer;
+        } else {
+            this._buffer = this.createBuffer();
+            return this._buffer;
+        }
+    }
+
+    uploadBuffer() {
+        const { gl } = this;
+        if (this._value === undefined || !this.location) return;
+        // console.log("upload buffer", this._buffer, this._value);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value), gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(this.location, this.bufferSize, gl[this.settings.argType], false, 0, 0);
+        gl.enableVertexAttribArray(this.location);
+    }
+
+    swapBuffer(buffer) {
+        this._buffer = buffer;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        this._location = null;
+        gl.enableVertexAttribArray(this.location);
+        gl.vertexAttribPointer(this.location, gl[this.settings.args], gl[this.settings.argType], false, 0, 0);
+    }
+
+    createBuffer(value, size) {
+        console.log(this.name, value, size);
+        if (value) this._value = value;
+        if (this._buffer) return this._buffer;
         const { gl } = this;
 
-        const assignments = ["UNSIGNED_BYTE", "SHORT", "UNSIGNED_SHORT", "INT", "UNSIGNED_INT", "FLOAT"];
+        this.bufferSize = size || this.settings.args;
 
+        const assignments = ["UNSIGNED_BYTE", "SHORT", "UNSIGNED_SHORT", "INT", "UNSIGNED_INT", "FLOAT"];
+        console.log(this.name, "Buffer Size", this.bufferSize, this.location);
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        if (this.value) gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.value), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.location, 2, gl[this.settings.argType], false, 0, 0);
+        if (this._value) gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value), gl.DYNAMIC_DRAW);
+
         gl.enableVertexAttribArray(this.location);
-        this.buffer = buffer;
-        return this.buffer;
+        gl.vertexAttribPointer(this.location, this.settings.args, gl[this.settings.argType], false, 0, 0);
+
+        if (this.isFeedback) {
+            this._feedbackBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this._feedbackBuffer);
+            if (this._value) gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value), gl.STATIC_DRAW);
+            gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, this._feedbackBuffer);
+        }
+
+        this._buffer = buffer;
+        return this._buffer;
+
+        /*
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
+        this.gl.vertexAttribPointer(this.positionAttrib, size, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(this.positionAttrib);
+
+        */
     }
 }
-
-export default {};
+export default Variable;

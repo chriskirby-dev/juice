@@ -33,11 +33,41 @@ class Form extends Emitter {
         this.updateInputs();
     }
 
-    onChange(name, value) {
+    formatValue(dataType, value) {
+        if (dataType == "int") {
+            if (value === true || value === false) {
+                value = value === true ? 1 : 0;
+            }
+        } else if (dataType == "number") {
+            value = Number(value);
+        } else if (dataType == "boolean") {
+            value = Boolean(value);
+        }
+
+        return value;
+    }
+
+    onChange(name, value, input) {
+        if (input.type == "checkbox" && !input.checked) {
+            value = false;
+        }
+        if (input.hasAttribute("data-type")) {
+            const dataType = input.getAttribute("data-type");
+            value = this.formatValue(dataType, value);
+        }
+
         this.emit("change", name, value);
     }
 
-    onInput(name, value) {
+    onInput(name, value, input) {
+        if (input.type == "checkbox" && !input.checked) {
+            value = false;
+        }
+        if (input.hasAttribute("data-type")) {
+            const dataType = input.getAttribute("data-type");
+            value = this.formatValue(dataType, value);
+        }
+
         this.emit("input", name, value);
     }
 
@@ -48,10 +78,10 @@ class Form extends Emitter {
             this.emit("change", input.name, input.value);
             if (!this.inputs[input.name]) {
                 input.addEventListener("change", (e) => {
-                    self.onChange(e.target.name, e.target.value);
+                    self.onChange(e.target.name, e.target.value, e.target);
                 });
                 input.addEventListener("input", (e) => {
-                    self.onInput(e.target.name, e.target.value);
+                    self.onInput(e.target.name, e.target.value, e.target);
                 });
                 this.inputs[name] = input;
             }

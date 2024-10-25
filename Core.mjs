@@ -30,6 +30,23 @@ class Juice {
         this.currentFile = currentFile;
         this.queues = new JuiceQueues();
         this.storage = new JuiceStorage();
+        this.eventRegistry = {};
+    }
+
+    registerEvent(name, fn, args = []) {
+        if (!this.eventRegistry[name]) {
+            this.eventRegistry[name] = [];
+        }
+        this.eventRegistry[name].push(fn);
+        return `juice.dispatchEvent(this,'${name}')`;
+    }
+
+    dispatchEvent(target, name, ...args) {
+        if (!this.eventRegistry[name]) {
+            return;
+        }
+        this.eventRegistry[name].forEach((fn) => fn(target, ...args));
+        return false;
     }
 
     storage(bucket) {
@@ -78,7 +95,7 @@ class Juice {
 }
 
 export const juice = new Juice();
-root.juice = juice;
+juice.expose();
 
 import _config from "./Configuration.mjs";
 export const config = _config;

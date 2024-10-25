@@ -32,6 +32,38 @@ export class Cursor {
     }
 }
 
+export function last(arr) {
+    return arr[arr.length - 1];
+}
+
+export function first(arr) {
+    return arr[0];
+}
+
+export function intersect(arr1, arr2) {
+    return arr1.filter((value) => -1 !== arr2.indexOf(value));
+}
+
+export function distinct(arr1, arr2) {
+    return arr1.filter((value) => -1 === arr2.indexOf(value));
+}
+
+export function merge(a, b) {
+    const merged = a.slice(0);
+    for (let i = 0; i < b.length; i++) {
+        if (merged.indexOf(b[i]) === -1) {
+            merged.push(b[i]);
+        }
+    }
+    return merged;
+}
+
+export function equal(a, b) {
+    a = a.slice().sort();
+    b = b.slice().sort();
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 class ArrUtil {
     static diff(a, b) {
         return {

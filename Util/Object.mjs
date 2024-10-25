@@ -47,6 +47,12 @@ export function setEnumerability(target, props = [], enumerable = true, enumRest
     }
 }
 
+export function objectFilter(obj, filter) {
+    return Object.keys(obj)
+        .filter((key) => filter(key, obj[key]))
+        .reduce((res, key) => Object.assign(res, { [key]: obj[key] }), {});
+}
+
 class ObjectUtil {
     static arrPluck(arr, path) {
         return arr.map((item) => ObjectUtil.pluck(item, path));

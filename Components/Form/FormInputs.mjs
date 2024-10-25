@@ -1,9 +1,134 @@
 import { VirtualDom, vElement } from "../../VirtualDom/VirtualDom.mjs";
 import Str from "../../Util/String.mjs";
-import Arr from "../../Util/Array.mjs";
+import { last, first, intersect } from "../../Util/Array.mjs";
 import InputName from "./InputName.mjs";
 export function datalist() {
     const list = vElement("datalist", {}, []);
+}
+
+const ARG_ORDER = ["type", "name", "value"];
+const OBJ_ARG_ORDER = ["attributes", "options"];
+const INPUT_TYPES = ["text", "textarea", "checkbox", "radio", "select"];
+//form("name", {}, [input()]);
+function conformParams(...args) {
+    let params = {};
+    if (args.length > 1) {
+        const obj_args = args.filter((arg) => arg instanceof Object);
+        for (let o = 0; o < obj_args.length; o++) {
+            params[OBJ_ARG_ORDER[o]] = obj_args[o];
+        }
+
+        const text_args = args.filter((arg) => !(arg instanceof Object));
+        for (let t = 0; t < text_args.length; t++) {
+            params[ARG_ORDER[t]] = text_args[t];
+        }
+    } else {
+        params = args[0];
+    }
+
+    const name = new InputName(params.name);
+    const { type, attributes = {}, value = "" } = params;
+    attributes.name = name;
+
+    const attributedProps = intersect(ATTTRIBUTED_PROPERTIES, Object.keys(params));
+    for (let prop of attributedProps) {
+        //Shift Property to Attributes
+        if (attributes[prop] !== undefined) continue;
+        attributes[prop] = params[prop];
+        delete params[prop];
+    }
+
+    if (!attributes.id) attributes.id = name.toId();
+    if (!params.hasOwnProperty("label")) params.label = name.toLabel();
+
+    return params;
+}
+
+export function form(name, attributes = {}, children = []) {
+    return vElement("form", attributes, children);
+}
+
+export function input(children) {
+    const params = conformParams(...args);
+    const attrs = {
+        class: `form-input ${type}`,
+    };
+    return vElement("div", attrs, children);
+}
+
+export function fieldset(legend, children) {
+    return vElement("fieldset", {}, [vElement("legend", {}, [legend]), ...children]);
+}
+
+export function checkbox(...args) {
+    const properties = conformParams(["checkbox", ...args]);
+    const { attributes = {} } = properties;
+    return vElement(
+        "label",
+        {
+            for: attributes.id,
+        },
+        [vElement("span", {}, [properties.label]), vElement("input", attributes)]
+    );
+}
+
+export function radio(...args) {
+    const properties = conformParams(["radio", ...args]);
+    const { attributes = {} } = properties;
+    return vElement(
+        "label",
+        {
+            for: attributes.id,
+        },
+        [vElement("span", {}, [properties.label]), vElement("input", attributes)]
+    );
+}
+
+export function select(...args) {
+    const { attributes = {}, options = {}, label, value = "" } = conformParams(["select", ...args]);
+
+    const vOptions = [];
+    if (Array.isArray(options)) {
+        for (let i = 0; i < options.length; i++) {
+            const attrs = {
+                value: options[i],
+            };
+            if (attrs.value === value) {
+                attrs.selected = "";
+            }
+            vOptions.push(vElement("option", attrs, [options[i]]));
+        }
+    } else if (typeof options === "object") {
+        for (let key in options) {
+            const attrs = {
+                value: options[key],
+            };
+            if (attrs.value === value) {
+                attrs.selected = "";
+            }
+            vOptions.push(vElement("option", attrs, [key]));
+        }
+    }
+
+    return [vElement("label", { for: attributes.id }, [label]), vElement("select", attributes, vOptions)];
+}
+
+export function textarea(...args) {
+    const properties = conformParams(["textarea", ...args]);
+    const { label, value = "", attributes = {} } = properties;
+    return [vElement("label", { for: attributes.id }, [label]), vElement("textarea", attributes, [value])];
+}
+
+export function text(...args) {
+    const properties = conformParams(["text", ...args]);
+    const { label, attributes = {} } = properties;
+    return [vElement("label", { for: attributes.id }, [label]), vElement("input", attributes)];
+}
+
+export function hidden(...args) {
+    const properties = conformParams(["hidden", ...args]);
+    const { attributes = {} } = properties;
+    return vElement("input", attributes);
 }
 
 const ATTTRIBUTED_PROPERTIES = [
@@ -26,7 +151,7 @@ class FormInputs {
         const { type, attributes = {}, value = "" } = properties;
         attributes.name = name;
 
-        const attributedProps = Arr.intersect(ATTTRIBUTED_PROPERTIES, Object.keys(properties));
+        const attributedProps = intersect(ATTTRIBUTED_PROPERTIES, Object.keys(properties));
         for (let prop of attributedProps) {
             //Shift Property to Attributes
             if (attributes[prop] !== undefined) continue;
@@ -79,12 +204,13 @@ class FormInputs {
     }
 
     static checkbox(name, value, attributes = {}, properties = {}) {
+        if (attributes.checked === false) delete attributes.checked;
         return vElement(
             "label",
             {
-                for: attributes[id],
+                for: attributes.id,
             },
-            [vElement("span", {}, [properties.label || FormInputs.nameToLabel(name)]), vElement("input", attributes)]
+            [vElement("span", {}, [properties.label]), vElement("input", attributes)]
         );
     }
 
@@ -100,7 +226,7 @@ class FormInputs {
         return vElement(
             "label",
             {
-                for: attributes[id],
+                for: attributes.id,
             },
             [vElement("span", {}, [properties.label || FormInputs.nameToLabel(name)]), vElement("input", attributes)]
         );

@@ -1,4 +1,4 @@
-import Util from '../Util/Core.mjs';
+import Util from "../Util/Core.mjs";
 
 /**
  *     merge(...arrays):
@@ -24,37 +24,42 @@ import Util from '../Util/Core.mjs';
  */
 
 class DistinctArray extends Array {
-
     merge(...arrays) {
-        return new DistinctArray(...[].concat(...arrays));
+        const set = new Set(this);
+        arrays.forEach((array) => array.forEach((item) => set.add(item)));
+        return new DistinctArray(...set);
     }
 
     constructor(items = []) {
-        super(...items);
+        super();
+        this.push(...items);
     }
 
-    push( ...items ){
-        items.forEach( item => { if( !this.has(item) ) super.push( item ) } );
+    push(...items) {
+        const set = new Set(this);
+        items.forEach((item) => set.add(item));
+        this.length = 0;
+        set.forEach((item) => super.push(item));
         return this.length;
     }
 
     remove(...items) {
-        this.splice(0, this.length, ...this.filter(item => !items.includes(item)));
+        const set = new Set(items);
+        this.splice(0, this.length, ...this.filter((item) => !set.has(item)));
     }
 
     has(item) {
         return this.includes(item);
     }
 
-    index(item){
-        const idx =  this.indexOf(item);
+    index(item) {
+        const idx = this.indexOf(item);
         return idx === -1 ? false : idx;
     }
 
     reset() {
-        this.splice(0, this.length);
+        this.length = 0;
     }
 }
-
 
 export default DistinctArray;

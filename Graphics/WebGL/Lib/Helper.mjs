@@ -113,3 +113,32 @@ export function loadText(url) {
         xhr.send();
     });
 }
+
+export function checkGLError(gl) {
+    const error = gl.getError();
+    if (error !== gl.NO_ERROR) {
+        console.error("WebGL error:", error);
+        switch (error) {
+            case gl.INVALID_ENUM:
+                console.error("INVALID_ENUM: An unacceptable value has been specified for an enumerated argument.");
+                break;
+            case gl.INVALID_VALUE:
+                console.error("INVALID_VALUE: A numeric argument is out of range.");
+                break;
+            case gl.INVALID_OPERATION:
+                console.error("INVALID_OPERATION: The specified operation is not allowed in the current state.");
+                break;
+            case gl.INVALID_FRAMEBUFFER_OPERATION:
+                console.error("INVALID_FRAMEBUFFER_OPERATION: The framebuffer object is not complete.");
+                break;
+            case gl.OUT_OF_MEMORY:
+                console.error("OUT_OF_MEMORY: Not enough memory is left to execute the command.");
+                break;
+            case gl.CONTEXT_LOST_WEBGL:
+                console.error("CONTEXT_LOST_WEBGL: The WebGL context has been lost.");
+                break;
+            default:
+                console.error("Unknown error code:", error);
+        }
+    }
+}

@@ -614,7 +614,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             #resize(width, height) {
                 const resizeAction = this.RESIZE_ACTION;
-                console.log("resize");
+                console.log("resize", width, height);
                 switch (resizeAction) {
                     case "width":
                         this.width = width;
@@ -638,7 +638,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 }
 
                 if (typeof this.onResize === "function") {
-                    this.onResize(this.width, this.height, resizeAction);
+                    this.onResize(width, height, resizeAction);
                 }
             }
 

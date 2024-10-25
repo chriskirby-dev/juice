@@ -29,8 +29,11 @@ export function randomBetween(min, max) {
     return min + rand;
 }
 
-export function randomIntBetween(min, max) {
-    const rand = Math.random() * (max - min);
+export function randomIntBetween(min, max, exclude = []) {
+    let rand = Math.random() * (max - min);
+    while (exclude.includes(rand) && max - min < exclude.length) {
+        rand = Math.random() * (max - min);
+    }
     return Math.round(min + rand);
 }
 
