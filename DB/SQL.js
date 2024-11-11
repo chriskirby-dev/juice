@@ -73,7 +73,14 @@ export class SQL {
         let resp = { statement: '', args: [] };
         if(!empty(params)){
             resp.statement = `WHERE `;
-            resp.statement += Object.keys( params ).map( prop => prop +' = ?' ).join(' AND ');
+            resp.statement += Object.keys( params ).map( prop => {
+                if(params[prop] == null){
+                    delete params[prop];
+                    return prop + ' IS NULL';
+                }else{
+                    return prop +' = ?' 
+                }
+            }).join(' AND ');
             resp.args = Object.values( params );
         }
         return resp;
@@ -108,10 +115,23 @@ export class SQL {
         return resp;
     }
 
-    static delete( table, conditions ){
-        let resp = { statement: '', args: [] };
-        resp.statement = `DELETE FROM ${table} WHERE`;
+    static max(table, column, conditions){
+        let resp = { statement: `SELECT MAX(${column}) AS MAX FROM ${table}`, args: [] };
         if(!empty(conditions)) resp = SQL.join( resp, SQL.conditions(conditions) );
+        return resp;
+    }
+
+    static count(table, conditions){
+        let resp = { statement: `SELECT COUNT(*) AS COUNT FROM ${table}`, args: [] };
+        if(!empty(conditions)) resp = SQL.join( resp, SQL.conditions(conditions) );
+        return resp;
+    }
+
+    static delete( table, conditions ){
+        let resp = { statement: `DELETE FROM ${table}`, args: [] };
+
+        if(!empty(conditions)) resp = SQL.join( resp, SQL.conditions(conditions) );
+       // console.log(resp);
         return resp;
     }
 
@@ -128,7 +148,7 @@ export class SQL {
 
     static order(order){
         if(empty(order)) return;
-        return { statement: `ORDER BY ${order.join(', ')}`, args: [] }
+        return { statement: `ORDER BY ${ type(order,'array') ? order.join(', ') : order }`, args: [] }
     }
 
     static limit(limit){

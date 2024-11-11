@@ -1,19 +1,24 @@
-import EventEmitter from '../../Event/Emitter.mjs';
-import Collection from './Collection.mjs';
-import DistinctArray from '../../DataTypes/DistinctArray.mjs';
-import { type, empty, equals, exists } from '../../Util/Core.mjs';
-import { normalCase, studly, unStudly, pascalCase } from '../../Util/String.mjs';
-import { setEnumerability } from '../../Util/Object.mjs';
-import LookupChain from '../LookupChain';
+import EventEmitter from "../../Event/Emitter.mjs";
+import Collection from "./Collection.mjs";
+import DistinctArray from "../../DataTypes/DistinctArray.mjs";
+import { type, empty, equals, exists } from "../../Util/Core.mjs";
+import { normalCase, studly, unStudly, pascalCase, dashed } from "../../Util/String.mjs";
+import { setEnumerability } from "../../Util/Object.mjs";
+import LookupChain from "../LookupChain.js";
+import Watch from "../../Proxy/Watch.mjs";
+
+import FormBuilder from "../../Form/Builder.mjs";
 
 class Model extends EventEmitter {
-
     static key = null;
-    static tableName = '';
-    static primaryKey = 'id';
-    static foreignKey = null;
+    static tableName = "";
+    static primaryKey = "id";
+    static primaryLabel;
+    static foreignKey;
+    static localKey;
     static debug = false;
     static index = 0;
+    static async = false;
 
     static db;
 
@@ -27,34 +32,81 @@ class Model extends EventEmitter {
     #protected = {};
     relationships = {};
 
+    static component = { tagName: "", attributes: {}, instance: null };
+
     get static() {
         return this.constructor;
     }
 
-    static Collection(data = []) {
-        if (data == null) data = [];
-        debug(data);
-        if (!type(data, 'array')) {
+    static Collection(data) {
+        if (data && !type(data, "array")) {
             if (Model.debug) console.log(data);
             throw new Error(`Collection ${this.name} must supply array or null ${typeof data} provided`, data);
+        } else if (empty(data)) {
+            data = [];
         }
+
+        // console.log(data);
 
         return new Collection(data, this);
     }
 
-
-
-
-    static select( ...columns ){
-        return new LookupChain( this ).select( ...columns );
+    static delete(conditions) {
+        if (conditions && !type(conditions, "object")) {
+            conditions = { [this.primaryKey]: conditions };
+        }
+        this.db.delete(this.tableName, conditions);
     }
 
-    static where( conditions ){
-        return new LookupChain( this ).where( conditions );
+    static count(conditions = {}) {
+        return Promise.resolve(this.db.count(this.tableName, conditions));
     }
 
-    static all( limit, offset ){
-        return new LookupChain( this ).where( {} ).all( limit, offset );
+    static max(property, conditions = {}) {
+        console.log(this.db);
+        return this.db.max(this.tableName, property, conditions);
+    }
+
+    static select(...columns) {
+        return new LookupChain(this).select(...columns);
+    }
+
+    static where(conditions, options) {
+        return new LookupChain(this, options).where(conditions);
+    }
+
+    static all(limit, offset) {
+        return this.Collection(new LookupChain(this).all(limit, offset));
+    }
+
+    static fromId(id) {
+        return new this(this.db.first(this.tableName, ["*"], { [this.primaryKey]: id }));
+    }
+
+    static find(conditions, options) {
+        if (conditions && !type(conditions, "object")) {
+            conditions = { [this.primaryKey]: conditions };
+        }
+        return new LookupChain(this, options).where(conditions).first();
+    }
+
+    static formOptions(label, value) {
+        const l = label || this.primaryLabel;
+        const v = value || this.primaryId;
+        return Promise.resolve(this.select(`${l} AS label, ${v} AS value`).all());
+    }
+
+    static form(data) {
+        if (data instanceof Model) data = data.toJson();
+        return FormBuilder.buildFromSchema(this.schema, data);
+    }
+
+    form() {
+        return FormBuilder.buildFromSchema(this.static.schema, this.toJson());
+    }
+
+    static get hasProperty() {
+        return {};
     }
 
     static get hasOne() {
@@ -94,16 +146,48 @@ class Model extends EventEmitter {
     }
 
     static initialize() {
+        const self = this;
         this.index++;
-        //Initialize the static model 
+        //Initialize the static model
         if (!this.key) this.key = normalCase(this.tableName);
-        if (!this.foreignKey) this.foreignKey = this.key + '_' + this.primaryKey;
+        if (!this.foreignKey) this.foreignKey = this.key + "_" + this.primaryKey;
+        if (!this.localKey) this.localKey = this.primaryKey;
         //Set the initializedf flag
+
+        this.component.tagName = dashed(this.name);
+
+        this.component.attributes = {
+            id(model) {
+                return self.component.tagName + "-" + model[model.primaryKey];
+            },
+        };
+
+        if (!this.primaryLabel) {
+            let primaryLabel = ["name", "key", "label"].filter((k) => Object.keys(this.schema).includes(k));
+
+            for (let property in this.schema) {
+                if (this.schema[property].primaryLabel) {
+                    primaryLabel = this.schema[property].primaryLabel;
+                }
+            }
+
+            this.primaryLabel = primaryLabel;
+        }
+
         this.initialized = true;
     }
 
+    static useDatabase(db) {
+        this.db = db;
+        if (db.async) {
+            this.async = true;
+        }
+    }
+
     constructor(data = {}, options = {}) {
-        super(data);
+        super();
+
+        if (data instanceof Model) data = data.toJson();
 
         //Save the arguments To allow for resetting it later
         this.#args = [data, options];
@@ -111,16 +195,22 @@ class Model extends EventEmitter {
         //If the static model has not been initialized, initialize it
         if (!this.static.initialized) this.static.initialize();
 
+        //Set DB
         this.db = this.static.db;
+        if (this.db.async) this.async = true;
+
         //Set the index based on instantiation and increment static count
         this.protected.index = this.static.index;
         this.static.index++;
 
+        const _with = options.with || this.static.with;
         //Initialize the protected properties
         this.#required = new DistinctArray();
         this.protected.changed = new DistinctArray();
         this.protected.relatedChanged = new DistinctArray();
-        this.protected.with = new DistinctArray(this.static.with);
+        this.protected.with = new DistinctArray([..._with]);
+        this.protected.appends = new DistinctArray(...this.static.appends);
+        this.#changed = new DistinctArray();
 
         //Create the validator
         // this.errors = new ValidationErrors(this);
@@ -130,33 +220,41 @@ class Model extends EventEmitter {
 
         //Populate from the options object
         if (options.with) this.protected.with.push(...options.with);
+        if (options.appends) this.protected.appends.push(...options.appends);
         if (options.collection) this.collection = options.collection;
+
+        //if model is part of a collection
         if (options.parent) this.parent = options.parent;
 
+        //save source data
         this._source = data;
 
-        //If data exists but is not an object, assume it is the primary key
-        if (data && !type(data, 'object')) data = { [this.static.primaryKey]: data };
+        //If data exists but and is number, assume it is the primary key
+        if (data && type(data, "number")) return this.static.fromId(data);
 
         //Initialize the model instance
         this.initialize(data);
-
-
     }
 
-    get data() { return this.#data; }
+    setParent(parent) {
+        this.parent = parent;
+    }
 
-    set data(v){ return false; }
+    get data() {
+        return this.#data;
+    }
 
-    get foreignKey() { return this.static.foreignKey; }
+    set data(v) {
+        return false;
+    }
 
-    get primary() { return this[this.static.primaryKey]; }
-
-    get required() { return this.#required; }
+    get required() {
+        return this.#required;
+    }
 
     get exists() {
         const primaryKey = this.static.existsKey || this.static.primaryKey;
-        return (this[primaryKey] && !this.deleted) ? true : false;
+        return this[primaryKey] && !this.deleted ? true : false;
     }
 
     get protected() {
@@ -165,7 +263,7 @@ class Model extends EventEmitter {
 
     //Get difference between provided data and model data.
 
-    diff(data) {
+    #diff(data) {
         const diff = {};
         let count = 0;
         for (let prop in data) {
@@ -181,22 +279,31 @@ class Model extends EventEmitter {
 
     delete() {
         const { primaryKey } = this;
-        this.db.delete(this.static.tableName, { [primaryKey]: this[primaryKey] });
-        this.deleted = true;
-        this.emit('deleted', this);
-        if (this.collection) this.collection.delete(this);
-
+        if (!this.exists) return;
+        if (this.beforeDelete) this.beforeDelete();
+        const onComplete = (response) => {
+            this.deleted = true;
+            this.emit("deleted", this);
+            if (this.collection) this.collection.delete(this);
+            if (this.afterDelete) this.afterDelete();
+            return response;
+        };
+        if (this.async) {
+            return this.db.delete(this.static.tableName, { [primaryKey]: this[primaryKey] }).then(onComplete);
+        } else {
+            const resp = this.db.delete(this.static.tableName, { [primaryKey]: this[primaryKey] });
+            return onComplete(resp);
+        }
     }
 
     /**
-     * 
+     *
      * Reset model to state. It was called in.
      */
 
     reset(data = {}) {
-        const resetModel = new this.constructor(data || this.#args[0]);
-        // this.transferEvents(resetModel);
-        return resetModel;
+        this.fill(data);
+        this.emit("reset");
     }
 
     /**
@@ -205,28 +312,84 @@ class Model extends EventEmitter {
 
     save() {
         const { primaryKey } = this;
-        if (this.exists) {
-            this.db.update(this.static.tableName, this.#data, { [primaryKey]: this[primaryKey] });
-        } else {
-            const insert = this.db.insert(this.static.tableName, this.#data);
-            this[primaryKey] = insert.lastInsertRowid;
-            debug(insert.lastInsertRowid);
-            debug(this.foreignKey);
-            
-        }
-        if(!empty(this.relationships)){
-            for( let relationship in this.relationships ){
-                const related = this.relationships[relationship];
-                switch(related.type){
-                    case 'hasOne':
-                    this[relationship][this.foreignKey] = this[this.primaryKey]
-                    this[relationship].save();
-                    break;
-                }
-                debug( 'RELATIONSHIP', relationship, related.type, this[relationship] );
+        const schema = this.static.schema;
+        let data = { ...this.#data };
+        // console.log(this.#data);
+        let saveType = "create";
+
+        //If beforeSave hook is set
+        if (this.beforeSave) data = this.beforeSave(data);
+
+        //Prepare data for db
+        for (let prop in data) {
+            if (schema[prop] && schema[prop].type == "json") {
+                //If property has JSON type in schema serialize for save
+                if (type(data[prop], "object") || type(data[prop], "array")) data[prop] = JSON.stringify(data[prop]);
             }
         }
-        this.saved = true;
+
+        const onComplete = () => {
+            this.static.emit(`${saveType}d`, this);
+            this.emit("saved", this.toJson());
+            this.#changed.reset();
+            this.saved = true;
+            return;
+        };
+
+        if (this.exists) {
+            //if data exists update
+            if (this.beforeUpdate) data = this.beforeUpdate(data);
+            if (this.async) {
+                return this.db.update(this.static.tableName, data, { [primaryKey]: this[primaryKey] }).then(() => {
+                    this.saveRelated().then(onComplete);
+                });
+            } else {
+                const resp = this.db.update(this.static.tableName, data, { [primaryKey]: this[primaryKey] });
+                this.saveRelated();
+                return onComplete();
+            }
+        } else {
+            if (this.beforeCreate) data = this.beforeCreate(data);
+            if (this.async) {
+                return this.db.insert(this.static.tableName, data).then((insert) => {
+                    this[primaryKey] = insert.lastInsertRowid;
+                    return this.saveRelated().then(onComplete);
+                });
+            } else {
+                const resp = this.db.insert(this.static.tableName, data);
+                this[primaryKey] = resp.lastInsertRowid;
+                this.saveRelated();
+                return onComplete();
+            }
+        }
+    }
+
+    saveRelated() {
+        const { relationships } = this;
+
+        if (empty(relationships)) return Promise.resolve();
+
+        const saving = [];
+
+        for (let relationship in relationships) {
+            const related = relationships[relationship];
+            switch (related.type) {
+                case "hasOne":
+                    this[relationship][this.foreignKey] = this[this.primaryKey];
+                    if (this[relationship].isDirty()) {
+                        saving.push(this[relationship].save());
+                    }
+                    break;
+                case "hasMany":
+                    if (this[relationship].isDirty()) {
+                        this[relationship].save();
+                    }
+                    break;
+            }
+            //  console.log( 'RELATIONSHIP', relationship, related.type, this[relationship] );
+        }
+
+        return this.async ? Promise.all(saving).then(resolve) : saving;
     }
 
     /**
@@ -234,34 +397,45 @@ class Model extends EventEmitter {
      */
 
     pull() {
-        const data = this.db.get(this.tableName, { 
-            [this.primaryKey]: this[this.primaryKey]
-        });
-
-        this.fill(data);
+        if (this.async) {
+            return this.db
+                .first(this.static.tableName, "*", {
+                    [this.primaryKey]: this[this.primaryKey],
+                })
+                .then((data) => {
+                    this.fill(data, false, true);
+                });
+        } else {
+            const data = this.db.first(this.static.tableName, "*", {
+                [this.primaryKey]: this[this.primaryKey],
+            });
+            this.fill(data, false, true);
+        }
     }
 
     //Fill model with supplied data
 
     fill(data = {}, silent, saved) {
-        debug('FILL', data, this.with);
+        // console.log('FILL', data, this.with);
         const schema = this.static.schema;
         const target = silent ? this.#data : this;
-        const skipNonRelated = empty(data) || this.diff(data);
-
-        if (skipNonRelated) return;
+        const skipNonRelated = empty(data) || this.#diff(data);
+        //console.log('skipNonRelated', skipNonRelated);
+        if (empty(data)) return;
 
         //Fill the model with the supplied data
 
-        for (const prop in data) {
+        for (const prop in this.#diff(data)) {
+            // console.log('fill', prop, data[prop]);
             if (this[prop] !== data[prop]) {
                 const propSchema = schema[prop];
                 if (propSchema) {
-                    if (propSchema.type === 'json' && propSchema.collection) {
+                    if (propSchema.type === "json" && propSchema.collection) {
                         //Shema indicatesthat this property is a Json object or a collection ofmodels.
                         this[prop].update(data[prop], silent, saved);
                     } else {
                         //Else is a simple property so update.
+                        // console.log('set', prop, data[prop]);
                         target[prop] = data[prop];
                     }
                     this.protected.changed.remove(prop);
@@ -269,11 +443,11 @@ class Model extends EventEmitter {
             }
         }
 
-        this.with.forEach((prop) => {
+        this.protected.with.forEach((prop) => {
             if (data[prop] && !empty(data[prop])) {
                 if (this[prop] instanceof Collection) {
                     this[prop].update(data[prop], silent);
-                } else if (this[_with] instanceof ModelBase) {
+                } else if (this[prop] instanceof Model) {
                     this[prop].fill(data[prop], silent);
                 } else if (!empty(data[prop])) {
                     this[prop] = data[prop];
@@ -281,18 +455,20 @@ class Model extends EventEmitter {
             }
         });
 
+        this.protected.appends.forEach((prop) => {});
+
         if (saved) this.saved = true;
 
-        this.emit('filled');
+        this.emit("filled");
     }
 
     //Get any properties that changed since last save.
 
-    changes(){
+    changes() {
         const schema = this.static.schema;
         const changeTmp = this.#changed.slice(0);
 
-        if(!this.exists){
+        if (!this.exists) {
             return this.toJson();
         }
     }
@@ -307,32 +483,78 @@ class Model extends EventEmitter {
         const json = {};
 
         for (const prop in schema) {
-            if (schema.type && schema.type == 'collection') {
+            if (prop == "collection") continue;
+            if (schema.type && schema.type == "collection") {
                 json[prop] = this.#data[prop].toJson();
             } else {
                 json[prop] = this.#data[prop];
             }
         }
 
-        if (this.static.with.length) {
-            for (let prop of this.static.with) {
+        if (this.protected.with.length || this.protected.appends.length) {
+            const addonFields = this.protected.with.merge(this.protected.appends);
+            for (let prop of addonFields) {
                 const accessor = studly(`get_${prop}_attribute`);
-                if (this[accessor] !== undefined) {
-                    json[prop] = this[prop];
+                if (typeof this[accessor] === "function") {
+                    json[prop] = this[accessor]();
                 } else {
-                    if (this[prop] && typeof this[prop].toJson === 'function') {
+                    if (this[prop] && typeof this[prop].toJson === "function") {
                         json[prop] = this[prop].toJson();
                     } else {
                         json[prop] = this[prop];
                     }
                 }
+
+                if (json[prop] instanceof Collection || json[prop] instanceof Model) {
+                    json[prop] = json[prop].toJson();
+                }
             }
         }
-        
 
         return json;
     }
 
+    hasComponent() {
+        return this.component !== undefined;
+    }
+
+    createComponent() {
+        const { component: cmp } = this.static;
+        // console.log(cmp);
+        const component = document.createElement(cmp.tagName);
+        // console.log(component);
+        for (let prop in cmp.attributes) {
+            component.setAttribute(
+                prop,
+                type(cmp.attributes[prop], "function") ? cmp.attributes[prop](this) : cmp.attributes[prop]
+            );
+        }
+
+        component.addModel(this, { copyToData: true });
+
+        this.component = component;
+        return component;
+    }
+
+    linkComponent(component) {
+        const { component: settings } = this.static;
+        // console.log(component);
+        if (settings.attributes) {
+            for (let prop in settings.attributes) {
+                component.setAttribute(
+                    prop,
+                    type(settings.attributes[prop], "function")
+                        ? settings.attributes[prop](this)
+                        : settings.attributes[prop]
+                );
+            }
+        }
+
+        component.addModel(this, { copyToData: true });
+
+        this.component = component;
+        return component;
+    }
 
     #getProperty(prop) {
         const accessor = studly(`get_${prop}_attribute`);
@@ -341,19 +563,32 @@ class Model extends EventEmitter {
     }
 
     #setProperty(prop, value, schema) {
-
         const format = this.static.format[prop];
         const rules = this.static.rules[prop];
         const silent = schema.silent && schema.silent === true;
 
+        if (empty(value)) value = null;
+
         //If schema contains readonly do not update
         if (schema.readonly && !empty(this[prop])) {
-            debug(`Trying to set readonly value of ${prop} to ${value} after already has value of ${this[prop]} in ${this.static.name}!`);
+            console.log(
+                `Trying to set readonly value of ${prop} to ${value} after already has value of ${this[prop]} in ${this.static.name}!`
+            );
             return false;
         }
 
-        if (schema.type == 'int' && value !== null)
-            value = parseInt(value);
+        if (schema.type == "json" && type(value, "string")) {
+            while (type(value, "string")) {
+                try {
+                    value = JSON.parse(value);
+                } catch (e) {
+                    console.log("JSON Parse Error", e);
+                    return false;
+                }
+            }
+        }
+
+        if (schema.type == "int" && value !== null) value = parseInt(value);
 
         //If property has mutator attribute
         const mutator = studly(`set_${prop}_attribute`);
@@ -362,14 +597,14 @@ class Model extends EventEmitter {
         //If value has not changed exit
         if (this.#data[prop] === value) return false;
 
-        if (this.ready && Model.debug) debug('Set Property', this.protected.index, prop, value, schema);
+        if (this.ready && Model.debug) console.log("Set Property", this.protected.index, prop, value, schema);
 
         if (this.collection) {
             if (schema.unique) {
                 let match;
-                if (match = this.collection.findIndexBy(prop, value, false, this.index)) {
+                if ((match = this.collection.findIndexBy(prop, value, false, this.index))) {
                     //Value Not unique
-                    debug('Unique Error', this.collection[match], this);
+                    console.log("Unique Error", this.collection[match], this);
                     if (match !== this.index) this.errors.set(prop, new UniquePropertyError(prop, this, value));
                     return false;
                 }
@@ -380,62 +615,84 @@ class Model extends EventEmitter {
         // if (this.errors.has(prop)) this.errors.clear(prop);
         this.#data[prop] = value;
 
+        if (this.ready && this.#valid && !this.isValid) {
+            this.#valid = false;
+            if (Model.debug) console.log("NOT VALID NOW");
+            this.emit("invalid");
+        }
+
         const updateSchema = this.static.schema.updated_at;
         const createSchema = this.static.schema.created_at;
 
-        if ((this.static.properties.includes('updated_at') || this.static.timestamps)
-            && (!updateSchema || updateSchema.generate !== false)) {
+        if (
+            (this.static.properties.includes("updated_at") || this.static.timestamps) &&
+            (!updateSchema || updateSchema.generate !== false)
+        ) {
             this.#data.updated_at = Date.now();
         }
 
         if (this.ready) this.#changed.push(prop);
 
-        if (!silent) this.emit('change', prop, value);
+        if (!silent) this.emit("change", prop, value);
 
         if (this.ready && !this.#valid && this.isValid) {
             this.#valid = true;
-            if (Model.debug) console.log('IS VALID NOW');
-            this.emit('valid');
+            if (Model.debug) console.log("IS VALID NOW");
+            this.emit("valid");
         }
+    }
 
+    isDirty(prop) {
+        if (!prop) return this.#changed.length > 0;
+        return this.#changed.includes(prop);
     }
 
     #initializeProperty(prop, value = null, schema) {
-
-        debug('initializeProperty', prop, value, schema);
+        // console.log('initializeProperty', prop, value, schema);
 
         const self = this;
         const readonly = schema.readonly;
 
+        if (value == undefined && schema.default) value = schema.default;
 
-        if (schema.type == 'json') {
+        if (schema.type == "json") {
             //JSON Collection
+            while (type(value, "string")) {
+                try {
+                    value = JSON.parse(value);
+                } catch (e) {
+                    value = {};
+                }
+            }
+
+            if (value == null) value = {};
+
             if (schema.collection) {
                 value = schema.collection.Collection(value);
-                value.on('change', (instance, iprop, value) => {
+                value.on("change", (instance, iprop, value) => {
                     this.#changed.push(prop);
-                    this.emit('change', prop, instance, iprop, value);
+                    this.emit("change", prop, instance, iprop, value);
                 });
             } else {
                 //Standard JSON
+                //console.log('WATCH', type(value), value);
 
-                Watch.deep(value || {}, (path, value) => {
+                Watch.deep(value, (path, value) => {
                     // app.log('Watch Deep Change', path, val);
-                    this.emit('change', path, value);
+                    this.emit("change", path, value);
                 });
             }
         }
 
         if (schema.required) this.#required.push(prop);
 
-
         if (value == null && schema.generate) {
             const gen = schema.generate.bind(this);
             value = gen();
-            debug('generated', value);
+            // console.log('generated', value);
         }
 
-        if (value === null && schema.default !== undefined) value = schema.default;
+        if (empty(value) && schema.default !== undefined) value = schema.default;
 
         if (this[prop] !== undefined) {
             value = this[prop];
@@ -449,71 +706,111 @@ class Model extends EventEmitter {
 
         Object.defineProperty(this, prop, propertyDef);
         //app.log('Defined', prop, value );
-        this.#setProperty(prop, value, schema)
+        this.#setProperty(prop, value, schema);
 
         // app.log('Initialized', prop );
     }
 
-
     // Initialize a relationship between models based on the specified type, key, value, and schema
-    #initializeRelationship(type, key, value, schema) {
+    async #initializeRelationship(relationType, key, value, schema) {
         // Extract relevant properties from the model schema
+        const self = this;
         const RelatedModel = schema.model;
-        const foreignKey = schema.foreignKey || this.foreignKey || this.static.foreignKey;
-        const localKey = schema.localKey || this.static.primaryKey;
-        let relation;
+        const foreignKey = schema.foreignKey || this.foreignKey;
+        const localKey = schema.localKey || this.localKey;
+        let relation, loadRelationship;
+
+        //console.log(relationType, key, value, schema);
+
+        RelatedModel.useDatabase(this.static.db);
 
         // Log initialization details for debugging
-        debug('MODEL INIT RELATIONSHIP', type, key, value, schema);
+        //console.log('MODEL INIT RELATIONSHIP', relationType, key, value, schema);
 
-        // Create the appropriate type of relationship based on the given type
-        if (type === 'hasMany') {
-            // If it's a 'hasMany' relationship, create a collection
-            relation = RelatedModel.Collection(value);
-            relation.setParent(this);
-        } else {
-            // For 'belongsTo' and 'hasOne', create a model instance
-            if(value){
-            relation = new RelatedModel(value || (type === 'belongsTo' && this[schema.localKey]), { parent: this });
-            }else{
-                relation =  RelatedModel.where({
-                    [this.foreignKey]: this[this.primaryKey]
-                }).first();
+        function attachEvents() {
+            // Attach event listeners for change events on the relationship
+            relation.on("change", (instance, iprop, rvalue) => {
+                if (self.ready) self.protected.relatedChanged.push(key);
+                self.emit("change", key, instance, iprop, rvalue);
+            });
 
-                debug(relation);
-            }
-            // Set the foreign key if it's not a 'hasMany' relationship
-            if (type !== 'hasMany') {
-                relation[foreignKey] = this[localKey];
-            }
-        }
-
-        // Attach event listeners for change events on the relationship
-        relation.on('change', (instance, iprop, rvalue) => {
-            if (this.ready) this.protected.relatedChanged.push(key);
-            this.emit('change', key, instance, iprop, rvalue);
-        });
-
-        // For 'hasMany' relationships, handle 'saved' event to remove the changed flag
-        if (type === 'hasMany') {
-            relation.on('saved', () => {
-                this.protected.relatedChanged.remove(key);
+            // For 'hasMany' relationships, handle 'saved' event to remove the changed flag
+            relation.on("saved", () => {
+                self.protected.relatedChanged.remove(key);
             });
         }
 
+        // Create the appropriate type of relationship based on the given relationType
+        if (relationType === "hasMany") {
+            // If it's a 'hasMany' relationship, create a collection
+            // console.log('HAS MANY', key, value)
+            if (value) {
+                relation = RelatedModel.Collection(value);
+                relation.setParent(this);
+                attachEvents();
+            } else {
+                loadRelationship = function loadRelationship() {
+                    const query = RelatedModel.where({
+                        [foreignKey]: self[localKey],
+                    });
+                    //  console.log(query);
+                    if (schema.orderBy) query.orderBy(schema.orderBy);
+                    relation = query.all();
+                    relation.setParent(self);
+                    attachEvents();
+                    return relation;
+                };
+            }
+        } else {
+            const _with = RelatedModel.with.slice(0);
+
+            // For Single record create a model instance
+            if (relationType === "belongsTo" && schema.localKey) {
+            }
+            if (value) {
+                relation = new RelatedModel(value, { parent: this, with: [] });
+                // Set the foreign key if it's not a 'hasMany' relationship
+                relation[foreignKey] = this[localKey];
+                attachEvents();
+            } else {
+                loadRelationship = function loadRelationship() {
+                    relation = RelatedModel.where(
+                        {
+                            [foreignKey]: self[localKey],
+                        },
+                        { parent: self, with: [] }
+                    ).first();
+                    relation.setParent(self);
+                    if (!relation[foreignKey]) relation[foreignKey] = self[localKey];
+                    attachEvents();
+                    return relation;
+                };
+            }
+        }
+
+        if (loadRelationship && this.protected.with.includes(key)) {
+            loadRelationship();
+        }
+
         // Store relationship metadata in the model's relationships object
-        this.relationships[key] = { type, ...schema };
+        this.relationships[key] = { type: relationType, ...schema };
 
         // Define property getter and setter for the relationship
         Object.defineProperty(this, key, {
             get() {
-                return relation;
+                //Allow Lazy Load
+                if (!relation) loadRelationship();
+
+                return schema.pluck ? relation[schema.pluck] : relation;
             },
             set(data) {
-                debug('SET RELATION', key, data);
+                //console.log('SET RELATION', key, data);
+                if (schema.pluck) {
+                    relation[schema.pluck] = data;
+                }
                 if (empty(data)) {
                     relation.reset();
-                    if (type !== 'hasMany') {
+                    if (relationType !== "hasMany") {
                         relation[foreignKey] = this[localKey];
                     }
                     return;
@@ -521,85 +818,93 @@ class Model extends EventEmitter {
 
                 // Handle different data types: RelatedModel instance, array, or object
                 if (data instanceof RelatedModel) {
-                    if (type === 'hasMany' && Array.isArray(data)) {
+                    if (relationType === "hasMany" && Array.isArray(data)) {
                         relation.update(data);
-                    } else if (type !== 'hasMany' && typeof data === 'object') {
+                    } else if (relationType !== "hasMany" && typeof data === "object") {
                         relation.reset(data);
                     } else {
                         relation.push(data);
                     }
                 } else {
                     // Throw an error if the data type is not allowed in the relationship
-                    throw new Error(`Trying to add Model of ${data.constructor.name} to relation when only ${RelatedModel.name} allowed`);
+                    throw new Error(
+                        `Trying to add Model of ${data.constructor.name} to relation when only ${RelatedModel.name} allowed`
+                    );
                 }
 
                 // Update the foreign key and track changes if the model is ready
                 if (this.ready) this.protected.relatedChanged.push(key);
-                if (type !== 'hasMany') relation[foreignKey] = this[localKey];
-            }
+                if (relationType !== "hasMany") relation[foreignKey] = this[localKey];
+            },
         });
     }
 
-
     initialize(data = {}) {
+        //console.log('INITIALIZE MODEL', data);
         const schema = this.static.schema;
 
-        this.primaryKey = this.static.primaryKey || 'id';
-
+        this.primaryKey = this.static.primaryKey;
+        this.foreignKey = this.static.foreignKey;
+        this.localKey = this.static.localKey;
+        this.primaryLabel = this.static.primaryLabel;
+        // console.log(data);
         for (let prop in schema) {
-            this.#initializeProperty(prop, data[prop] || null, schema[prop]);
+            const propValue = data[prop];
+            // console.log(prop, propValue);
+            this.#initializeProperty(prop, data[prop] || undefined, schema[prop]);
         }
 
         if (this.static.timestamps) {
-            this.#initializeProperty('created_at', data.created_at || null, { type: 'timestamp', silent: true });
-            this.#initializeProperty('updated_at', data.updated_at || null, { type: 'timestamp', silent: true });
-            this.#initializeProperty('deleted_at', data.deleted_at || null, { type: 'timestamp' });
+            this.#initializeProperty("created_at", data.created_at || null, { type: "timestamp", silent: true });
+            this.#initializeProperty("updated_at", data.updated_at || null, { type: "timestamp", silent: true });
+            this.#initializeProperty("deleted_at", data.deleted_at || null, { type: "timestamp" });
         }
 
-        if (this.protected.with.length) {
+        //Setup Accessors
+        if (this.protected.with.length || this.protected.appends.length) {
+            //* Include "With" and "Appends" Attribute merged Accessors
+            const addonFields = this.protected.with.merge(this.protected.appends);
 
-            //* Include "With" Attribute Accessors
-
-            for (let prop of this.protected.with) {
+            for (let prop of addonFields) {
+                //Get Accessor Name
                 const accessor = studly(`get_${prop}_attribute`);
-
-                if (type(this[accessor], 'function') && !schema[prop]) {
+                //If Accessor Exists and not in schema set it up
+                if (type(this[accessor], "function") && !schema[prop]) {
                     Object.defineProperty(this, prop, {
-                        get: () => this[accessor](this.#data[prop]),
-                        set: () => false
+                        get: () => this[accessor](),
+                        set: () => false,
                     });
                 }
             }
         }
 
+        //If Id is set try to pull record from DB
+        if (!empty(data) && data[this.primaryKey]) {
+            this.pull();
+        }
+
+        //Initialize Relationships
         let relatedKey;
-        if (Object.keys(this.static.hasMany).length) {
-            for (relatedKey in this.static.hasMany) {
-                //if(this.protected.with.has(relatedKey))
-                this.#initializeRelationship('hasMany', relatedKey, data[relatedKey], this.static.hasMany[relatedKey]);
-            }
-        }
-
-        if (Object.keys(this.static.hasOne).length) {
-            // debug(this.static.hasOne);
-            for (relatedKey in this.static.hasOne) {
-                //if (this.protected.with.has(relatedKey))
-                this.#initializeRelationship('hasOne', relatedKey, data[relatedKey], this.static.hasOne[relatedKey]);
-            }
-        }
-
-        if (Object.keys(this.static.belongsTo).length) {
-            for (relatedKey in this.static.belongsTo) {
-                // if (this.protected.with.has(relatedKey))
-                this.#initializeRelationship('belongsTo', relatedKey, data[relatedKey], this.static.belongsTo[relatedKey]);
+        const relationTypes = ["hasOne", "hasMany", "hasProperty", "belongsTo"];
+        for (let relationType of relationTypes) {
+            if (Object.keys(this.static[relationType]).length) {
+                for (relatedKey in this.static[relationType]) {
+                    this.#initializeRelationship(
+                        relationType,
+                        relatedKey,
+                        data[relatedKey],
+                        this.static[relationType][relatedKey]
+                    );
+                }
             }
         }
 
         // app.log('data initialized ', this.#data)
         this.ready = true;
         if (this.onReady) this.onReady();
-
     }
 }
+
+EventEmitter.bind(Model);
 
 export default Model;
