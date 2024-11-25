@@ -16,6 +16,11 @@ class LookupChain {
         return this;
     }
 
+    sum(column, alias) {
+        this.chain.columns = `SUM(${column}) AS ${alias || column + "s"}`;
+        return this;
+    }
+
     where(conditions) {
         this.chain.conditions = conditions;
         return this;

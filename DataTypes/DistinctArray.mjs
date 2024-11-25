@@ -30,7 +30,7 @@ class DistinctArray extends Array {
         return new DistinctArray(...set);
     }
 
-    constructor(items = []) {
+    constructor(...items) {
         super();
         this.push(...items);
     }
@@ -44,8 +44,14 @@ class DistinctArray extends Array {
     }
 
     remove(...items) {
+        if (items.length === 0) return;
         const set = new Set(items);
-        this.splice(0, this.length, ...this.filter((item) => !set.has(item)));
+        if (set.size === 0) return;
+        try {
+            this.splice(0, this.length, ...this.filter((item) => !set.has(item)));
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     has(item) {

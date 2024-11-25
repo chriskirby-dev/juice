@@ -38,6 +38,15 @@ class Model extends EventEmitter {
         return this.constructor;
     }
 
+    /**
+     * Creates a new Collection instance from the given data. If no data is
+     * provided, an empty array is used. If data is not an array, an error is
+     * thrown.
+     *
+     * @param {Array} [data] - Data to be inserted into collection
+     * @returns {Proxy} - A proxy object for the collection
+     * @throws {Error} - If data is not an array
+     */
     static Collection(data) {
         if (data && !type(data, "array")) {
             if (Model.debug) console.log(data);
@@ -51,6 +60,13 @@ class Model extends EventEmitter {
         return new Collection(data, this);
     }
 
+    /**
+     * Deletes records from the database table that match the given conditions.
+     *
+     * @param {Object|any} conditions - The conditions to match records against.
+     * If not an object, it will be converted to an object using the primary key.
+     * @throws {TypeError} - If conditions is not an object and cannot be converted.
+     */
     static delete(conditions) {
         if (conditions && !type(conditions, "object")) {
             conditions = { [this.primaryKey]: conditions };
@@ -65,6 +81,10 @@ class Model extends EventEmitter {
     static max(property, conditions = {}) {
         console.log(this.db);
         return this.db.max(this.tableName, property, conditions);
+    }
+
+    static sum(property, conditions = {}) {
+        return this.db.sum(this.tableName, property, conditions);
     }
 
     static select(...columns) {

@@ -81,6 +81,11 @@ class SQLiteDatabase extends Database {
         return this.db.prepare(cmd.statement).get(...cmd.args).MAX;
     }
 
+    sum(table, column, conditions) {
+        const cmd = SQL.sum(table, column, conditions);
+        return this.db.prepare(cmd.statement).get(...cmd.args).SUM;
+    }
+
     addModel(Model) {
         if (!Model) return;
         Model.db = this;

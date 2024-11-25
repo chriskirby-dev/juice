@@ -49,6 +49,10 @@ export function floor(n) {
     return Math.floor(n);
 }
 
+export function between(value, min, max) {
+    return value >= min && value <= max;
+}
+
 export const { cos, sin, atan, atan2, PI, abs, sqrt, min, max, pow } = Math;
 
 export default {

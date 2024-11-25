@@ -63,6 +63,11 @@ export function normalCase(value, seperator = "_") {
         .replace(" ", seperator);
 }
 
+export function dashed(value) {
+    let dashed = value.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+    return dashed.charAt(0) == "-" ? dashed.slice(1) : dashed;
+}
+
 class StringUtil {
     static upper = toUpper;
     static lower = toLower;
