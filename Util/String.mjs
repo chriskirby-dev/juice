@@ -68,30 +68,30 @@ export function dashed(value) {
     return dashed.charAt(0) == "-" ? dashed.slice(1) : dashed;
 }
 
-class StringUtil {
-    static upper = toUpper;
-    static lower = toLower;
+export default {
+    upper: toUpper,
+    lower: toLower,
 
-    static seperators() {
+    seperators() {
         return ["-", "_", " "];
-    }
+    },
 
-    static words = words;
+    words,
 
-    static ucword = ucword;
+    ucword,
 
-    static ucwords = ucwords;
+    ucwords,
 
-    static replaceAll = replaceAll;
+    replaceAll,
 
-    static tpl(string, args) {
+    tpl(string, args) {
         var replacer = function (p, c) {
             return p.replace(/%s/, c);
         };
         return args.reduce(replacer, string);
-    }
+    },
 
-    static sprintx(string, args = [], tokens = []) {
+    sprintx(string, args = [], tokens = []) {
         let out = string;
         for (let i = 0; i < args.length; i++) {
             out = out.replace(`%${tokens[i]}...`, args[i].join(", "));
@@ -101,33 +101,33 @@ class StringUtil {
             out = args[i].reduce(replacer, out);
         }
         return out;
-    }
+    },
 
-    static sprintf(string, args) {
+    sprintf(string, args) {
         const tokens = [...args];
         var replacer = function (p, c) {
             args.shift();
             return p.replace(/%s/, c);
         };
         return tokens.reduce(replacer, string);
-    }
+    },
 
-    static sprintMake(string, args) {
+    sprintMake(string, args) {
         var replacer = function (p, c) {
             return p.replace(c, "%s");
         };
         return args.reduce(replacer, string);
-    }
+    },
 
-    static pascalCase = pascalCase;
+    pascalCase,
 
-    static unPascal = unPascal;
+    unPascal,
 
-    static studly = studly;
+    studly,
 
-    static unStudly = unStudly;
+    unStudly,
 
-    static camel(value) {
+    camel(value) {
         const parts = value.split(/[_-\s]/);
         return (
             parts.shift().toLowerCase() +
@@ -137,21 +137,19 @@ class StringUtil {
                 })
                 .join("")
         );
-    }
+    },
 
-    static dashed(value) {
+    dashed(value) {
         let dashed = value.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
         return dashed.charAt(0) == "-" ? dashed.slice(1) : dashed;
-    }
+    },
 
-    static computize(value) {
+    computize(value) {
         if (!value) return "";
         value = value.replace(/[\[\]]/g, "-");
         return value
             .replace(/[^a-zA-Z0-9 -]/g, "")
             .replace(/\s/g, "-")
             .toLowerCase();
-    }
-}
-
-export default StringUtil;
+    },
+};

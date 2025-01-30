@@ -55,7 +55,6 @@ class LookupChain {
         if (_offset) this.chain.offset = _offset;
         const { Model } = this;
         const { columns = ["*"], conditions = {}, order, limit, offset } = this.chain;
-        // console.log(this);
         const all = Model.db.all(Model.tableName, columns.join(", "), conditions, order, limit, offset);
         return Model.Collection(all, this.options);
     }

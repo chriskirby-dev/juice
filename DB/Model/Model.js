@@ -48,15 +48,15 @@ class Model extends EventEmitter {
      * @throws {Error} - If data is not an array
      */
     static Collection(data) {
-        if (data && !type(data, "array")) {
+        console.log(!type(data, "object"));
+        if (data && !type(data, "array") && !type(data, "object")) {
             if (Model.debug) console.log(data);
-            throw new Error(`Collection ${this.name} must supply array or null ${typeof data} provided`, data);
+            throw new Error(
+                `Collection ${this.name} must supply array or null ${typeof data} provided: ` + JSON.stringify(data)
+            );
         } else if (empty(data)) {
             data = [];
         }
-
-        // console.log(data);
-
         return new Collection(data, this);
     }
 
@@ -103,6 +103,10 @@ class Model extends EventEmitter {
         return new this(this.db.first(this.tableName, ["*"], { [this.primaryKey]: id }));
     }
 
+    static fromPrimary(primary) {
+        return new this(this.db.first(this.tableName, ["*"], { [this.primaryKey]: primary }));
+    }
+
     static find(conditions, options) {
         if (conditions && !type(conditions, "object")) {
             conditions = { [this.primaryKey]: conditions };
@@ -124,11 +128,6 @@ class Model extends EventEmitter {
     form() {
         return FormBuilder.buildFromSchema(this.static.schema, this.toJson());
     }
-
-    static get hasProperty() {
-        return {};
-    }
-
     static get hasOne() {
         return {};
     }
@@ -138,6 +137,10 @@ class Model extends EventEmitter {
     }
 
     static get belongsTo() {
+        return {};
+    }
+
+    static get hasProperty() {
         return {};
     }
 
@@ -204,9 +207,58 @@ class Model extends EventEmitter {
         }
     }
 
+    static import(data) {
+        const self = this;
+        const schema = this.schema;
+        const columns = Object.keys(schema);
+
+        function isMultipleRecords(d) {
+            //if not an array
+            if (!Array.isArray(d)) return false;
+            //if not all elements are objects
+            if (d.map((r) => type(r, "object")).includes(false)) return false;
+            return true;
+        }
+
+        if (isMultipleRecords(data)) {
+            return data.map((r) => self.import(r));
+        }
+
+        //Import Single record
+
+        const imported = [];
+        const record = new this();
+
+        for (let key of columns) {
+            let importConfig = schema[key].import || {};
+            if (importConfig.key && data[importConfig.key]) {
+                record[key] = data[importConfig.key];
+                imported.push(key);
+            }
+        }
+
+        for (let key of columns) {
+            if (imported.includes(key)) continue;
+            let importConfig = schema[key].import || {};
+            if (importConfig.run) {
+                record[key] = importConfig.run(data);
+                imported.push(key);
+            }
+
+            if (importConfig.exit && importConfig.exit(data)) {
+                return null;
+            }
+        }
+
+        record.save();
+
+        return record;
+    }
+
     constructor(data = {}, options = {}) {
         super();
 
+        //If passed data is a model, convert it to json
         if (data instanceof Model) data = data.toJson();
 
         //Save the arguments To allow for resetting it later
@@ -251,6 +303,10 @@ class Model extends EventEmitter {
 
         //If data exists but and is number, assume it is the primary key
         if (data && type(data, "number")) return this.static.fromId(data);
+        //If passed data is not an object, assume it is the primary key
+        if (!type(data, "object")) {
+            data = { [this.primaryKey]: data };
+        }
 
         //Initialize the model instance
         this.initialize(data);
@@ -258,6 +314,10 @@ class Model extends EventEmitter {
 
     setParent(parent) {
         this.parent = parent;
+    }
+
+    hasColumn(field) {
+        return this.static.properties.includes(field);
     }
 
     get data() {
@@ -353,12 +413,18 @@ class Model extends EventEmitter {
             this.emit("saved", this.toJson());
             this.#changed.reset();
             this.saved = true;
+            if (this.afterSave) this.afterSave();
             return;
         };
 
         if (this.exists) {
             //if data exists update
             if (this.beforeUpdate) data = this.beforeUpdate(data);
+
+            if (this.hasColumn("updated_at")) {
+                data.updated_at = new Date().toISOString();
+            }
+
             if (this.async) {
                 return this.db.update(this.static.tableName, data, { [primaryKey]: this[primaryKey] }).then(() => {
                     this.saveRelated().then(onComplete);
@@ -370,6 +436,9 @@ class Model extends EventEmitter {
             }
         } else {
             if (this.beforeCreate) data = this.beforeCreate(data);
+            if (this.hasColumn("created_at")) {
+                data.created_at = new Date().toISOString();
+            }
             if (this.async) {
                 return this.db.insert(this.static.tableName, data).then((insert) => {
                     this[primaryKey] = insert.lastInsertRowid;
@@ -417,6 +486,7 @@ class Model extends EventEmitter {
      */
 
     pull() {
+        if (!this.exists) return;
         if (this.async) {
             return this.db
                 .first(this.static.tableName, "*", {
@@ -610,6 +680,10 @@ class Model extends EventEmitter {
 
         if (schema.type == "int" && value !== null) value = parseInt(value);
 
+        if (schema.type == "url" && type(value, "string")) {
+            value = encodeURI(value);
+        }
+
         //If property has mutator attribute
         const mutator = studly(`set_${prop}_attribute`);
         if (this[mutator]) value = this[mutator](value);
@@ -629,6 +703,10 @@ class Model extends EventEmitter {
                     return false;
                 }
             }
+        }
+
+        if (empty(value) && !this.exists && schema.default) {
+            value = schema.default;
         }
 
         //Passed Error Checks so clear errors.
@@ -673,7 +751,7 @@ class Model extends EventEmitter {
         const self = this;
         const readonly = schema.readonly;
 
-        if (value == undefined && schema.default) value = schema.default;
+        if (value === undefined && schema.default) value = schema.default;
 
         if (schema.type == "json") {
             //JSON Collection
@@ -711,8 +789,6 @@ class Model extends EventEmitter {
             value = gen();
             // console.log('generated', value);
         }
-
-        if (empty(value) && schema.default !== undefined) value = schema.default;
 
         if (this[prop] !== undefined) {
             value = this[prop];
@@ -773,7 +849,6 @@ class Model extends EventEmitter {
                     const query = RelatedModel.where({
                         [foreignKey]: self[localKey],
                     });
-                    //  console.log(query);
                     if (schema.orderBy) query.orderBy(schema.orderBy);
                     relation = query.all();
                     relation.setParent(self);

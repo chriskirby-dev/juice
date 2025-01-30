@@ -64,8 +64,8 @@ class Migration extends Model {
         const fields = {};
 
         if (Model.timestamps) {
-            schema.updated_at = { type: "datetime", null: true };
-            schema.created_at = { type: "datetime" };
+            schema.updated_at = { type: "datetime", value: "CURRENT_TIMESTAMP" };
+            schema.created_at = { type: "datetime", default: "CURRENT_TIMESTAMP" };
             schema.deleted_at = { type: "datetime", null: true };
         }
 

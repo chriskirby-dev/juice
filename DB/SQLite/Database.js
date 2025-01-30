@@ -8,121 +8,125 @@ global.debug = console.log;
 class SQLiteDatabase extends Database {
     source = null;
 
-    constructor(path, options) {
-        super(new BetterSQLite3(path, options));
+    constructor(databasePath, dbOptions) {
+        super(new BetterSQLite3(databasePath, dbOptions));
+        this.databasePath = databasePath;
     }
 
-    hasTable(table) {
-        const exists = this.db.run(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`, [table]);
-        return exists.run();
+    hasTable(tableName) {
+        const query = `SELECT name FROM sqlite_master WHERE type='table' AND name = ?`;
+        const result = this.db.prepare(query).get(tableName);
+        return result !== undefined;
     }
 
-    createTable(table, fields) {
-        return this.db.exec(
-            `CREATE TABLE IF NOT EXISTS ${table} ( ${Object.keys(fields).map((f) => `${f} ${fields[f]}`)} )`
-        );
+    createTable(tableName, columnDefinitions) {
+        const columns = Object.keys(columnDefinitions)
+            .map((column) => `${column} ${columnDefinitions[column]}`)
+            .join(", ");
+        const query = `CREATE TABLE IF NOT EXISTS ${tableName} (${columns})`;
+        console.log(query);
+        return this.db.exec(query);
     }
 
-    addColumnToTable(table, column, schema) {
-        const definition = Migration.compileField(column, schema);
-        return this.db.exec(`ALTER TABLE ${table} ADD ${column} ${definition}`);
+    addColumn(table, column, columnDefinition) {
+        const definition = Migration.compileField(column, columnDefinition);
+        const query = `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`;
+        return this.db.exec(query);
     }
 
-    insert(table, data) {
-        const cmd = SQL.insert(table, data);
-        return this.db.prepare(cmd.statement).run(cmd.args);
+    insert(tableName, rowData) {
+        const command = SQL.insert(tableName, rowData);
+        return this.db.prepare(command.statement).run(command.args);
     }
 
-    insertAll(table, list) {
-        const cmd = SQL.insert(table, list[0]);
-        newRecord = this.db.prepare(cmd.statement);
-        this.db.transaction((item) => {
-            newRecord(Object.values(item));
-        })(list);
+    insertAll(tableName, records) {
+        const statement = SQL.insert(tableName, records[0]).statement;
+        const insert = this.db.prepare(statement);
+        this.db.transaction(() => {
+            records.forEach((record) => {
+                insert.run(...Object.values(record));
+            });
+        })();
     }
 
     first(table, columns, conditions) {
-        const cmd = SQL.select(table, columns, conditions);
-        //debug(cmd);
-        return this.db.prepare(cmd.statement).get(...cmd.args);
+        const { statement, args } = SQL.select(table, columns, conditions);
+        const result = this.db.prepare(statement).get(...args);
+        return result;
     }
 
-    all(table, columns, conditions, order, limit, offset) {
-        // debug(table, columns, conditions, order, limit, offset );
-        const cmd = new SQLStatement().select(table, columns, conditions).order(order).limit(limit).compile();
-        // debug(cmd);
+    all(table, columns = [], conditions = {}, order = {}, limit = null, offset = null) {
+        const cmd = new SQLStatement()
+            .select(table, columns, conditions)
+            .order(order)
+            .limit(limit)
+            .offset(offset)
+            .compile();
+        console.log(cmd);
         return this.db.prepare(cmd.statement).all(...cmd.args) || [];
     }
 
     update(table, data, conditions) {
-        const cmd = SQL.update(table, data, conditions);
-        console.log(cmd);
-        return this.db.prepare(cmd.statement).run(...cmd.args);
+        const { statement, args } = SQL.update(table, data, conditions);
+        return this.db.prepare(statement).run(...args);
     }
 
-    updateAll() {
-        const cmd = new SQLStatement().update(table, columns, conditions).order(order).limit(limit);
+    updateAll(table, data, conditions) {
+        const cmd = new SQLStatement().update(table, data, conditions).compile();
         return this.db.prepare(cmd.statement).run(...cmd.args);
     }
 
     delete(table, conditions) {
-        const cmd = SQL.delete(table, conditions);
-        return this.db.prepare(cmd.statement).run(cmd.args);
+        const deleteCommand = SQL.delete(table, conditions);
+        return this.db.prepare(deleteCommand.statement).run(deleteCommand.args);
     }
 
     count(table, conditions) {
-        const cmd = SQL.count(table, conditions);
-        // console.log(cmd);
-        return this.db.prepare(cmd.statement).get(...cmd.args).COUNT;
+        const query = SQL.count(table, conditions);
+        return this.db.prepare(query.statement).get(...query.args).COUNT;
     }
 
-    max(table, column, conditions) {
-        const cmd = SQL.max(table, column, conditions);
-        return this.db.prepare(cmd.statement).get(...cmd.args).MAX;
+    async max(table, column, conditions) {
+        const { statement, args } = SQL.max(table, column, conditions);
+        const result = this.db.prepare(statement).get(...args);
+        return result ? result.MAX : null;
     }
 
-    sum(table, column, conditions) {
-        const cmd = SQL.sum(table, column, conditions);
-        return this.db.prepare(cmd.statement).get(...cmd.args).SUM;
+    async sum(table, column, conditions) {
+        const { statement, args } = SQL.sum(table, column, conditions);
+        const result = this.db.prepare(statement).get(...args);
+        return result ? result.SUM : null;
     }
 
     addModel(Model) {
         if (!Model) return;
+
         Model.db = this;
         const tableName = Model.tableName;
-        const schema = Model.schema;
         const tableSchema = this.schema[tableName];
-
-        let useMigration = Model.name !== "Migration" ? true : false;
         const fields = Migration.compileFields(Model.schema, Model);
+        const useMigration = Model.name !== "Migration";
 
         if (!tableSchema) {
-            // debug('FIELDS', fields);
-            const create = this.createTable(tableName, fields);
-            // debug('CREATE', create);
-        } else {
-            let migration = Migration.fromModel(Model);
+            this.createTable(tableName, fields);
+        } else if (useMigration) {
+            const migration = Migration.fromModel(Model);
             const diff = migration.diff(fields);
             if (diff) {
-                //has updates
-                migration.update(diff, schema);
+                migration.update(diff, Model.schema);
             }
         }
 
         this.models[Model.name] = Model;
-        if (!this.tables[tableName]) this.tables[tableName] = {};
-        this.tables[tableName].model = Model;
+        this.tables[tableName] = { model: Model };
     }
 
-    registerFunction(name, fn, options) {
-        return this.db.function(name, options, fn);
+    registerFunction(name, func, options) {
+        return this.db.function(name, options, func);
     }
 
-    registerAggregate(name, options) {
-        /*options:
-            start, step, result
-        */
-        return this.db.aggregate(name, options);
+    registerAggregate(name, { start, step, finalize }) {
+        return this.db.aggregate(name, { start, step, finalize });
     }
 
     exec(sql) {
@@ -185,23 +189,34 @@ class SQLiteDatabase extends Database {
     }
 
     getTables() {
-        const internal = ["sqlite_sequence", "sqlite_schema", "sqlite_temp_schema"];
-        const tbl_list = this.db.pragma(`table_list`);
-        const tables = tbl_list.filter((tbl) => !internal.includes(tbl.name));
-        const resp = {};
-        for (let i = 0; i < tables.length; i++) {
-            resp[tables[i].name] = tables[i];
+        const internalTables = ["sqlite_sequence", "sqlite_schema", "sqlite_temp_schema"];
+        const tables = this.db.pragma("table_list").filter((table) => !internalTables.includes(table.name));
+        const tableList = {};
+        for (const table of tables) {
+            tableList[table.name] = table;
         }
-        return resp;
+        return tableList;
+    }
+
+    backup(destination) {
+        if (!destination) {
+            const date = new Date();
+            destination = `backup-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}.db`;
+        }
+        return this.db.backup(destination);
     }
 
     initialize() {
+        const hasBootTable = this.hasTable("boot");
+        if (!hasBootTable) {
+            this.createTable("boot", Migration.compileFields(Migration.schema, Migration));
+        }
+
         const tables = this.getTables();
-        for (let tableName in tables) {
+        for (const tableName of Object.keys(tables)) {
             const table = tables[tableName];
-            const tbl = this.tableInfo(table.name);
             const columns = {};
-            for (let column of tbl) {
+            for (const column of this.tableInfo(tableName)) {
                 columns[column.name] = column;
             }
             table.columns = columns;
@@ -209,7 +224,6 @@ class SQLiteDatabase extends Database {
         }
         this.schema = tables;
         this.addModel(Migration);
-        // debug('DB Schema', this.schema);
     }
 }
 

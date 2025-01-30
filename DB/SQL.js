@@ -44,7 +44,7 @@ export class SQLStatement {
         return this;
     }
 
-    offset() {
+    offset(...args) {
         this._offset = SQL.offset(...args);
         return this;
     }
@@ -78,7 +78,7 @@ export class SQL {
             resp.statement += Object.keys(params)
                 .map((prop) => {
                     if (typeof params[prop] == "string" && params[prop].startsWith("LIKE")) {
-                        const cmd = `${prop} LIKE '${params[prop].split(" ").pop()}%'`;
+                        const cmd = `${prop} LIKE '${params[prop].split(" ").pop()}'`;
                         delete params[prop];
                         return cmd;
                     }
@@ -174,8 +174,8 @@ export class SQL {
     }
 
     static offset(offset) {
-        if (empty(limit)) return;
-        return { statement: `OFFSET ?`, args: [limit] };
+        if (empty(offset)) return;
+        return { statement: `OFFSET ?`, args: [offset] };
     }
 }
 
