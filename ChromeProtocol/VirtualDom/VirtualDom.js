@@ -205,6 +205,8 @@ class VirtualDom extends DomainWrapper {
         debug("root", root);
         this.root = root;
 
+        this.emit("update", "reset", root);
+
         this.registerNode(root);
     }
 
@@ -227,7 +229,7 @@ class VirtualDom extends DomainWrapper {
 
         // await Page.loadEventFired();
         // Subscribe to DOM mutation events
-        await DOMDebugger.setEventListenerBreakpoint({ eventName: "subtree-modified" });
+        // await DOMDebugger.setEventListenerBreakpoint({ eventName: "subtree-modified" });
 
         // Get the root Document node1
 
@@ -239,10 +241,12 @@ class VirtualDom extends DomainWrapper {
 
         const attributeModified = ({ nodeId, name, value }) => {
             this.getNodeById(nodeId).setAttribute(name, value);
+            this.emit("update", "attribute-change", { nodeId, name, value });
         };
 
         const attributeRemoved = ({ nodeId, name }) => {
             this.getNodeById(nodeId).removeAttribute(name);
+            this.emit("update", "attribute-remove", { nodeId, name });
         };
 
         const characterDataModified = ({ nodeId, characterData }) => {
@@ -250,6 +254,7 @@ class VirtualDom extends DomainWrapper {
             if (vNode) {
                 vNode.data.nodeValue = characterData;
             }
+            this.emit("update", "character-data", { nodeId, characterData });
         };
 
         const nodeInserted = ({ parentNodeId, previousNodeId, node }) => {
@@ -261,6 +266,7 @@ class VirtualDom extends DomainWrapper {
                 const element = this.registerNode(node);
                 parent.addChild(element, previous);
             }
+            this.emit("update", "node-insert", { parentNodeId, previousNodeId, node });
         };
 
         const nodeRemoved = ({ parentNodeId, nodeId }) => {
@@ -270,6 +276,7 @@ class VirtualDom extends DomainWrapper {
             if (parent) {
                 parent.removeChild(child);
             }
+            this.emit("update", "node-remove", { parentNodeId, nodeId });
         };
 
         const setChildNodes = ({ parentId, nodes }) => {
@@ -284,6 +291,8 @@ class VirtualDom extends DomainWrapper {
                     return this.registerNode(node);
                 });
             }
+
+            this.emit("update", "child-nodes", { parentId, nodes });
         };
 
         DOM.childNodeInserted(nodeInserted);

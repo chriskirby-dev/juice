@@ -24,6 +24,24 @@ export function currentFile(meta) {
 root.currentFile = currentFile;
 
 class Juice {
+    static blend(...mixins) {
+        class Blended {
+            constructor(...args) {
+                for (const Mixin of mixins) {
+                    const mixinInstance = new Mixin(...args);
+                    copyProperties(this, mixinInstance);
+                }
+            }
+        }
+
+        for (const Mixin of mixins) {
+            copyProperties(Composite, Mixin);
+            copyProperties(Composite.prototype, Mixin.prototype);
+        }
+
+        return Blended;
+    }
+
     constructor() {
         this.root = root;
         this.resolve = import.meta.resolve;
@@ -31,6 +49,10 @@ class Juice {
         this.queues = new JuiceQueues();
         this.storage = new JuiceStorage();
         this.eventRegistry = {};
+    }
+
+    blend(...mixins) {
+        return Juice.blend(...mixins);
     }
 
     registerEvent(name, fn, args = []) {
@@ -41,54 +63,69 @@ class Juice {
         return `juice.dispatchEvent(this,'${name}')`;
     }
 
-    dispatchEvent(target, name, ...args) {
-        if (!this.eventRegistry[name]) {
-            return;
-        }
-        this.eventRegistry[name].forEach((fn) => fn(target, ...args));
-        return false;
+    dispatchEvent(target, eventName, ...args) {
+        const eventRegistry = this.eventRegistry;
+        const eventHandlers = eventRegistry[eventName];
+
+        if (!eventHandlers) return;
+
+        eventHandlers.forEach((handler) => handler(target, ...args));
     }
 
-    storage(bucket) {
+    storage(bucketName) {
         if (!this._storage) {
-            let buckets = localStorage.getItem("juice:storage:buckets");
-            if (buckets) {
-                buckets = JSON.parse(buckets);
-            } else {
-                buckets = [];
-            }
-
-            this._storage = {
-                buckets,
-            };
+            const buckets = JSON.parse(localStorage.getItem("juice:storage:buckets") || "[]");
+            this._storage = { buckets };
         }
-        localStorage;
+        const bucket = this._storage.buckets.find((b) => b.name === bucketName);
+        if (!bucket) return null;
+        return JSON.parse(localStorage.getItem(bucket.key) || "{}");
     }
 
     expose() {
-        (window || global).juice = this;
+        const globalScope = typeof window !== "undefined" ? window : global;
+        globalScope.juice = this;
     }
 
-    load(url, options = {}) {
-        const parsed = parseFilePath(file);
+    async load(url, { cache = false } = {}) {
+        const { ext } = parseFilePath(url);
+        let cachedContent = cache ? localStorage.getItem(`juice:cache:${url}`) : null;
 
-        function fileContentsLoaded(contents) {
-            if (options.cache) {
+        const fetchContent = async () => {
+            const response = await fetch(url);
+            return response.text();
+        };
+
+        let content = cachedContent;
+        if (!cachedContent) {
+            content = await fetchContent();
+            if (cache) {
+                localStorage.setItem(`juice:cache:${url}`, content);
             }
         }
 
-        switch (parsed.ext) {
+        const appendElement = (tagName, content) => {
+            const element = document.createElement(tagName);
+            if (tagName === "style" || tagName === "script") {
+                element.textContent = content;
+            } else {
+                element.innerHTML = content;
+            }
+            document.body.appendChild(element);
+        };
+
+        switch (ext) {
             case "css":
-                fetch(url)
-                    .then((r) => r.text())
-                    .then(fileContentsLoaded);
+                appendElement("style", content);
                 break;
             case "js":
-                break;
+                appendElement("script", content);
                 break;
             case "html":
+                appendElement("div", content);
                 break;
             default:
+                console.warn(`Unknown file extension: ${ext}`);
                 break;
         }
     }
@@ -108,13 +145,14 @@ juice.path = function (scope, relative) {
 };
 
 const callstack = [];
-juice.track = function (fn) {
-    return function (...args) {
+juice.track = function trackCall(fn) {
+    return function trackedCall(...args) {
+        const originalCallStackLength = callStack.length;
         callStack.push(fn);
         try {
             return fn.apply(this, args);
         } finally {
-            callStack.pop();
+            callStack.splice(originalCallStackLength, 1);
         }
     };
 };
@@ -124,26 +162,6 @@ juice.caller = function () {
         return null;
     }
     return callStack[callStack.length - 1];
-};
-
-juice.blend = function (...classes) {
-    class Blended {
-        constructor(...args) {
-            for (const Flavor of classes) {
-                // Create an instance of the mixin and call its constructor with the given arguments
-                const instance = new Flavor(...args);
-                // Copy properties from the instance to the Mixed instance
-                copyProperties(this, instance);
-            }
-        }
-    }
-
-    for (const Flavor of classes) {
-        copyProperties(Blended, Flavor);
-        copyProperties(Blended.prototype, Flavor.prototype);
-    }
-
-    return Blended;
 };
 
 export default juice;

@@ -5,6 +5,7 @@ import VirtualDom from "./VirtualDom/VirtualDom.js";
 import Debugger from "./Debugger.js";
 import Target from "./Target.js";
 import Page from "./Page/Page.js";
+import ChromeDebugWindow from "./UI/ChromeDebugWindow.js";
 import EventEmitter from "events";
 
 const domainWrappers = {
@@ -44,6 +45,10 @@ class ChromeProtocol extends EventEmitter {
         this.client = null;
 
         this.connect();
+    }
+
+    open() {
+        this.ui = new ChromeDebugWindow(this);
     }
 
     getTarget() {
