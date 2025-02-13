@@ -1,6 +1,6 @@
 import Parser from "./Parser.mjs";
 import { default as _render, updateElement, renderWithRefs } from "./Render.mjs";
-import { default as Element } from "./Element.mjs";
+import { default as vElement } from "./Element.mjs";
 import diff from "./Diff.mjs";
 import Util from "../Util/Core.mjs";
 
@@ -28,36 +28,7 @@ function vElementArgs(...args) {
     return el;
 }
 
-export class vElement {
-    static make(...args) {
-        const defaults = vElementArgs(...args);
-        return class extends vElement {
-            constructor(...args) {
-                const params = vElementArgs(...args);
-                super(
-                    defaults.tag || params.tag,
-                    Object.assign({}, defaults.attributes, params.attributes),
-                    defaults.children.concat(params.children),
-                    Object.assign({}, defaults.options, params.options)
-                );
-            }
-        };
-    }
-
-    constructor(...args) {
-        const params = vElementArgs(...args);
-        const { tag, attributes, children, options } = params;
-
-        const vElem = Object.create(null);
-
-        return Object.assign(vElem, {
-            tag,
-            attributes,
-            children,
-            options,
-        });
-    }
-}
+export { vElement };
 
 export const div = vElement.make("div");
 
@@ -69,7 +40,7 @@ export class VirtualDom {
     static element = vElement;
 
     static el(...args) {
-        return this.element(...args);
+        return new this.element(...args);
     }
 
     static create(vdom) {

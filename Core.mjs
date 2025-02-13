@@ -72,25 +72,28 @@ class Juice {
         eventHandlers.forEach((handler) => handler(target, ...args));
     }
 
-    storage(bucketName) {
-        if (!this._storage) {
-            const buckets = JSON.parse(localStorage.getItem("juice:storage:buckets") || "[]");
-            this._storage = { buckets };
-        }
-        const bucket = this._storage.buckets.find((b) => b.name === bucketName);
-        if (!bucket) return null;
-        return JSON.parse(localStorage.getItem(bucket.key) || "{}");
-    }
-
     expose() {
         const globalScope = typeof window !== "undefined" ? window : global;
         globalScope.juice = this;
     }
 
+    /**
+     * Loads a file from the given URL and appends it to the document body.
+     *
+     * @param {string} url URL of the file to load
+     * @param {Object} [options={}] Optional parameters
+     * @param {boolean} [options.cache=false] Whether to cache the loaded content in local storage
+     * @returns {Promise<void>}
+     */
     async load(url, { cache = false } = {}) {
         const { ext } = parseFilePath(url);
         let cachedContent = cache ? localStorage.getItem(`juice:cache:${url}`) : null;
 
+        /**
+         * Fetches the content of the given URL.
+         *
+         * @returns {Promise<string>}
+         */
         const fetchContent = async () => {
             const response = await fetch(url);
             return response.text();
@@ -104,6 +107,12 @@ class Juice {
             }
         }
 
+        /**
+         * Appends an element of the given tag name and content to the document body.
+         *
+         * @param {string} tagName Tag name of the element to append
+         * @param {string} content Content of the element
+         */
         const appendElement = (tagName, content) => {
             const element = document.createElement(tagName);
             if (tagName === "style" || tagName === "script") {

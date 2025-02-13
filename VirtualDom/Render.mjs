@@ -3,19 +3,20 @@ import Parser from "./Parser.mjs";
 
 import { type, empty } from "../Util/Core.mjs";
 
+const aliases = {
+    attributes: ["attrs"],
+    ns: ["namespace"],
+    tag: ["tagName"],
+    children: ["content"],
+};
+
 function conform(vNode) {
-    const aliases = {
-        attributes: ["attrs"],
-        ns: ["namespace"],
-        tag: ["tagName"],
-        children: ["content"],
-    };
-    for (let alias in aliases) {
-        if (empty(vNode[alias])) {
-            const existing = aliases[alias].filter((a) => vNode[a] !== undefined);
-            if (existing.length > 0) {
-                vNode[alias] = vNode[existing[0]];
-                delete vNode[existing[0]];
+    for (const key in aliases) {
+        if (empty(vNode[key])) {
+            const aliasKey = aliases[key].find((alias) => vNode[alias] !== undefined);
+            if (aliasKey) {
+                vNode[key] = vNode[aliasKey];
+                delete vNode[aliasKey];
             }
         }
     }
@@ -55,64 +56,66 @@ export const updateElement = ($parent, newNode, oldNode, index = 0) => {
 //vNode: Virtual dom element In the form of the object consisting of:
 //tag: The tag name of the element
 
-const renderEl = (vNode, refs = null) => {
-    conform(vNode);
-
-    //If V node is null or undefined create empty text node
+const renderElement = (vNode, withRefs, refs = {}) => {
+    vNode = conformVNode(vNode);
     if (!vNode) return document.createTextNode("");
-    //If the vnode is the text node representing that strings a type of string
-    if (type(vNode, "string")) return document.createTextNode(vNode);
-    //If V node is in an array create a document fragment and add each node to it
-    else if (type(vNode, "array")) {
+    if (typeof vNode === "string") return document.createTextNode(vNode);
+    if (Array.isArray(vNode)) {
         const fragment = document.createDocumentFragment();
-        vNode.forEach((node) => fragment.append(renderEl(node)));
+        vNode.forEach((node) => fragment.appendChild(renderElement(node)));
         return fragment;
     }
-    if (!vNode.options) vNode.options = {};
-    const { tag, attributes, children = [], options = {} } = vNode;
-
-    //If tag is not specified but attributes are present and must be an element default to div
+    const { tag, attributes = {}, children = [], options = {} } = vNode;
     if (!tag && attributes) tag = "div";
     if (!tag) return "";
-    ///console.log(vNode);
-    let el = options.namespace ? document.createElementNS(options.namespace, tag) : document.createElement(tag);
-
-    for (const [k, v] of Object.entries(attributes)) {
-        if (refs && k == "ref") refs[k] = el;
-        // console.log(el);
+    const element = options.namespace ? document.createElementNS(options.namespace, tag) : document.createElement(tag);
+    for (const [key, value] of Object.entries(attributes)) {
+        if (key === "ref") refs[key] = element;
         try {
-            el.setAttribute(k, v);
-        } catch (e) {
-            console.warn(e);
+            element.setAttribute(key, value);
+        } catch (error) {
+            console.warn(error);
         }
     }
-
     if (options.events) {
-        for (let event in options.events) {
-            el.addEventListener(event, options.events[event], false);
+        for (const event in options.events) {
+            element.addEventListener(event, options.events[event], false);
         }
     }
-
     if (!attributes["data-vid"]) {
         attributes["data-vid"] = nextId();
     }
-
-    if (typeof children == "string") children = [children];
-
+    if (typeof children === "string") children = [children];
     for (const child of children) {
-        if (tag.toLowerCase() == "template") {
-            el.innerHTML += child;
+        if (tag.toLowerCase() === "template") {
+            element.innerHTML += child;
         } else {
-            const _child = renderEl(child, refs);
-            el.appendChild(Array.isArray(_child) ? _child[0] : _child);
+            const renderedChild = renderElement(child, withRefs, refs);
+            element.appendChild(renderedChild);
         }
     }
+    return withRefs ? [element, refs] : element;
+};
 
-    return refs ? [el, refs] : el;
+const conformVNode = (vNode) => {
+    for (const key in aliases) {
+        if (vNode[key] === undefined) {
+            const aliasKey = aliases[key].find((alias) => vNode[alias] !== undefined);
+            if (aliasKey) {
+                vNode[key] = vNode[aliasKey];
+                delete vNode[aliasKey];
+            }
+        }
+    }
+    if (vNode.ns) {
+        vNode.options.namespace = vNode.ns;
+        delete vNode.ns;
+    }
+    return vNode;
 };
 
 function VDomRender(vNode) {
-    this.vdom = renderEl(vNode, {});
+    this.vdom = renderElement(vNode, {});
     console.log(this.vdom);
 
     this.ref = function (id) {
@@ -130,14 +133,14 @@ const render = (vNode) => {
         return document.createTextNode(vNode);
     }
 
-    return renderEl(vNode);
+    return renderElement(vNode);
 };
 
 export const renderWithRefs = (vNode, refs = {}) => {
     if (typeof vNode === "string") {
         return document.createTextNode(vNode);
     }
-    return renderEl(vNode, {});
+    return renderElement(vNode, {});
 };
 
 export default render;
