@@ -1,6 +1,9 @@
 import { Node, TextNode, Document, Frame } from "./Node.js";
 import DomainWrapper from "../DomainWrapper.js";
 import Helper from "./Helper.js";
+import Tree from "./Tree.js";
+
+import { createDelay } from "../../Util/Timers.mjs";
 
 class VirtualDom extends DomainWrapper {
     static uses = ["DOM", "Page", "DOMDebugger", "Runtime"];
@@ -10,15 +13,25 @@ class VirtualDom extends DomainWrapper {
 
     async getRootElement(depth = -1) {
         const { DOM } = this.domains;
-        const { root } = await DOM.getDocument({
-            depth: depth,
+
+        const { root: rootElement } = await DOM.getDocument({
+            depth,
             pierce: true,
         });
-        if (!root) {
-            throw new Error("Failed to retrieve the root document node.");
+
+        if (!rootElement) {
+            throw new Error("Failed to retrieve the root document element.");
         }
-        debug("getRootElement", root);
-        return root;
+
+        return rootElement;
+    }
+
+    get rootNode() {
+        return this.getNodeByBackendId(this.root.backendNodeId);
+    }
+
+    async getTree() {
+        return new Tree(this);
     }
 
     async querySelectorBackend(selector, backendNodeId) {
@@ -69,7 +82,7 @@ class VirtualDom extends DomainWrapper {
 
     registerNode(node, frame) {
         const { nodeId, backendNodeId } = node;
-        debug("registerNode", node, nodeId, backendNodeId);
+        //debug("registerNode", node, nodeId, backendNodeId);
 
         let children = [];
         let shadows = [];
@@ -123,7 +136,7 @@ class VirtualDom extends DomainWrapper {
 
     removeNode(node) {
         const { nodeId, backendId, parentId } = node;
-        debug("removeNode", node, nodeId, backendId);
+        //debug("removeNode", node, nodeId, backendId);
 
         delete this.index.backend[backendId];
         delete this.index.id[nodeId];
@@ -191,29 +204,38 @@ class VirtualDom extends DomainWrapper {
         const { DOM, Page } = this.domains;
         if (this.readyBusy == true) return;
         this.readyBusy = true;
-        this.ReadyTO = setTimeout(async () => {
-            this.readyBusy = false;
-        }, 500);
 
-        this.reset();
+        console.log("onDomContentReady");
 
         const { root } = await DOM.getDocument({
             depth: -1,
             pierce: true,
         });
 
-        debug("root", root);
-        this.root = root;
+        this.reset(root);
+
+        console.log("root", root);
+
+        this.registerNode(root);
 
         this.emit("update", "reset", root);
 
-        this.registerNode(root);
+        this.delay(500).then(() => {
+            // this.emit("ready");
+            this.readyBusy = false;
+        });
+
+        if (!this.contentFirstLoaded) {
+            this.emit("first-loaded");
+            this.contentFirstLoaded = true;
+        }
+        return true;
     }
 
-    reset() {
+    reset(root) {
         this.nodes = [];
         this.index = { id: [], backend: [] };
-        this.root = {};
+        this.root = root || {};
     }
 
     get documents() {
@@ -221,114 +243,100 @@ class VirtualDom extends DomainWrapper {
     }
 
     async initialize() {
-        debug("VDOM init");
+        this.delay = createDelay();
         const { DOM, Page, DOMDebugger } = this.domains;
 
         Node.DOM = DOM;
         Node.vdom = this;
 
-        // await Page.loadEventFired();
-        // Subscribe to DOM mutation events
-        // await DOMDebugger.setEventListenerBreakpoint({ eventName: "subtree-modified" });
+        this.reset();
 
-        // Get the root Document node1
+        await this.onDomContentReady();
 
         DOM.childNodeCountUpdated((data) => {
-            debug("childNodeCountUpdated", data);
             const node = this.getNodeById(data.nodeId);
-            debug(node);
+            if (node) {
+                node.data.childNodeCount = data.newChildNodeCount;
+            }
+            this.emit("update", "child-nodes-count", data);
         });
 
-        const attributeModified = ({ nodeId, name, value }) => {
-            this.getNodeById(nodeId).setAttribute(name, value);
+        DOM.attributeModified(({ nodeId, name, value }) => {
+            const node = this.getNodeById(nodeId);
+            if (node) {
+                node.setAttribute(name, value);
+            }
             this.emit("update", "attribute-change", { nodeId, name, value });
-        };
+        });
 
-        const attributeRemoved = ({ nodeId, name }) => {
-            this.getNodeById(nodeId).removeAttribute(name);
+        DOM.attributeRemoved(({ nodeId, name }) => {
+            const node = this.getNodeById(nodeId);
+            if (node) {
+                node.removeAttribute(name);
+            }
             this.emit("update", "attribute-remove", { nodeId, name });
-        };
+        });
 
-        const characterDataModified = ({ nodeId, characterData }) => {
+        DOM.characterDataModified(({ nodeId, characterData }) => {
             const vNode = this.getNodeById(nodeId);
             if (vNode) {
                 vNode.data.nodeValue = characterData;
             }
             this.emit("update", "character-data", { nodeId, characterData });
-        };
+        });
 
-        const nodeInserted = ({ parentNodeId, previousNodeId, node }) => {
-            debug("nodeInserted", node);
-            node.parentId = parentNodeId;
+        DOM.setChildNodes(({ parentId, nodes }) => {
+            const parent = this.getNodeById(parentId);
+            if (parent) {
+                parent.data.children = [];
+                nodes.forEach((node) => {
+                    node.parentId = parentId;
+                    parent.data.children.push(node.backendNodeId);
+                    this.registerNode(node);
+                });
+            }
+            this.emit("update", "child-nodes", { parentId, nodes });
+        });
+
+        DOM.childNodeInserted(({ parentNodeId, previousNodeId, node }) => {
             const parent = this.getNodeById(parentNodeId);
-            const previous = this.getNodeById(previousNodeId);
             if (parent) {
                 const element = this.registerNode(node);
-                parent.addChild(element, previous);
+                parent.addChild(element, previousNodeId);
             }
             this.emit("update", "node-insert", { parentNodeId, previousNodeId, node });
-        };
+        });
 
-        const nodeRemoved = ({ parentNodeId, nodeId }) => {
-            debug("childNodeRemoved", nodeId);
+        DOM.childNodeRemoved(({ parentNodeId, nodeId }) => {
             const parent = this.getNodeById(parentNodeId);
             const child = this.getNodeById(nodeId);
             if (parent) {
                 parent.removeChild(child);
             }
             this.emit("update", "node-remove", { parentNodeId, nodeId });
-        };
-
-        const setChildNodes = ({ parentId, nodes }) => {
-            debug("setChildNodes", parentId, nodes);
-            const parent = this.getNodeById(parentId);
-
-            if (parent) {
-                parent.data.children = [];
-                nodes.map((node) => {
-                    node.parentId = parentId;
-                    parent.data.children.push(node.backendNodeId);
-                    return this.registerNode(node);
-                });
-            }
-
-            this.emit("update", "child-nodes", { parentId, nodes });
-        };
-
-        DOM.childNodeInserted(nodeInserted);
-        DOM.childNodeRemoved(nodeRemoved);
-        DOM.characterDataModified(characterDataModified);
-        DOM.attributeModified(attributeModified);
-        DOM.attributeRemoved(attributeRemoved);
-
-        DOM.setChildNodes(setChildNodes);
+        });
 
         DOM.distributedNodesUpdated((data) => {
-            debug("distributedNodesUpdated", data);
-            // if(this.state == 'loading') this.resetContentReadyEvent();
+            this.emit("update", "distributed-nodes", data);
         });
 
         DOM.shadowRootPopped((data) => {
-            debug("shadowRootPopped ", data);
-            // if(this.state == 'loading') this.resetContentReadyEvent();
+            this.emit("update", "shadow-root-popped", data);
         });
 
         DOM.shadowRootPushed((data) => {
-            debug("shadowRootPushed", data);
-            // if(this.state == 'loading') this.resetContentReadyEvent();
+            this.emit("update", "shadow-root-pushed", data);
         });
 
         DOM.topLayerElementsUpdated((data) => {
-            debug("topLayerElementsUpdated", data);
-            // if(this.state == 'loading') this.resetContentReadyEvent();
+            this.emit("update", "top-layer-elements", data);
         });
 
-        DOM.documentUpdated(this.onDomContentReady.bind(this));
-        Page.domContentEventFired(this.onDomContentReady.bind(this));
-        this.onDomContentReady();
-        debug("VDOM Listeners Added");
+        //DOM.documentUpdated(this.onDomContentReady.bind(this));
+        //Page.domContentEventFired(this.onDomContentReady.bind(this));
 
-        return;
+        this.cdp.webContents.on("dom-ready", this.onDomContentReady.bind(this));
+        this.onDomContentReady();
     }
 }
 

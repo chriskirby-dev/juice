@@ -12,50 +12,67 @@ import VDomParser from "./Parser.mjs";
 class VDom {
     #references = {};
     html = "";
-    tpl;
+    template;
     vdom;
     dom;
     virtual;
     #staged = null;
     #rendered = null;
-    CONTAINER_VDOM = {
+    containerVDom = {
         tag: "div",
         attributes: { class: "vdom--container" },
         children: [],
     };
 
+    /**
+     * @param {string|VDom} [content] - HTML string or VDom object to be rendered.
+     * @param {Object} [options] - Options object.
+     * @param {HTMLElement} [options.container] - Element to render the VDom into.
+     * @param {Object} [options.scope] - Object to scope the rendering to.
+     * @param {boolean} [options.render=false] - Whether to render the VDom immediately.
+     * @param {boolean} [options.containerAsRoot=false] - Whether to use the container as the root element.
+     */
     constructor(content = "", options = {}) {
         this.options = options;
-
-        if (options.container) {
-            this.container = type(options.container, "string")
-                ? document.querySelector(options.container)
-                : options.container;
-        } else {
-            this.container = document.createElement("div");
-        }
-
-        if (options.scope) {
-            this.scope = options.scope;
-        }
-
-        this.tpl = document.createElement("template");
-        this.root = document.createDocumentFragment();
+        this.container = this.initializeContainer(options.container);
+        this.scope = options.scope || null;
+        this.template = document.createElement("template");
+        this.rootFragment = document.createDocumentFragment();
 
         this.initialize();
 
-        if (this.container.innerHTML.trim() !== "") {
+        if (content) {
+            this.stage(content);
         }
 
-        if (content) this.stage(content);
-
-        if (options.render) this.render();
+        if (options.render) {
+            this.render();
+        }
     }
 
-    package(vdom) {
-        this.#staged = { ...this.CONTAINER_VDOM };
-        this.#staged.children = type(vdom, "array") ? [...vdom] : [vdom];
+    initializeContainer(containerOption) {
+        if (containerOption) {
+            return typeof containerOption === "string" ? document.querySelector(containerOption) : containerOption;
+        }
+        return document.createElement("div");
+    }
 
+    /**
+     * Packages the provided virtual DOM (vdom) into a container structure.
+     * This container structure is a copy of the current containerVDom with the
+     * provided vdom set as its children. The resulting structure is stored in
+     * the #staged property.
+     *
+     * @param {Array|Object} vdom - The virtual DOM to be packaged. Can be a single
+     *                              vdom object or an array of vdom objects.
+     * @returns {Object} The packaged container structure with the vdom as children.
+     */
+
+    package(vdom) {
+        const container = { ...this.containerVDom };
+        container.children = Array.isArray(vdom) ? [...vdom] : [vdom];
+
+        this.#staged = container;
         return this.#staged;
     }
 
@@ -66,39 +83,22 @@ class VDom {
      */
 
     stage(content) {
-        let vdom;
+        let stagedVdom;
 
         if (empty(content)) {
-            return this.package([]);
+            stagedVdom = this.package([]);
+        } else {
+            stagedVdom = this.package(VDomParser.parse(content, this.scope));
         }
-
-        switch (VDomParser.type(content)) {
-            case "html":
-                vdom = VDomParser.fromHTML(content);
-                break;
-            case "text":
-                vdom = VDomParser.fromText(content);
-                break;
-            case "dom":
-                vdom = VDomParser.fromDom(content);
-                break;
-            case "vdom":
-                vdom = content;
-                break;
-        }
-
-        //Insert content into a vdom wrapper
-        this.package(vdom);
-
-        return this.#staged;
+        console.log(stagedVdom);
+        return stagedVdom;
     }
 
     //Add element to one or more references.
 
-    addReference(element, ref = null) {
-        if (!ref) return;
-        const refs = ref.includes(",") ? ref.split(",").map((r) => r.trim()) : [ref];
-        refs.map((ref) => {
+    addReferences(element, ref) {
+        const references = ref.includes(",") ? ref.split(",") : [ref];
+        references.forEach((ref) => {
             if (!this.#references[ref]) this.#references[ref] = [];
             this.#references[ref].push(element);
         });
@@ -118,35 +118,32 @@ class VDom {
 
     /** Apply event handlers */
 
-    applyEventHandel(el, eventHandle) {
-        const handles = [eventHandle];
-        if (eventHandle.includes("||")) handles = eventHandle.split("||");
+    applyEventHandlers(el, eventHandlers) {
+        const handlers = eventHandlers.split("||");
+        handlers.forEach((handler) => {
+            const [event, fnName] = handler.split("::");
+            const args = handler.includes("(")
+                ? handler
+                      .split("(")
+                      .pop()
+                      .split(")")
+                      .shift()
+                      .split(",")
+                      .map((arg) => arg.replace(/['"]/g, "").trim())
+                : [];
 
-        handles.forEach((handler) => {
-            const [event, call] = handler.split("::");
-            debug(event, call);
-            let args = [];
-            if (handler.includes("(")) {
-                args = handler
-                    .split("(")
-                    .pop()
-                    .split(")")
-                    .shift()
-                    .split(",")
-                    .map((arg) => arg.replace(/['"]/g, "").trim());
-                //  debug(args);
-                handler = handler.split("(").shift();
-            }
-            let handlerFn = this.scope[handler] ? this.scope[handler].bind(this.scope) : function () {};
+            const handlerFn = this.scope[fnName] ? this.scope[fnName].bind(this.scope) : function () {};
 
             el.addEventListener(event, (e) => {
                 const respArgs = args.map((arg) => {
-                    if (arg === "this") return element;
-                    if (typeof arg == "string" && arg.indexOf("this.") === 0) return element[arg.replace("this.", "")];
+                    if (arg === "this") return el;
+                    if (typeof arg === "string" && arg.indexOf("this.") === 0) {
+                        return el[arg.replace("this.", "")];
+                    }
                     return arg;
                 });
-                handlerFn = handlerFn.bind(self);
-                return handlerFn(e, ...respArgs);
+                const boundHandler = handlerFn.bind(this);
+                return boundHandler(e, ...respArgs);
             });
 
             el.classList.add("events-set");
@@ -155,95 +152,87 @@ class VDom {
         el.removeAttribute("event");
     }
     /**
-     * Add all elements taht include a id attribute to index
-     * @param {*} staged
+     * Index elements with an 'id' attribute in the staged VDom
+     * @param {Object} node - The node to index
      */
-    indexStage(staged) {
-        if (!staged && this.#staged) {
-            staged = this.#staged;
-            this.index = { ids: {} };
-        }
-        if (staged) {
-            if (staged.attributes && staged.attributes.id) {
-                this.index.ids[staged.attributes.id] = staged;
-            }
+    indexVDom(node) {
+        if (!node) return;
 
-            if (staged.children) {
-                staged.children.forEach((child) => this.indexStage(child));
-            }
+        this.index = this.index || { ids: {} };
+
+        if (node.attributes?.id) {
+            this.index.ids[node.attributes.id] = node;
+        }
+
+        if (node.children) {
+            node.children.forEach((child) => this.indexVDom(child));
         }
     }
 
     render(content) {
         if (content) this.stage(content);
-        //Build new VDom from html
+
         if (!this.#staged) return false;
 
-        //Create Patch for Current VDom with Staged VDom
-        const patch = VirtualDom.diff(this.virtual, this.#staged);
+        const patch = VirtualDom.diff(this.currentVDom, this.#staged);
+        console.log("rootFragment", this.rootFragment);
+        patch(this.rootFragment);
 
-        //Apply Patch to root node
-        patch(this.root);
-
-        //Pull References from new dom
-        const refs = this.root.querySelectorAll("[ref]");
-        for (let i = 0; i < refs.length; i++) {
-            const ref = refs[i].getAttribute("ref");
-            console.log(ref);
-            this.addReference(refs[i], ref);
-            refs[i].removeAttribute("ref");
+        const refs = this.rootFragment.querySelectorAll("[id]");
+        for (const refEl of refs) {
+            const ref = refEl.getAttribute("id");
+            this.addReferences(refEl, ref);
+            // refEl.removeAttribute("ref");
         }
 
-        const eventsEls = this.root.querySelectorAll("[event]");
-
-        for (let i = 0; i < eventsEls.length; i++) {
-            const el = eventsEls[i];
-            const eventHandle = el.getAttribute("event");
-            this.applyEventHandel(eventHandle);
+        const eventEls = this.rootFragment.querySelectorAll("[event]");
+        for (const eventEl of eventEls) {
+            const eventHandle = eventEl.getAttribute("event");
+            this.applyEventHandle(eventHandle);
         }
 
-        this.indexStage();
-        this.virtual = this.#staged;
+        this.indexVDom(this.#staged);
+        this.currentVDom = this.#staged;
         this.#staged = null;
 
-        //If container is set but not currently parent
-        if (this.container && this.root.parentNode !== this.container && this.container !== this.root) {
-            this.container.appendChild(this.root);
+        if (!this.options.containerAsRoot && this.container && this.rootFragment.parentNode !== this.container) {
+            this.container.appendChild(this.rootFragment);
         }
 
-        return this.root;
+        return this.rootFragment;
     }
 
     find(id) {
         if (!this.#staged) {
             this.#staged = JSON.parse(JSON.stringify(this.virtual));
-            this.indexStage();
+            this.indexVDom();
         }
-        const virtualElement = this.index.ids[id];
+
+        const element = this.index.ids[id];
         return {
             replace() {},
             alter(tagName, attributes) {
                 if (tagName) {
-                    virtualElement.tag = tagName;
+                    element.tag = tagName;
                 }
                 if (attributes) {
-                    Object.assign(virtualElement.attributes, attributes);
+                    Object.assign(element.attributes, attributes);
                 }
             },
-            children(children) {
-                virtualElement.children = [...arguments];
+            children(...children) {
+                element.children = children;
             },
-            append(child) {
-                virtualElement.children.push(...arguments);
+            append(...children) {
+                element.children.push(...children);
             },
-            prepend(child) {
-                virtualElement.children.unshift(...arguments);
+            prepend(...children) {
+                element.children.unshift(...children);
             },
         };
     }
 
     toHTML() {
-        return this.root.innerHTML;
+        return this.rootFragment.innerHTML;
     }
 
     toVDom() {
@@ -251,30 +240,32 @@ class VDom {
     }
 
     initialize() {
-        //Initialize empty stage
+        // Initialize empty stage
         this.stage("");
-        //Set empty virtual dom
+        // Set empty virtual dom
         this.virtual = this.#staged;
 
         if (this.options.containerAsRoot) {
             this.container.classList.add("vdom--container");
-            this.root = this.container;
-            this.CONTAINER_VDOM = {
-                tag: this.root.tagName,
+            this.rootFragment = this.container;
+            this.containerVDom = {
+                tag: this.container.tagName,
                 attributes: {},
             };
-            for (let i = 0; i < this.container.attributes.length; i++) {
-                this.CONTAINER_VDOM.attributes[this.container.attributes[i].name] = this.container.attributes[i].value;
+
+            for (const attribute of this.container.attributes) {
+                this.containerVDom.attributes[attribute.name] = attribute.value;
             }
+
             return;
         }
 
-        //Create container div if not set
-        const initDiv = document.createElement("div");
-        initDiv.classList.add("vdom--container");
-        this.container.appendChild(initDiv);
-        //Set Container to root
-        this.root = initDiv;
+        // Create container div if not set
+        const containerDiv = document.createElement("div");
+        containerDiv.classList.add("vdom--container");
+        this.container.appendChild(containerDiv);
+        // Set container to root
+        this.rootFragment = containerDiv;
     }
 }
 

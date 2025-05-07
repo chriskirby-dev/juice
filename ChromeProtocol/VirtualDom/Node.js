@@ -75,6 +75,10 @@ export class TextNode {
         this.constructor.DOM.setNodeValue({ nodeId: this.nodeId, value: text });
     }
 
+    toObject() {
+        return this.data;
+    }
+
     update(data) {
         this.data = data;
     }
@@ -252,7 +256,31 @@ export class Node {
         this.classList.add(`node-b${this.backendId}`);
     }
 
-    update(data) {
+    toVDom() {
+        const vdom = Object.create(null);
+        Object.assign(vdom, this.data);
+        vdom.tag = this.tagName.toLowerCase();
+        vdom.attributes = { ...this.attributes };
+        if (vdom.children)
+            vdom.children = vdom.children.map((c) => this.constructor.vdom.getNodeByBackendId(c).toVDom());
+        return vdom;
+    }
+
+    toObject() {
+        const data = Object.create(null);
+        Object.assign(data, this.data);
+
+        if (data.children.length > 0) {
+            data.children = data.children.map((c) => {
+                const node = this.constructor.vdom.getNodeByBackendId(c);
+                return node.toObject ? node.toObject() : node.data;
+            });
+        }
+
+        return data;
+    }
+
+    update(data = {}) {
         this.data = data;
 
         if (data.attributes) this.attributes = Helper.parseAttributeArray(data.attributes);

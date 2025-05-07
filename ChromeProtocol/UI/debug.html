@@ -1,15 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
     <head>
+        <meta charset="UTF-8">
         <title>Debug</title>
+        <link rel="stylesheet" href="../../../../dist/fonts/proxima-nova/fonts.css" />
+        <link rel="stylesheet" href="../../../../dist/css/default.css" />
+        <link rel="stylesheet" href="../../../../dist/css/debug.css" />
+
     </head>
 
     <body>
         <header>
             <ul>
-                <li><a>Elements</a></li>
-                <li><a>Events</a></li>
+                <li><a href="#elements" onclick="bridge.cdp.nav('elements')">Elements</a></li>
+                <li><a href="#events" onclick="bridge.cdp.nav('events')">Events</a></li>
+                <li><a href="#force" onclick="bridge.cdp.nav('fupdate')">Force Update</a></li>
+            </ul>
+            <ul>
+                <li>
+                    <div id="status" class="valign-middle" state="idle"></div>
+                </li>
             </ul>
         </header>
         <main>

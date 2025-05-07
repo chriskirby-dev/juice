@@ -334,7 +334,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 if (this.onPropertyChanged) this.onPropertyChanged.bind(this);
                 //Call onCreate
                 if (this.onCreate) this.onCreate();
-                debug("Created", this.constructor.name);
+                console.log("Created", this.constructor.name);
 
                 if (this.constructor.template) {
                     //Clone Template and append to dom
@@ -443,7 +443,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
              */
 
             #unstash() {
-                // debug('UNSTASH',this.constructor.name, this.#stashed );
+                // console.log('UNSTASH',this.constructor.name, this.#stashed );
                 while (this.#stashed.length > 0) {
                     const stashed = this.#stashed.shift();
                     if (this.debug) console.log("unStash", this.constructor.name, ...stashed);

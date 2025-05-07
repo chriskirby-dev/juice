@@ -24,8 +24,11 @@ class ChromeProtocolTargetClient {
 
 export async function getTargetFromWebContents(webContents) {
     const wc = webContents;
+    if (wc.debugger.isAttached() && wc.devTarget) return wc.devTarget;
     await wc.debugger.attach("1.3");
     const { targetInfo } = await wc.debugger.sendCommand("Target.getTargetInfo");
+
+    wc.devTarget = targetInfo;
     return targetInfo;
 }
 
@@ -49,6 +52,12 @@ class ChromeProtocol extends EventEmitter {
 
     open() {
         this.ui = new ChromeDebugWindow(this);
+        this.ui.setTarget(this._target);
+        return new Promise((resolve) => {
+            this.ui.on("ready", () => {
+                resolve(this.ui);
+            });
+        });
     }
 
     getTarget() {
@@ -123,12 +132,12 @@ class ChromeProtocol extends EventEmitter {
         this._target = await getTargetFromWebContents(this.webContents);
         if (this.connected) return Promise.resolve();
         //this.target = await this.getTargetById(this.targetId);
-        debug("target", this._target);
-        //debug('Chrome Protocol connecting to',this.target);
+        console.log("target", this._target);
+        //console.log('Chrome Protocol connecting to',this.target);
 
         return CDP({ targetId: this._target.targetId })
             .then((client) => {
-                debug("CDP Connected");
+                console.log("CDP Connected");
                 this.client = client;
                 this.connected = true;
                 this.emit("connect", client);
@@ -151,13 +160,13 @@ class ChromeProtocol extends EventEmitter {
 
     async getTargetById(targetId) {
         const targets = await this.getTargets();
-        debug(targets);
+        console.log(targets);
         return targets.find((target) => target.targetId === targetId);
     }
 
     async getTargetByTitle(title) {
         const targets = await this.getTargets();
-        //debug(targets);
+        //console.log(targets);
         return targets.find((target) => target.title.toLowerCase().includes(title.toLowerCase()));
     }
 

@@ -31,7 +31,9 @@ const VFORM = {
     },
 };
 
-export const vdom = vElement;
+export const vdom = function (...args) {
+    return new vElement(...args);
+};
 
 /**
  * Conform parameters to a standard format.
@@ -127,11 +129,11 @@ function conformParams(...args) {
  * @returns {Object} The form element.
  */
 export function form(name, attributes = {}, children = []) {
-    return vElement("form", attributes, children);
+    return new vElement("form", attributes, children);
 }
 
 export function container(attributes = {}, children = []) {
-    return vElement("div", attributes, children);
+    return new vElement("div", attributes, children);
 }
 
 export function row(label, children, params = {}) {
@@ -144,10 +146,10 @@ export function row(label, children, params = {}) {
     }
 
     if (label) {
-        children.unshift(vElement("label", { for: id, class: "row-label" }, [label]));
+        children.unshift(new vElement("label", { for: id, class: "row-label" }, [label]));
     }
 
-    content.push(vElement("div", { id, class: `row ${params.inline ? "inline" : ""}` }, children));
+    content.push(new vElement("div", { id, class: `row ${params.inline ? "inline" : ""}` }, children));
 
     return content;
 }
@@ -167,7 +169,7 @@ export function vector(name, values = [], labels = [], properties = {}) {
         inputs.push(input);
     }
 
-    return vElement("div", { class: "vector" }, [row(properties.label || "", inputs)]);
+    return new vElement("div", { class: "vector" }, [row(properties.label || "", inputs)]);
 }
 
 /**
@@ -176,7 +178,7 @@ export function vector(name, values = [], labels = [], properties = {}) {
  * @param {Array<Object>} children - Child elements of the input.
  * @returns {Object} The input element.
  */
-export function input(children, properties) {
+export function input(children, properties, options = {}) {
     if (!Array.isArray(children)) {
         children = [children];
     }
@@ -185,7 +187,8 @@ export function input(children, properties) {
     const attrs = {
         class: `input ${type}`,
     };
-    return vElement("div", attrs, children);
+
+    return new vElement("div", attrs, children, options);
 }
 
 export function wrap(type, children, properties = {}) {
@@ -200,7 +203,7 @@ export function wrap(type, children, properties = {}) {
         delete properties.field;
     }
 
-    return vElement("div", attributes, children);
+    return new vElement("div", attributes, children);
 }
 
 /**
@@ -211,7 +214,7 @@ export function wrap(type, children, properties = {}) {
  * @returns {Object} The fieldset element.
  */
 export function fieldset(legend, children) {
-    return vElement("fieldset", {}, [vElement("legend", {}, [legend]), ...children]);
+    return new vElement("fieldset", {}, [new vElement("legend", {}, [legend]), ...children]);
 }
 
 /**
@@ -226,14 +229,14 @@ export function checkbox(...args) {
 
     const { attributes = {} } = properties;
     attributes.type = "checkbox";
-    return vElement(
+    return new vElement(
         "label",
         {
             for: attributes.id,
             class: `form-input radio ${properties.inline ? "inline" : ""}`,
             ...(attributes.field || {}),
         },
-        [vElement("span", {}, [properties.label]), vElement("input", attributes)]
+        [new vElement("span", {}, [properties.label]), new vElement("input", attributes)]
     );
 }
 
@@ -248,15 +251,26 @@ export function radio(...args) {
     const properties = conformParams(...["radio", ...args]);
     const { attributes = {} } = properties;
     attributes.type = "radio";
-    return vElement(
+    return new vElement(
         "label",
         {
             for: attributes.id,
             class: `form-input radio ${properties.inline ? "inline" : ""}`,
             ...(attributes.field || {}),
         },
-        [vElement("span", {}, [properties.label]), vElement("input", attributes)]
+        [new vElement("span", {}, [properties.label]), new vElement("input", attributes)]
     );
+}
+
+export function radios({ label, name, options = {}, attributes = {} }) {
+    const values = Object.keys(options).map((key, i) =>
+        radio({ name: name, label: key, value: options[key], attributes: { class: "inline" } })
+    );
+
+    return new vElement("div", attributes, [
+        new vElement("label", { for: attributes.id }, [label]),
+        wrap("radios", values),
+    ]);
 }
 
 /**
@@ -268,39 +282,37 @@ export function radio(...args) {
  * @param {string} value - The value of the select element.
  * @returns {Object} The select element.
  */
-export function select(...args) {
-    const properties = conformParams(...["select", ...args]);
-    const { attributes = {}, options = [], value, label } = properties;
+export function select({ label, options = [], attributes = {}, value = "", events = {} }) {
     const vOptions = [];
     if (Array.isArray(options)) {
-        for (let i = 0; i < options.length; i++) {
+        for (const option of options) {
             const attrs = {
-                value: options[i],
+                value: option,
             };
-            if (attrs.value == value) {
+            if (attrs.value === value) {
                 attrs.selected = "";
             }
-            vOptions.push(vElement("option", attrs, [options[i]]));
+            vOptions.push(new vElement("option", attrs, [option]));
         }
     } else if (typeof options === "object") {
-        for (let key in options) {
+        for (const key in options) {
             const attrs = {
                 value: options[key],
             };
-            if (attrs.value == value) {
+            if (attrs.value === value) {
                 attrs.selected = "";
             }
-            vOptions.push(vElement("option", attrs, [key]));
+            vOptions.push(new vElement("option", attrs, [key]));
         }
     }
 
     return wrap(
         "select",
         [
-            vElement("label", { for: attributes.id }, [label]),
-            input(vElement("select", attributes, vOptions), properties),
+            new vElement("label", { for: attributes.id }, [label]),
+            input(new vElement("select", attributes, vOptions), { attributes }, { events }),
         ],
-        properties
+        {}
     );
 }
 
@@ -318,7 +330,7 @@ export function textarea(...args) {
 
     return wrap(
         "textarea",
-        [vElement("label", { for: attributes.id }, [label]), vElement("textarea", attributes, [value])],
+        [new vElement("label", { for: attributes.id }, [label]), new vElement("textarea", attributes, [value])],
         properties
     );
 }
@@ -335,7 +347,7 @@ export function text(...args) {
     const { label, attributes = {} } = properties;
     return wrap(
         "text",
-        [vElement("label", { for: attributes.id }, [label]), input(vElement("input", attributes), properties)],
+        [new vElement("label", { for: attributes.id }, [label]), input(new vElement("input", attributes), properties)],
         properties
     );
 }
@@ -349,7 +361,7 @@ export function number(...args) {
     }
     return wrap(
         "number",
-        [vElement("label", { for: attributes.id }, [label]), input(vElement("input", attributes), properties)],
+        [new vElement("label", { for: attributes.id }, [label]), input(new vElement("input", attributes), properties)],
         properties
     );
 }
@@ -359,7 +371,7 @@ export function range(...args) {
     const { label, attributes = {} } = properties;
     return wrap(
         "range",
-        [vElement("label", { for: attributes.id }, [label]), input(vElement("input", attributes), properties)],
+        [new vElement("label", { for: attributes.id }, [label]), input(new vElement("input", attributes), properties)],
         properties
     );
 }
@@ -373,7 +385,7 @@ export function range(...args) {
 export function hidden(...args) {
     const properties = conformParams(...["hidden", ...args]);
     const { attributes = {} } = properties;
-    return vElement("input", attributes);
+    return new vElement("input", attributes);
 }
 
 export function render(vdom) {
@@ -386,5 +398,5 @@ export function button(label, attributes, fn) {
     attributes.href = "#";
     attributes.onclick = juice.registerEvent("form_button_" + bi, fn);
     bi++;
-    return vElement("a", attributes, [label], { events: { click: fn } });
+    return new vElement("a", attributes, [label], { events: { click: fn } });
 }

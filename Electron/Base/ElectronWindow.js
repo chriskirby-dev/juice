@@ -22,7 +22,7 @@ class ElectronWindow extends BaseWindow {
 
     constructor(options = {}) {
         super(ElectronWindow.prepareOptions(options));
-        debug(options);
+        // debug(options);
         this.constructor.instances.push(this);
         setTimeout(() => this.#initialize(), 0);
     }
@@ -96,7 +96,7 @@ class ElectronWindow extends BaseWindow {
     }
 
     #onResize() {
-        console.log("RESIZE", this.views);
+        // console.log("RESIZE", this.views);
         const [totalWidth, totalHeight] = this.getSize();
         const [width, height] = this.getContentSize();
         this.bounds.height = totalHeight;

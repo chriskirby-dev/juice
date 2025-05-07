@@ -123,116 +123,118 @@ class FormInput extends Component.HTMLElement {
 
     onConnect() {}
 
-    buildNative() {
-        if (!this.constructor.nativeInput) return;
-
+    buildNativeElement() {
         const nativeConfig = this.constructor.nativeInput;
-        const native = document.createElement(nativeConfig.tag);
+        const nativeElement = document.createElement(nativeConfig.tag);
 
-        for (const attribute in nativeConfig.attributes) {
-            const value = nativeConfig.attributes[attribute].includes("{{")
-                ? this[nativeConfig.attributes[attribute].replace(/[\{\}]/g, "")]
-                : nativeConfig.attributes[attribute].includes("[")
-                ? this.getAttribute(nativeConfig.attributes[attribute].replace(/[\[\]}]/g, ""))
-                : nativeConfig.attributes[attribute];
+        Object.entries(nativeConfig.attributes).forEach(([attribute, value]) => {
+            let attributeValue = value;
 
-            native.setAttribute(attribute, value);
-        }
+            if (value.includes("{{")) {
+                attributeValue = this[value.replace(/[\{\}]/g, "")];
+            } else if (value.includes("[")) {
+                attributeValue = this.getAttribute(value.replace(/[\[\]}]/g, ""));
+            }
 
-        this.appendChild(native);
-        this.native = native;
+            nativeElement.setAttribute(attribute, attributeValue);
+        });
+
+        this.appendChild(nativeElement);
+        this.native = nativeElement;
     }
 
     onChildren(childNodes) {
-        const nativeInputs = childNodes.filter(
+        const nativeElements = childNodes.filter(
             (node) =>
                 ["input", "select", "textarea"].includes(node.tagName.toLowerCase()) ||
                 node.querySelector("input, select, textarea")
         );
 
-        if (nativeInputs.length > 1) {
-            this.onMultipleNativeInput(nativeInputs);
-        } else if (nativeInputs.length === 1) {
-            this.onNativeInput(nativeInputs[0]);
+        if (nativeElements.length > 1) {
+            this.onMultipleNativeInput(nativeElements);
+        } else if (nativeElements.length === 1) {
+            this.onNativeInput(nativeElements[0]);
         } else {
-            this.buildNative();
+            this.buildNativeElement();
         }
     }
 
     onMultipleNativeInput() {
         const inputsById = {};
+        const hasMultipleInputs = Array.isArray(this.native);
+        const nativeElements = hasMultipleInputs ? this.native : [this.native];
 
-        for (const nativeElement of this.native) {
+        for (const nativeElement of nativeElements) {
             const elementTag = nativeElement.tagName.toLowerCase();
 
             if (elementTag === "label") {
-                const id = nativeElement.getAttribute("for");
+                const inputId = nativeElement.getAttribute("for");
 
-                if (!inputsById[id]) {
-                    inputsById[id] = {};
+                if (!inputsById[inputId]) {
+                    inputsById[inputId] = {};
                 }
 
-                inputsById[id].label = nativeElement.innerText.trim();
+                inputsById[inputId].label = nativeElement.innerText.trim();
 
                 const inputElement = nativeElement.querySelector("input, select, textarea");
 
                 if (inputElement) {
-                    inputsById[id].input = inputElement;
+                    inputsById[inputId].input = inputElement;
                 }
             } else if (elementTag === "input") {
-                const id = nativeElement.getAttribute("id");
+                const inputId = nativeElement.getAttribute("id");
 
-                if (!inputsById[id]) {
-                    inputsById[id] = {};
+                if (!inputsById[inputId]) {
+                    inputsById[inputId] = {};
                 }
 
-                inputsById[id].input = nativeElement;
-                inputsById[id].name = nativeElement.getAttribute("name");
-                inputsById[id].type = nativeElement.getAttribute("type");
+                inputsById[inputId].input = nativeElement;
+                inputsById[inputId].name = nativeElement.getAttribute("name");
+                inputsById[inputId].type = nativeElement.getAttribute("type");
             }
         }
     }
 
     onNativeInput() {
-        const isMultiple = this.native.length > 1;
+        const hasMultipleInputs = this.native.length > 1;
+        const nativeElement = hasMultipleInputs ? this.native[0] : this.native;
+        const tagName = nativeElement.tagName.toLowerCase();
 
-        const nativeTag = this.native[0].tagName.toLowerCase();
+        if (tagName === "select") {
+            const selectedValue = this.getAttribute("value");
 
-        if (nativeTag === "select") {
-            const value = this.getAttribute("value");
+            if (selectedValue) {
+                const selectedOption = nativeElement.querySelector(`option[value="${selectedValue}"]`);
 
-            if (value) {
-                const option = this.native[0].querySelector(`option[value="${value}"]`);
-
-                if (option) {
-                    option.selected = true;
+                if (selectedOption) {
+                    selectedOption.selected = true;
                 }
             }
 
-            this.native[0].addEventListener("change", (event) => {
+            nativeElement.addEventListener("change", (event) => {
                 this.dispatchEvent(new CustomEvent("change", { detail: event.target.value }));
             });
 
-            this.native[0].addEventListener("input", (event) => {
+            nativeElement.addEventListener("input", (event) => {
                 this.dispatchEvent(new CustomEvent("input", { detail: event.target.value }));
             });
         }
     }
 
     onFirstConnect() {
-        const { name: inputName, id: inputId } = this.attributes;
+        const { name, id } = this.attributes;
 
-        if (inputName) {
-            this.name = inputName.value;
-            this.id = inputId ? inputId.value : `input--${this.name}`;
+        if (name) {
+            this.name = name.value;
+            this.id = id ? id.value : `input--${this.name}`;
         }
 
         if (this.parentNode.classList.contains("row")) {
-            const parentChildren = this.parentNode.children;
-            const childCount = parentChildren.length;
+            const siblings = this.parentNode.children;
+            const siblingCount = siblings.length;
 
-            if (childCount > 1) {
-                this.style.width = `calc(${100 / childCount}% - ${childCount}rem)`;
+            if (siblingCount > 1) {
+                this.style.width = `calc(${100 / siblingCount}% - ${siblingCount}rem)`;
             }
         }
     }

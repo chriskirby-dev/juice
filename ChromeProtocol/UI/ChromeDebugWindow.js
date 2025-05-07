@@ -3,32 +3,85 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 import path from "node:path";
 
-import ElectronWindow from "../../Electron/Base/ElectronWindow.js";
+import FluxWindow from "../../Electron/Base/FluxWindow.mjs";
 
-class ChromeDebugWindow extends ElectronWindow {
+class ChromeDebugWindow extends FluxWindow {
     debug = true;
 
-    constructor(cdp) {
-        super({
-            width: 800,
-            height: 600,
-            // autoHideMenuBar: true,
-            enableRemoteModule: true,
-        });
-        this.preload = path.resolve(__dirname, "viewport.preload.mjs");
-        this.homepage = path.resolve(__dirname, "debug.html");
+    static appliedOptions = ["cdp"];
+
+    static homepage = path.resolve(__dirname, "debug.html");
+
+    constructor(cdp, target) {
+        super(
+            "debugview",
+            {
+                title: "Debugger",
+                cdp: cdp,
+                debug: true,
+                width: 800,
+                height: 600,
+                webPreferences: {
+                    contextIsolation: true,
+                    preload: path.resolve(__dirname, "viewport.preload.mjs"),
+                },
+            },
+            global.rootWindow
+        );
+
         this.cdp = cdp;
     }
 
-    initialize() {
-        const { vdom, webContents, ui } = this.cdp;
+    setTarget(target) {
+        console.log("setTarget", target);
+        this.target = target;
+        return this.target;
+    }
 
-        vdom.on("update", (action, data) => {
-            debug("UPDATE", acton, data);
-            ui.webContents.send(`vdom:${action}`, data);
+    async initialize() {
+        const { cdp, webContents } = this;
+        const { vdom } = cdp;
+
+        const target = this.setTarget(cdp.getTarget());
+
+        await vdom.isReady();
+
+        webContents.on("icp:vdom:reset", () => {
+            vdom.reset();
         });
 
-        vdom.on(`ipc:viewport`, (channel, e, ...data) => {
+        cdp.webContents.on("did-finish-load", () => {
+            vdom.reset();
+        });
+
+        vdom.on("update", async (action, data) => {
+            if (!webContents.isDestroyed() && webContents.mainFrame) {
+                const frame = webContents.mainFrame;
+                switch (action) {
+                    case "reset":
+                        const tree = await vdom.rootNode.toObject();
+                        data = tree;
+                        break;
+                }
+                console.log("UPDATE", action, data);
+                webContents.send(`vdom:${action}`, data);
+            }
+        });
+        /*
+        this.on(`ipc:vdom:reset`, async (channel, e, ...data) => {
+            const tree = await vdom.rootNode.toObject();
+            webContents.send(`vdom:reset`, tree);
+            return;
+        });
+*/
+        this.on(`ipc:debug-init`, async (channel, e, ...data) => {
+            if (!vdom.rootNode) return vdom.reset();
+            const tree = await vdom.rootNode.toObject();
+            webContents.send(`vdom:reset`, tree);
+            return;
+        });
+
+        this.on(`ipc:viewport`, (channel, e, ...data) => {
             switch (channel) {
                 case "debug-init":
                     break;

@@ -1,87 +1,65 @@
 import EventEmitter from "../Event/Emitter.mjs";
 
 class Database extends EventEmitter {
-    
     models = {};
     tables = {};
 
-    constructor(db){
+    constructor(db) {
         super();
         this.db = db;
         this.initialize();
     }
-    
-    model(name){
+
+    model(name) {
         return this.models[name];
     }
 
-    modelByTable( tableName ){
+    modelByTable(tableName) {
         return this.tables[tableName].model;
     }
 
-    deleted( table, records ){
+    addModel(Model) {}
+
+    createTable(tableName, fields) {}
+
+    deleted(table, records) {
         const Model = this.modelByTable(table);
-        Model.emit('deleted', records);
+        Model.emit("deleted", records);
     }
 
-    created( table, records ){
+    created(table, records) {
         const Model = this.modelByTable(table);
-        Model.emit('created', records);
+        Model.emit("created", records);
     }
 
-    updated( table, records ){
+    updated(table, records) {
         const Model = this.modelByTable(table);
-        Model.emit('updated', records);
+        Model.emit("updated", records);
     }
 
-    hasTable(table){
-      
-    }
+    hasTable(table) {}
 
-    createTable( table, fields ){
+    createTable(table, fields) {}
 
-    }
+    insert() {}
 
+    insertAll() {}
 
-    insert(){
+    get() {}
 
-    }
+    getAll() {}
 
-    insertAll(){
+    update() {}
 
-    }
+    updateAll() {}
 
-    get(){
+    delete() {}
 
-    }
+    addModel(Model) {}
 
-    getAll(){
-
-    }
-
-    update(){
-
-    }
-
-    updateAll(){
-
-    }
-
-    delete(){
-
-    }
-
-    addModel(Model){
-
-    }
-
-    model(name){
+    model(name) {
         return this.models[name];
     }
-
-   
-
 }
-
 
 export default Database;

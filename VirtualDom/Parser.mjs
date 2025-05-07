@@ -126,7 +126,7 @@ class Parser {
             }
         }
 
-        return vElement(tag, attrs, children, options);
+        return new vElement(tag, attrs, children, options);
     }
 }
 

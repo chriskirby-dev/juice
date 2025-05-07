@@ -65,7 +65,8 @@ const renderElement = (vNode, withRefs, refs = {}) => {
         vNode.forEach((node) => fragment.appendChild(renderElement(node)));
         return fragment;
     }
-    const { tag, attributes = {}, children = [], options = {} } = vNode;
+    let tag = vNode.tag;
+    const { attributes = {}, children = [], options = {} } = vNode;
     if (!tag && attributes) tag = "div";
     if (!tag) return "";
     const element = options.namespace ? document.createElementNS(options.namespace, tag) : document.createElement(tag);
@@ -98,6 +99,7 @@ const renderElement = (vNode, withRefs, refs = {}) => {
 };
 
 const conformVNode = (vNode) => {
+    if (vNode === undefined) return "";
     for (const key in aliases) {
         if (vNode[key] === undefined) {
             const aliasKey = aliases[key].find((alias) => vNode[alias] !== undefined);

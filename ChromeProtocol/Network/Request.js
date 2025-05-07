@@ -83,9 +83,16 @@ class NetworkRequest extends EventEmitter {
 
     get isLogin() {
         if (this.data.request?.hasPostData) {
-            console.log("post data", this.data.request?.postData);
+            //console.log("post data", this.data.request?.postData);
             if (!this.data.request?.postData) return false;
-            const postDataFields = Object.keys(JSON.parse(this.data.request?.postData) || {});
+            let rawData = this.data.request.postData;
+            let isJSON = false;
+            try {
+                rawData = JSON.parse(rawData);
+                isJSON = true;
+            } catch (e) {}
+            if (!isJSON) return false;
+            const postDataFields = Object.keys(rawData);
             if (
                 postDataFields.some((entry) => USERNAME_ALIASES.includes(entry)) &&
                 postDataFields.some((entry) => PASSWORD_ALIASES.includes(entry))
