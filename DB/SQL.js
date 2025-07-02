@@ -5,7 +5,7 @@ export const ColumnDefinations = {
     NUMERIC: ["number", "date", "datetime"],
     REAL: ["float"],
     TEXT: ["string", "text"],
-    BLOB: [],
+    BLOB: []
 };
 
 export class SQLStatement {
@@ -54,6 +54,60 @@ export class SQLStatement {
     }
 }
 
+export class SQLChain {
+    constructor(table) {
+        this.table = table;
+    }
+
+    drop() {
+        let statement = `DROP TABLE ${this.table}`;
+    }
+
+    truncate() {
+        let statement = `TRUNCATE TABLE ${this.table}`;
+    }
+
+    comment() {
+        let statement = `COMMENT ? ON TABLE ${this.table}`;
+    }
+
+    rename(newName) {
+        let statement = `RENAME TABLE ${this.table} TO ?`;
+        let args = [newName];
+        return { statement, args };
+    }
+
+    select(...columns) {
+        let statement = `SELECT ${columns.join(", ")} FROM ${this.table}`;
+        return this;
+    }
+
+    insert(data) {
+        const columns = Object.keys(data);
+        let statement = `INSERT INTO ${this.table} ( ${columns.join(", ")} ) VALUES ( ${columns
+            .map(() => "?")
+            .join(", ")} )`;
+        let args = Object.values(data);
+        return { statement, args };
+    }
+
+    update(data) {
+        const columns = Object.keys(data);
+        let statement = `UPDATE ${this.table} SET ${columns.map((col) => `${col} = ?`).join(", ")} `;
+        const args = Object.values(data);
+        return this;
+    }
+
+    delete() {
+        let statement = `DELETE FROM ${this.table}`;
+    }
+
+    where(conditions) {
+        this._conditions = SQL.conditions(conditions);
+        return this;
+    }
+}
+
 export class SQL {
     static getTableInfo(tableName) {
         const stmt = `PRAGMA table_info(${tableName})`;
@@ -71,36 +125,47 @@ export class SQL {
         return { statement: stmt, args: args };
     }
 
-    static conditions(params) {
-        let resp = { statement: "", args: [] };
-        if (!empty(params)) {
-            resp.statement = `WHERE `;
-            resp.statement += Object.keys(params)
-                .map((prop) => {
-                    if (typeof params[prop] == "string" && params[prop].startsWith("LIKE")) {
-                        const cmd = `${prop} LIKE '${params[prop].split(" ").pop()}'`;
-                        delete params[prop];
+    static conditions(conditions) {
+        const response = { statement: "", args: [] };
+        if (!empty(conditions)) {
+            response.statement = "WHERE ";
+            response.statement += Object.keys(conditions)
+                .map((column) => {
+                    const operator = "=";
+                    const value = conditions[column];
+
+                    if (typeof value === "string" && value.startsWith("LIKE")) {
+                        const cmd = `${column} LIKE '${value.split(" ").pop()}'`;
+                        delete conditions[column];
                         return cmd;
                     }
-                    if (params[prop] == null) {
-                        delete params[prop];
-                        return prop + " IS NULL";
+
+                    if (column.includes(" ")) {
+                        const [prop, op] = column.split(" ");
+                        column = prop;
+                        operator = op;
+                    }
+
+                    if (value === null) {
+                        delete conditions[column];
+                        return `${column} IS NULL`;
                     } else {
-                        return prop + " = ?";
+                        return `${column} ${operator} ?`;
                     }
                 })
                 .join(" AND ");
-            resp.args = Object.values(params);
+            response.args = Object.values(conditions);
         }
-        return resp;
+        return response;
     }
 
     static insert(table, data) {
-        const columns = Object.keys(data);
+        const columns = Object.keys(data).filter((c) => !empty(c));
+
         let stmt = `INSERT INTO ${table} ( ${columns.join(", ")} ) VALUES ( ${columns.map((c) => "?").join(", ")} )`;
         return {
             statement: stmt,
-            args: Object.values(data),
+            args: Object.values(data)
         };
     }
 
@@ -121,6 +186,12 @@ export class SQL {
         resp.statement = `SELECT ${columns.join(", ")} FROM ${table}`;
         if (!empty(conditions)) resp = SQL.join(resp, SQL.conditions(conditions), SQL.order(order), SQL.limit(limit));
 
+        return resp;
+    }
+
+    static exists(table, conditions) {
+        let resp = { statement: `SELECT 1 FROM ${table}`, args: [] };
+        if (!empty(conditions)) resp = SQL.join(resp, SQL.conditions(conditions));
         return resp;
     }
 

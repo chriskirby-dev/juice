@@ -3,14 +3,23 @@ import { STORAGE_TYPES, TYPE_ALIASES } from "./Constants.mjs";
 import Database from "../Database.js";
 import { SQL, SQLStatement } from "../SQL.js";
 import Migration from "./Migration.mjs";
+import SQLiteWorker from "./WorkerClient.js";
+import SQLBuilder from "../SQLBuilder.js";
+
 global.debug = console.log;
 
 class SQLiteDatabase extends Database {
     source = null;
+    useWorker = false;
+    worker = null;
+    _prepared = {};
+    queueCommands = false;
 
     constructor(databasePath, dbOptions) {
         super(new BetterSQLite3(databasePath, dbOptions));
         this.databasePath = databasePath;
+        this.queued = new Map();
+        this.queueId = 0;
     }
 
     hasTable(tableName) {
@@ -40,51 +49,122 @@ class SQLiteDatabase extends Database {
         return this.db.exec(query);
     }
 
-    insert(tableName, rowData) {
-        const command = SQL.insert(tableName, rowData);
-        return this.db.prepare(command.statement).run(command.args);
+    build(table) {
+        return new SQLBuilder(table);
+    }
+
+    insert(table, data, queue = false) {
+        const { statement, args } = new SQLBuilder(table).insert(data).build();
+        return this.run(statement, args);
     }
 
     insertAll(tableName, records) {
-        const statement = SQL.insert(tableName, records[0]).statement;
-        const insert = this.db.prepare(statement);
-        this.db.transaction(() => {
-            records.forEach((record) => {
-                insert.run(...Object.values(record));
-            });
-        })();
+        const { statement } = new SQLBuilder(tableName).insert(records[0]).build();
+        const prepared = this.db.prepare(statement);
+        const insertAll = this.db.transaction((records) => {
+            for (const record of records) prepared.run(...Object.values(record));
+        });
+
+        insertAll(records);
+    }
+
+    select(table, columns, conditions) {
+        const { statement, args } = new SQLBuilder(table).select(columns).where(conditions).build();
+        return this.get(statement, args);
     }
 
     first(table, columns, conditions) {
-        const { statement, args } = SQL.select(table, columns, conditions);
-        const result = this.db.prepare(statement).get(...args);
-        return result;
+        const { statement, args } = new SQLBuilder(table).select(columns).where(conditions).limit(1).build();
+        return this.get(statement, args);
     }
 
-    all(table, columns = [], conditions = {}, order = {}, limit = null, offset = null) {
-        const cmd = new SQLStatement()
-            .select(table, columns, conditions)
-            .order(order)
-            .limit(limit)
-            .offset(offset)
-            .compile();
-        console.log(cmd);
-        return this.db.prepare(cmd.statement).all(...cmd.args) || [];
+    many(table, columns, conditions, queue = false) {
+        const { statement, args } = new SQLBuilder(table).select(columns).where(conditions).build();
+        return this.all(statement, args);
     }
 
     update(table, data, conditions) {
-        const { statement, args } = SQL.update(table, data, conditions);
+        const { statement, args } = new SQLBuilder(table).update(data).where(conditions).build();
+        return this.run(statement, args);
+    }
+
+    updateAll(table, records, conditions, queue = false) {
+        const { statement } = new SQLBuilder(table).update(data).where(conditions).build();
+        const prepared = this.db.prepare(statement);
+        const updateAll = this.db.transaction((records) => {
+            for (const record of records) prepared.run(...Object.values(record));
+        });
+
+        updateAll(records);
+    }
+
+    delete(table, conditions, queue) {
+        const { statement, args } = new SQLBuilder(table).delete().where(conditions).build();
+        return this.run(statement, args);
+    }
+
+    exists(table, conditions, queue = false) {
+        const { statement, args } = new SQLBuilder(table).select(["1"]).where(conditions).limit(1).build();
+        return this.get(statement, args);
+    }
+
+    all(statement, args = []) {
+        return this.db.prepare(statement).all(...args) || [];
+    }
+
+    run(statement, args = []) {
+        // if (this.worker) return this.worker.send({ sql: statement, parameters: args });
         return this.db.prepare(statement).run(...args);
     }
 
-    updateAll(table, data, conditions) {
-        const cmd = new SQLStatement().update(table, data, conditions).compile();
-        return this.db.prepare(cmd.statement).run(...cmd.args);
+    exec(statement, args = []) {
+        // if (this.worker) return this.worker.send({ sql: statement, parameters: args });
+        return this.db.exec(statement, ...args);
     }
 
-    delete(table, conditions) {
-        const deleteCommand = SQL.delete(table, conditions);
-        return this.db.prepare(deleteCommand.statement).run(deleteCommand.args);
+    get(statement, args = []) {
+        //console.log(statement, args);
+        // if (this.worker) return this.worker.send({ sql: statement, parameters: args });
+        return this.db.prepare(statement).get(...args);
+    }
+
+    get worker() {
+        if (!this._worker) {
+            this._worker = new SQLiteWorker(this.databasePath, {
+                timeout: 5000
+            });
+        }
+
+        return this._worker;
+    }
+
+    queue({ action, statement, args }) {
+        switch (action) {
+            case "insert":
+            case "update":
+            case "delete":
+                action = "run";
+                break;
+            case "first":
+                action = "first";
+                break;
+            case "select":
+                action = "all";
+                break;
+        }
+        const id = this.queueId++;
+        this.queued.set(id, { action, statement, args });
+    }
+
+    initializeFns() {
+        this.registerAggregate("addAll", { start: () => 0, step: (acc, val) => acc + val, finalize: (acc) => acc });
+        this.registerAggregate("avg", {
+            start: () => 0,
+            step: (array, nextValue) => {
+                array.push(nextValue);
+            },
+            result: (array) => array.reduce(sum) / array.length
+        });
     }
 
     /**
@@ -111,33 +191,69 @@ class SQLiteDatabase extends Database {
         return result ? result.SUM : null;
     }
 
+    savePrepared(modelName, name, statement) {
+        if (!this._prepared[modelName]) this._prepared[modelName] = {};
+        this._prepared[modelName][name] = this.db.prepare(statement);
+    }
+
+    getPrepared(modelName, name) {
+        return this._prepared[modelName]?.[name];
+    }
+
+    hasPrepared(modelName, name) {
+        return this._prepared[modelName]?.[name] ? true : false;
+    }
+
     /**
      * Adds a model to the database.
-     * If the model does not exist in the database, it will be created.
-     * If the model exists, it will be checked for changes and updated if needed.
+     * This method is responsible for setting up the database structure for
+     * the given model. If the model does not exist in the database, it will
+     * be created. If the model exists, it will be checked for changes and
+     * updated if needed.
      * @param {Model} Model - The Model to add to the database.
      */
     addModel(Model) {
+        // If the model is null, do nothing.
         if (!Model) return;
 
+        console.log("Add Model", Model.name, Model);
+
+        // Set the model's database property to the current database.
         Model.db = this;
+
+        // Get the table name for the model.
         const tableName = Model.tableName;
-        const tableSchema = this.schema[tableName];
-        const fields = Migration.compileFields(Model.schema, Model);
+
+        // Get the current schema for the table.
+        const dbTableSchemaExists = this.schema[tableName] ? true : false;
+        console.log("dbTableSchemaExists", dbTableSchemaExists);
+        // Get the compiled fields for the model.
+        const modelfields = Migration.compileFields(Model.schema, Model);
+        console.log("fields", modelfields);
+        // Set a flag to indicate whether migrations should be used to update
+        // the table structure.
         const useMigration = Model.name !== "Migration";
 
-        if (!tableSchema) {
-            this.createTable(tableName, fields);
+        // If the table does not exist, create it.
+        if (!dbTableSchemaExists) {
+            // Create the table.
+            this.createTable(tableName, modelfields);
+
+            // If the model has an onCreate method, call it.
             if (Model.onCreate) Model.onCreate();
-        } else if (useMigration) {
+        }
+        // If the table exists and migrations are enabled...
+        else if (useMigration) {
+            // Get the migration object for the model.
             const migration = Migration.fromModel(Model);
-            const diff = migration.diff(fields);
-            if (diff) {
-                migration.update(diff, Model.schema);
-            }
         }
 
+        // Add the model to the database's models object.
         this.models[Model.name] = Model;
+
+        if (Model.added) Model.added();
+
+        // Add the model to the database's tables object.
         this.tables[tableName] = { model: Model };
     }
 
@@ -185,9 +301,6 @@ class SQLiteDatabase extends Database {
      * @param {string} id
      * @param {string} sql
      */
-    prepare(id, sql) {
-        this.prepared[id] = this.db.prepare(sql);
-    }
 
     /**
      * Executes a prepared statement.
@@ -198,14 +311,14 @@ class SQLiteDatabase extends Database {
      * @param {string} statement
      * @param {...*} args
      * @returns {object}
-     */
+     
     run(statement, ...args) {
         //Execute Prepared
         const stmt = statement.charAt(0) == "$" ? this.prepared[statement.substring(1)] : this.db.prepare(statement);
         const info = stmt.run(...args);
         return info;
     }
-
+*/
     /**
      * Executes a SQL statement and returns the first row.
      * If the statement starts with "$", the prepared statement
@@ -215,14 +328,13 @@ class SQLiteDatabase extends Database {
      * @param {string} statement
      * @param {...*} args
      * @returns {object}
-     */
+    
     get(statement, ...args) {
         const stmt = statement.charAt(0) == "$" ? this.prepared[statement.substring(1)] : this.db.prepare(statement);
         const resp = stmt.get(...args);
         return resp;
     }
-
-    transaction(statement) {}
+*/
 
     /**
      * Executes a remote request.
@@ -335,6 +447,11 @@ class SQLiteDatabase extends Database {
         return this.db.backup(destination);
     }
 
+    prepare(statement) {
+        console.log(statement);
+        return this.db.prepare(statement);
+    }
+
     /**
      * Initializes the database.
      * If the "boot" table does not exist, it will be created with the current migration schema.
@@ -347,6 +464,8 @@ class SQLiteDatabase extends Database {
         if (!hasBootTable) {
             this.createTable("boot", Migration.compileFields(Migration.schema, Migration));
         }
+
+        this.transaction = this.db.transaction.bind(this.db);
 
         const tables = this.getTables();
         for (const tableName of Object.keys(tables)) {

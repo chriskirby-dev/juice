@@ -68,6 +68,61 @@ export function dashed(value) {
     return dashed.charAt(0) == "-" ? dashed.slice(1) : dashed;
 }
 
+/**
+ * Replaces placeholders in a string with the values in an array
+ *
+ * @param {string} template The string to replace placeholders in
+ * @param {array} values An array of values to replace placeholders with
+ * @param {array} placeholders An array of token names to replace placeholders with
+ *
+ * @returns {string} The string with placeholders replaced
+ */
+export function sprintx(template, values = [], placeholders = []) {
+    let result = template;
+    for (let i = 0; i < values.length; i++) {
+        // Replace %token... with the entire array joined by commas
+        result = result.replace(`%${placeholders[i]}...`, values[i].join(", "));
+        // Replace individual %token values in the string with the corresponding values in the array
+        result = values[i].reduce((acc, val) => acc.replace(`%${placeholders[i]}`, val), result);
+    }
+    return result;
+}
+
+/**
+ * Replace placeholders in a string with the values in an array
+ *
+ * This function works the same as the built-in printf() function.
+ * It takes a string and replaces placeholders with values from an array.
+ * The placeholders are %s.
+ *
+ * @param {string} string The string to replace placeholders in
+ * @param {array} args An array of values to replace placeholders with
+ *
+ * @returns {string} The string with placeholders replaced
+ */
+function sprintf(string, args) {
+    const tokens = [...args];
+    const replacer = (placeholder, value) => placeholder.replace(/%s/, value);
+    return tokens.reduce(replacer, string);
+}
+
+/**
+ * Replaces placeholders in a string with the values in an array
+ *
+ * This function works the same as the built-in sprint() function.
+ * It takes a string and replaces placeholders with values from an array.
+ * The placeholders are %s.
+ *
+ * @param {string} template The string to replace placeholders in
+ * @param {array} values An array of values to replace placeholders with
+ *
+ * @returns {string} The string with placeholders replaced
+ */
+function sprintMake(template, values) {
+    const replacer = (string, token) => string.replace(token, "%s");
+    return values.reduce(replacer, template);
+}
+
 export default {
     upper: toUpper,
     lower: toLower,
@@ -91,33 +146,11 @@ export default {
         return args.reduce(replacer, string);
     },
 
-    sprintx(string, args = [], tokens = []) {
-        let out = string;
-        for (let i = 0; i < args.length; i++) {
-            out = out.replace(`%${tokens[i]}...`, args[i].join(", "));
-            const replacer = function (p, c) {
-                return p.replace(`%${tokens[i]}`, c);
-            };
-            out = args[i].reduce(replacer, out);
-        }
-        return out;
-    },
+    sprintx,
+    sprintf,
 
-    sprintf(string, args) {
-        const tokens = [...args];
-        var replacer = function (p, c) {
-            args.shift();
-            return p.replace(/%s/, c);
-        };
-        return tokens.reduce(replacer, string);
-    },
-
-    sprintMake(string, args) {
-        var replacer = function (p, c) {
-            return p.replace(c, "%s");
-        };
-        return args.reduce(replacer, string);
-    },
+    camelCase,
+    sprintMake,
 
     pascalCase,
 

@@ -44,8 +44,13 @@ export function intersect(arr1, arr2) {
     return arr1.filter((value) => -1 !== arr2.indexOf(value));
 }
 
-export function distinct(arr1, arr2) {
-    return arr1.filter((value) => -1 === arr2.indexOf(value));
+export function countOccurrences(a, v) {
+    return a.reduce((count, val) => (val === v ? count + 1 : count), 0);
+}
+
+export function distinct(...arrays) {
+    const arr = [].concat(...arrays);
+    return arr.filter((value, index) => arr.indexOf(value) === index);
 }
 
 export function merge(a, b) {

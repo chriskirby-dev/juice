@@ -10,6 +10,7 @@ const REGEX = {
     templates: /\{template (\w+)\{"([^"]+)"\}\}/g,
     natives: /<template\s*([^>]*)>([\s\S]*?)<\/template>/g,
     each: /\{([a-z]+)([\sa-z]*)\{([^\}]+)\}\}/g,
+    each2: /\{each\s+([a-zA-Z_$][\w$]*)\s+in\s+([a-zA-Z_$][\w$]*)\}([\s\S]*?)\{\/each\}/g,
     vars: /\{\{([\s\S]*?)\}\}/g,
     layout: /\{layout\(([^)]*)\)\{([^\}]*)\}\}/g,
 };
@@ -31,9 +32,9 @@ class Tokenizer {
     count = 0;
 
     static parseRawToken(raw) {
-        console.log(raw);
+        console.log("parseRawToken", raw);
         const result = raw.match(REGEX.tag);
-        console.log(result);
+        console.log("parseRawToken", result);
         const [token, type, _args, key] = result;
 
         //Split Args seperated by comma(,) trim items and filter out empty
@@ -52,12 +53,19 @@ class Tokenizer {
 
         switch (type) {
             case "each":
-                const [name, tpl] = key.split("->");
-                _token.key = name;
-                _token.templateId = tpl;
+                if (key.includes("->")) {
+                    const [name, tpl] = key.split("->");
+                    _token.key = name;
+                    _token.templateId = tpl;
+                } else if (key.includes(" as ")) {
+                    const [name, single] = key.split(" as ");
+                    _token.key = name;
+                    _token.single = single;
+                }
                 break;
         }
 
+        console.log("parseRawToken", _token);
         return _token;
     }
 
@@ -190,12 +198,14 @@ class Tokenizer {
                     break;
                 case "each":
                     if (tokenValue) {
-                        const tokenizer = this.templates[token.templateId];
-                        token.value = tokenValue
-                            .map((item) => {
-                                return tokenizer.render(item);
-                            })
-                            .join("");
+                        if (token.templateId) {
+                            const tokenizer = this.templates[token.templateId];
+                            token.value = tokenValue
+                                .map((item) => {
+                                    return tokenizer.render(item);
+                                })
+                                .join("");
+                        }
                     }
                     break;
                 default:

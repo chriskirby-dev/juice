@@ -69,31 +69,58 @@ class Content {
 
     async loadFiles() {
         this.dir = this.srcPath.substring(0, Math.max(this.srcPath.lastIndexOf("/"), this.srcPath.lastIndexOf("\\")));
+        console.log(`Directory set to: ${this.dir}`);
+
         let src = fs.readFileSync(this.srcPath, "utf8");
+        console.log(`Source file content loaded from: ${this.srcPath}`);
+
         this.initialize(src);
+
         /*
         const TEMPLATES = /\{template (\w+)\{"([^"]+)"\}\}/g;
         src = src.replace(TEMPLATES, (match, tplid, tplpath) => {
             const tplSrcPath = path.resolve(this.dir, tplpath);
-            const contents = fs.readFileSync( tplSrcPath, 'utf8' );
+            console.log(`Processing template with ID: ${tplid}, Path: ${tplSrcPath}`);
+            
+            const contents = fs.readFileSync(tplSrcPath, 'utf8');
+            console.log(`Template content loaded for ID: ${tplid}`);
+            
             return `<template id="${tplid}">
             ${contents}
             </template>`;
         });
 
-        this.initialize(src);*/
+        this.initialize(src);
+        */
     }
 
     initialize(src) {
-        if (this.options.dir) this.dir = this.options.dir;
+        console.log("Initializing with source:", src);
+
+        if (this.options.dir) {
+            this.dir = this.options.dir;
+            console.log("Directory set to:", this.dir);
+        }
+
         this.source = src;
+        console.log("Source set.");
+
         this.tokenized = new Tokenizer(this.source, this.data, { root: this.dir });
-        console.log(this.options);
+        console.log("Tokenizer initialized with source and data.");
+
+        console.log("Options:", this.options);
         if (this.options.tokens) {
             this.rendered = this.replaceTokens(this.options.tokens);
+            console.log("Tokens replaced.");
         }
-        if (this._loaded) this._loaded();
+
+        if (this._loaded) {
+            this._loaded();
+            console.log("Loaded callback executed.");
+        }
+
         this.ready = true;
+        console.log("Initialization complete, ready set to true.");
     }
 
     static fromTemplate(id, data) {

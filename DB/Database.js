@@ -1,8 +1,17 @@
 import EventEmitter from "../Event/Emitter.mjs";
+import fs from "node:fs";
+import path from "node:path";
 
 class Database extends EventEmitter {
     models = {};
     tables = {};
+
+    static _queue = [];
+
+    static queue(modelName, data) {
+        const model = new this.models[modelName](data);
+        model.save();
+    }
 
     constructor(db) {
         super();
@@ -55,7 +64,33 @@ class Database extends EventEmitter {
 
     delete() {}
 
-    addModel(Model) {}
+    loadModelDirectory(dir) {
+        function loadModel(path) {
+            return new Promise((resolve, reject) => {
+                import(path).then((model) => {
+                    resolve(model.default);
+                });
+            });
+        }
+
+        const isFile = (fileName) => {
+            return fs.lstatSync(fileName.toString()).isFile();
+        };
+        const files = fs
+            .readdirSync(dir)
+            .map((fileName) => {
+                return path.join(dir, fileName);
+            })
+            .filter(isFile)
+            .map(loadModel);
+
+        return Promise.all(files).then((models) => {
+            models.forEach((model) => {
+                this.addModel(model);
+            });
+            return true;
+        });
+    }
 
     model(name) {
         return this.models[name];

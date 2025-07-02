@@ -58,6 +58,10 @@ class HTMLParser {
         return attrs;
     }
 
+    parse() {
+        return ElementParser.parse(this.source);
+    }
+
     static parse(el) {
         return ElementParser.parse(el);
     }

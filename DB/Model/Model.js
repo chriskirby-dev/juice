@@ -4,9 +4,8 @@ import DistinctArray from "../../DataTypes/DistinctArray.mjs";
 import { type, empty, equals, exists } from "../../Util/Core.mjs";
 import { normalCase, studly, unStudly, pascalCase, dashed } from "../../Util/String.mjs";
 import { setEnumerability } from "../../Util/Object.mjs";
-import LookupChain from "../LookupChain.js";
 import Watch from "../../Proxy/Watch.mjs";
-
+import ModelSQLBuilder from "./ModelSQLBuilder.js";
 import FormBuilder from "../../Form/Builder.mjs";
 
 class Model extends EventEmitter {
@@ -38,6 +37,22 @@ class Model extends EventEmitter {
         return this.constructor;
     }
 
+    static queryBuilder() {
+        return new ModelSQLBuilder(this);
+    }
+
+    static getPrepared(name) {
+        return this.db.getPrepared(this.name, name);
+    }
+
+    static hasPrepared(name) {
+        return this.db.hasPrepared(this.name, name);
+    }
+
+    static savePrepared(name, statement) {
+        return this.db.savePrepared(this.name, name, statement);
+    }
+
     /**
      * Creates a new Collection instance from the given data. If no data is
      * provided, an empty array is used. If data is not an array, an error is
@@ -60,6 +75,10 @@ class Model extends EventEmitter {
         return new Collection(data, this);
     }
 
+    static migrations() {
+        return [];
+    }
+
     /**
      * Deletes records from the database table that match the given conditions.
      *
@@ -71,11 +90,17 @@ class Model extends EventEmitter {
         if (conditions && !type(conditions, "object")) {
             conditions = { [this.primaryKey]: conditions };
         }
-        this.db.delete(this.tableName, conditions);
+        const sql = new ModelSQLBuilder(this).delete(conditions).build();
+        return this.db.run(sql.statement, sql.args);
     }
 
     static count(conditions = {}) {
-        return Promise.resolve(this.db.count(this.tableName, conditions));
+        const sql = new ModelSQLBuilder(this).count(conditions).build();
+        return this.db.get(sql.statement, sql.args).count;
+    }
+
+    static exists(conditions = {}) {
+        return new ModelSQLBuilder(this).where(conditions).exists();
     }
 
     static max(property, conditions = {}) {
@@ -88,15 +113,32 @@ class Model extends EventEmitter {
     }
 
     static select(...columns) {
-        return new LookupChain(this).select(...columns);
+        if (!columns.length) columns = ["*"];
+        return new ModelSQLBuilder(this).select(...columns);
     }
 
     static where(conditions, options) {
-        return new LookupChain(this, options).where(conditions);
+        return new ModelSQLBuilder(this).select("*").where(conditions);
     }
 
-    static all(limit, offset) {
-        return this.Collection(new LookupChain(this).all(limit, offset));
+    static all(limit, offset, queue = false) {
+        return new ModelSQLBuilder(this).select("*").limit(limit).offset(offset).all();
+    }
+
+    static insertMany(data, prepared = null) {
+        if (!prepared) {
+            const sql = new ModelSQLBuilder(this).insert(data[0]).build();
+            const { statement, args } = sql;
+            console.log(this.db);
+            prepared = this.db.prepare(statement);
+        }
+        const insertMany = this.db.transaction((records) => {
+            for (const record of records) {
+                const data = Array.isArray(record) ? record : Object.values(record);
+                prepared.run(...data);
+            }
+        });
+        return this.Collection(insertMany(data));
     }
 
     static fromId(id) {
@@ -111,7 +153,7 @@ class Model extends EventEmitter {
         if (conditions && !type(conditions, "object")) {
             conditions = { [this.primaryKey]: conditions };
         }
-        return new LookupChain(this, options).where(conditions).first();
+        return new ModelSQLBuilder(this).where(conditions);
     }
 
     static formOptions(label, value) {
@@ -182,7 +224,7 @@ class Model extends EventEmitter {
         this.component.attributes = {
             id(model) {
                 return self.component.tagName + "-" + model[model.primaryKey];
-            },
+            }
         };
 
         if (!this.primaryLabel) {
@@ -197,8 +239,25 @@ class Model extends EventEmitter {
             this.primaryLabel = primaryLabel;
         }
 
+        if (this.preparedStatements) {
+            for (const [key, value] of Object.entries(this.preparedStatements)) {
+                this._prepared[key] = value;
+            }
+        }
+
+        const count = this.count();
+        if (count == 0 && this.seed) {
+            const seed = this.seed();
+            this.insertMany(seed);
+            this.onDBConnect("insertMany", seed);
+        }
+
+        if (this.afterInitialize) this.afterInitialize();
+
         this.initialized = true;
     }
+
+    static onDBConnect(job, args) {}
 
     static useDatabase(db) {
         this.db = db;
@@ -280,7 +339,7 @@ class Model extends EventEmitter {
         this.#required = new DistinctArray();
         this.protected.changed = new DistinctArray();
         this.protected.relatedChanged = new DistinctArray();
-        this.protected.with = new DistinctArray([..._with]);
+        this.protected.with = new DistinctArray(..._with);
         this.protected.appends = new DistinctArray(...this.static.appends);
         this.#changed = new DistinctArray();
 
@@ -386,6 +445,11 @@ class Model extends EventEmitter {
         this.emit("reset");
     }
 
+    update(data) {
+        this.fill(data);
+        this.emit("updated");
+    }
+
     /**
      * Save current model data to database.
      */
@@ -424,8 +488,15 @@ class Model extends EventEmitter {
             if (this.hasColumn("updated_at")) {
                 data.updated_at = new Date().toISOString();
             }
-
-            if (this.async) {
+            if (this.queueOps) {
+                this.db.queue({
+                    action: "run",
+                    statement: new ModelSQLBuilder(this.static)
+                        .update(data)
+                        .where({ [primaryKey]: this[primaryKey] })
+                        .build().statement
+                });
+            } else if (this.async) {
                 return this.db.update(this.static.tableName, data, { [primaryKey]: this[primaryKey] }).then(() => {
                     this.saveRelated().then(onComplete);
                 });
@@ -439,7 +510,12 @@ class Model extends EventEmitter {
             if (this.hasColumn("created_at")) {
                 data.created_at = new Date().toISOString();
             }
-            if (this.async) {
+            if (this.queueOps) {
+                this.db.queue({
+                    action: "run",
+                    statement: new ModelSQLBuilder(this.static).insert(data).statement
+                });
+            } else if (this.async) {
                 return this.db.insert(this.static.tableName, data).then((insert) => {
                     this[primaryKey] = insert.lastInsertRowid;
                     return this.saveRelated().then(onComplete);
@@ -490,14 +566,14 @@ class Model extends EventEmitter {
         if (this.async) {
             return this.db
                 .first(this.static.tableName, "*", {
-                    [this.primaryKey]: this[this.primaryKey],
+                    [this.primaryKey]: this[this.primaryKey]
                 })
                 .then((data) => {
                     this.fill(data, false, true);
                 });
         } else {
             const data = this.db.first(this.static.tableName, "*", {
-                [this.primaryKey]: this[this.primaryKey],
+                [this.primaryKey]: this[this.primaryKey]
             });
             this.fill(data, false, true);
         }
@@ -568,16 +644,29 @@ class Model extends EventEmitter {
      * @returns {Object} including any relations
      */
 
-    toJson() {
+    toJson(only = null) {
         const schema = this.static.schema;
         const json = {};
 
-        for (const prop in schema) {
-            if (prop == "collection") continue;
-            if (schema.type && schema.type == "collection") {
-                json[prop] = this.#data[prop].toJson();
-            } else {
-                json[prop] = this.#data[prop];
+        if (only) {
+            for (const prop in schema) {
+                if (only.includes(prop)) {
+                    if (schema.type && schema.type == "collection") {
+                        json[prop] = this.#data[prop].toJson();
+                    } else {
+                        json[prop] = this.#data[prop];
+                    }
+                }
+            }
+            return json;
+        } else {
+            for (const prop in schema) {
+                if (prop == "collection") continue;
+                if (schema.type && schema.type == "collection") {
+                    json[prop] = this.#data[prop].toJson();
+                } else {
+                    json[prop] = this.#data[prop];
+                }
             }
         }
 
@@ -773,7 +862,7 @@ class Model extends EventEmitter {
                 });
             } else {
                 //Standard JSON
-                //console.log('WATCH', type(value), value);
+                //console.log("WATCH", prop, type(value), value);
 
                 Watch.deep(value, (path, value) => {
                     // app.log('Watch Deep Change', path, val);
@@ -847,7 +936,7 @@ class Model extends EventEmitter {
             } else {
                 loadRelationship = function loadRelationship() {
                     const query = RelatedModel.where({
-                        [foreignKey]: self[localKey],
+                        [foreignKey]: self[localKey]
                     });
                     if (schema.orderBy) query.orderBy(schema.orderBy);
                     relation = query.all();
@@ -871,7 +960,7 @@ class Model extends EventEmitter {
                 loadRelationship = function loadRelationship() {
                     relation = RelatedModel.where(
                         {
-                            [foreignKey]: self[localKey],
+                            [foreignKey]: self[localKey]
                         },
                         { parent: self, with: [] }
                     ).first();
@@ -930,7 +1019,7 @@ class Model extends EventEmitter {
                 // Update the foreign key and track changes if the model is ready
                 if (this.ready) this.protected.relatedChanged.push(key);
                 if (relationType !== "hasMany") relation[foreignKey] = this[localKey];
-            },
+            }
         });
     }
 
@@ -967,7 +1056,7 @@ class Model extends EventEmitter {
                 if (type(this[accessor], "function") && !schema[prop]) {
                     Object.defineProperty(this, prop, {
                         get: () => this[accessor](),
-                        set: () => false,
+                        set: () => false
                     });
                 }
             }
@@ -995,6 +1084,7 @@ class Model extends EventEmitter {
         }
 
         // app.log('data initialized ', this.#data)
+
         this.ready = true;
         if (this.onReady) this.onReady();
     }
