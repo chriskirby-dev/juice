@@ -47,6 +47,18 @@ export function setEnumerability(target, props = [], enumerable = true, enumRest
     }
 }
 
+export function flatten(obj, parentKey = "", result = {}) {
+    for (const [key, value] of Object.entries(obj)) {
+        const path = parentKey ? `${parentKey}.${key}` : key;
+        if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+            flattenObject(value, path, result);
+        } else {
+            result[path] = value;
+        }
+    }
+    return result;
+}
+
 export function objectFilter(obj, filter) {
     return Object.keys(obj)
         .filter((key) => filter(key, obj[key]))

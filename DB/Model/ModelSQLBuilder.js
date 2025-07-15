@@ -27,14 +27,21 @@ class ModelSQLBuilder extends SQLBuilder {
         return new this.Model(this.Model.db.get(statement, args));
     }
 
-    all() {
+    all(asCollection = true) {
         const { statement, args } = this.build();
-        return this.Model.Collection(this.Model.db.all(statement, args));
+        return asCollection
+            ? this.Model.Collection(this.Model.db.all(statement, args))
+            : this.Model.db.all(statement, args);
     }
 
     queue(action) {
         const { statement, args } = this.build();
         this.Model.db.queue({ action, statement, args });
+    }
+
+    save() {
+        const { statement, args } = this.build();
+        return this.Model.db.run(statement, args);
     }
 
     exists() {

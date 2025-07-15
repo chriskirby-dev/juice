@@ -30,6 +30,7 @@ class Model extends EventEmitter {
     #private = {};
     #protected = {};
     relationships = {};
+    static _prepared = {};
 
     static component = { tagName: "", attributes: {}, instance: null };
 
@@ -117,12 +118,20 @@ class Model extends EventEmitter {
         return new ModelSQLBuilder(this).select(...columns);
     }
 
+    static pluck(prop) {
+        return new ModelSQLBuilder(this).select(prop);
+    }
+
     static where(conditions, options) {
         return new ModelSQLBuilder(this).select("*").where(conditions);
     }
 
     static all(limit, offset, queue = false) {
         return new ModelSQLBuilder(this).select("*").limit(limit).offset(offset).all();
+    }
+
+    static insert(data) {
+        return new ModelSQLBuilder(this).insert(data).save();
     }
 
     static insertMany(data, prepared = null) {

@@ -3,6 +3,8 @@ import TokenContent from "./Content.js";
 import fs from "fs";
 import path from "path";
 import EventEmitter from "events";
+import { safeEval, findTokensInString } from "../Util/Eval.js";
+
 function shortId(length = 8) {
     return Math.random()
         .toString(36)
@@ -104,10 +106,11 @@ class Token extends EventEmitter {
     async parse() {
         this.parsing = true;
         const raw = this.string.trim();
+        console.log("Raw Token", raw);
         const parsed = /^\{(.*?)\{([\s\S]*)\}(.*?)\}$/m.exec(raw);
-
+        console.log(parsed);
         const command = parsed[1].trim();
-        const body = parsed[2].trim();
+        let body = parsed[2].trim();
         const footer = parsed[3].trim();
 
         this.source = { command, body, footer };
@@ -119,6 +122,10 @@ class Token extends EventEmitter {
         };
 
         if (raw.startsWith("{{") && raw.endsWith("}}")) {
+            if (body.includes("||")) {
+                this.default = body.split("||")[1].trim();
+                body = body.split("||")[0].trim();
+            }
             this.contextId = body;
             this.type = "variable";
             this.render = function RenderVariable(context) {
@@ -127,7 +134,8 @@ class Token extends EventEmitter {
             this.config = {
                 type: "variable",
                 target: "inner",
-                contextId: this.contextId
+                contextId: this.contextId,
+                inTag: this.inTag
             };
             this.parsing = false;
             this.isReady = true;
@@ -137,8 +145,16 @@ class Token extends EventEmitter {
 
             this.type = type;
 
-            if (type === "each") {
-                this.type = "each";
+            if (type === "if") {
+                this.config = {
+                    type: this.type,
+                    statement: `return ${args.join(" ")}`,
+                    value: body,
+                    inTag: this.inTag
+                };
+
+                this.render = this.renderIf;
+            } else if (type === "each") {
                 this.render = this.renderEach;
                 const item = args[2] || "item";
                 const contextId = (this.contextId = args[0]);
@@ -149,7 +165,8 @@ class Token extends EventEmitter {
                     contextId: this.contextId,
                     list: args[0],
                     item,
-                    template: body
+                    template: body,
+                    inTag: this.inTag
                 };
 
                 const content = new TokenContent(body, null, { root: this.parent.root, parent: this });
@@ -213,28 +230,50 @@ class Token extends EventEmitter {
     }
 
     computeValue(context = this.context) {
-        const { templateVars } = this;
+        const { templateVars, config } = this;
 
-        const CONTEXT = getValueFromPath(context, this.contextId, this.type === "each" ? [] : "");
-        switch (this.type) {
-            case "variable":
-                return CONTEXT;
-            case "each":
-                const values = CONTEXT.map((data) => {
-                    const ctx = { [this.item]: data };
-                    // console.log("EACH CONTEXT ITEM", ctx);
-                    return templateVars.content.render(ctx);
-                });
+        if (this.contextId) {
+            const CONTEXT = getValueFromPath(context, this.contextId, this.type === "each" ? [] : "");
 
-                return values.join("\n");
-            case "include":
-                return templateVars.content.render(CONTEXT);
+            switch (this.type) {
+                case "variable":
+                    return CONTEXT === "" ? this.default || "" : CONTEXT;
+                case "each":
+                    const values = CONTEXT.map((data) => {
+                        const ctx = { [this.config.item]: data };
+                        // console.log("EACH CONTEXT ITEM", ctx);
+                        return templateVars.content.render(ctx);
+                    });
+
+                    return values.join("\n");
+                case "include":
+                    return templateVars.content.render(CONTEXT);
+                case "if":
+                    return;
+                default:
+            }
         }
+    }
+
+    renderIf(context) {
+        if (context) this.setContext(context);
+        let rendered = "";
+        const { config } = this;
+        if (safeEval(config.statement, context)) {
+            const stringTokens = findTokensInString(config.value, this.context);
+            if (stringTokens.length) {
+                rendered = safeEval(config.value, context);
+            } else {
+                rendered = config.value;
+            }
+        }
+        // console.log("IF RENDERED", rendered);
+        return rendered;
     }
 
     renderEach(context) {
         if (context) this.setContext(context);
-        const { templateVars } = this;
+
         const value = this.computeValue(context);
         // console.log("EACH TEMP Var", templateVars), value;
         const rendered = [this.container.rendered, value, this.container.close];

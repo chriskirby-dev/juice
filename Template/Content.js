@@ -50,8 +50,22 @@ export class TokenContent extends EventEmitter {
         let token = {};
         let chunk = "";
         let inHTMLTag = false;
+        let maxDepth = 0;
         for (let i = 0; i < string.length; i++) {
             if (string[i] === "<") {
+                /*
+                if (string.substring(i, i + 5) === "<script") {
+                    console.log("SCRIPT", i);
+                    const scriptEnd = string.indexOf("</script>", i);
+                    if (scriptEnd > -1) {
+                        splitContent.push(string.slice(i, scriptEnd + 8));
+                        console.log("SCRIPT END", scriptEnd);
+                        i = scriptEnd + 8;
+                        chunk = "";
+                        continue;
+                    }
+                }
+                    */
                 inHTMLTag = true;
             } else if (string[i] === ">") {
                 inHTMLTag = false;
@@ -62,19 +76,24 @@ export class TokenContent extends EventEmitter {
                     chunk = "";
                 }
                 count++;
+                maxDepth = count;
                 if (!token.id) {
                     token.start = i;
                     token.id = shortId();
                 }
             } else if (string[i] === close) {
                 count--;
-                if (count === 0) {
+                if (count === 0 && maxDepth > 1) {
+                    maxDepth = 0;
                     token.end = i;
                     token.string = string.slice(token.start, token.end + 1);
                     const t = new Token(token, this.context, parent, inHTMLTag);
                     token = {};
                     tokens.push(t);
                     splitContent.push(t);
+                } else if (count === 0) {
+                    chunk = chunk + string.slice(token.start, i + 1);
+                    token = {};
                 }
             } else if (!token.id) {
                 chunk += string[i];

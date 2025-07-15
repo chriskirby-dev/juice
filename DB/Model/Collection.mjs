@@ -1,9 +1,8 @@
-
-import { default as Util, type, empty } from '../../Util/Core.mjs';
-import * as Condition from '../../Util/Condition.mjs';
-import DistinctArray from '../../DataTypes/DistinctArray.mjs';
+import { default as Util, type, empty } from "../../Util/Core.mjs";
+import * as Condition from "../../Util/Condition.mjs";
+import DistinctArray from "../../DataTypes/DistinctArray.mjs";
 //import { PackageFile, FileCollection } from './PackageFile.mjs';
-import Emitter from '../../Event/Emitter.mjs';
+import Emitter from "../../Event/Emitter.mjs";
 
 const studly = Util.String.studly;
 const unStudly = Util.String.unStudly;
@@ -14,15 +13,14 @@ const unStudly = Util.String.unStudly;
  */
 
 class SuperCollection extends Array {
-
     /**
      * Array of primary key names used for identifying models within the collection.
      * @type {Array.<string>}
      * @static
      */
 
-    static primaryKeys = ['id','uuid'];
-    
+    static primaryKeys = ["id", "uuid"];
+
     #indexes = {};
     #options = {};
     #parent = null;
@@ -41,8 +39,8 @@ class SuperCollection extends Array {
      * @type {string}
      */
 
-    primaryKey = 'id';
-    
+    primaryKey = "id";
+
     /**
      * Array of exceptions encountered during collection operations.
      * @type {Array.<*>}
@@ -78,29 +76,30 @@ class SuperCollection extends Array {
      * @returns {SuperCollection} Returns the initialized collection.
      */
 
-    of( Model, options={} ){
-
+    of(Model, options = {}) {
         Emitter.bind(this);
 
-        if( Model.collectionOptions ){
-            options = Util.Object.merge( Model.collectionOptions, options );
+        if (Model.collectionOptions) {
+            options = Util.Object.merge(Model.collectionOptions, options);
         }
 
         this.Model = Model;
         this.#options = options;
-        
-        this.defaultSort = Model.collectionDefaultSort || function( a, b ){
-            return 1;
-        }
-    
-        if(this.length){
+
+        this.defaultSort =
+            Model.collectionDefaultSort ||
+            function (a, b) {
+                return 1;
+            };
+
+        if (this.length) {
             //console.log(this);
             //If collection contains items sorted according to the default sorting
             this.sort();
-            for(let i=0;i<this.length;i++){
-                if(empty(this[i])) continue;
-                this[i] = this.#prepare( this[i] );
-                this.emit('insert', this[i], i );
+            for (let i = 0; i < this.length; i++) {
+                if (empty(this[i])) continue;
+                this[i] = this.#prepare(this[i]);
+                this.emit("insert", this[i], i);
             }
         }
 
@@ -115,14 +114,18 @@ class SuperCollection extends Array {
      * @returns {boolean} Returns true if there are dirty instances, otherwise false.
      */
 
-    isDirty(){ return this.#changed.length > 0; }
+    isDirty() {
+        return this.#changed.length > 0;
+    }
 
     /**
      * Gets the array of dirty (changed) instances in the collection.
      * @returns {DistinctArray} Returns an array containing the dirty instances.
      */
 
-    get dirty(){ return this.#changed; }
+    get dirty() {
+        return this.#changed;
+    }
 
     /**
      * Prepares a record for insertion into the collection.
@@ -131,59 +134,62 @@ class SuperCollection extends Array {
      * @returns {Model} Returns the prepared Model instance.
      */
 
-    setParent( parent ){
+    setParent(parent) {
         this.#parent = parent;
     }
 
-    getParent(){
+    getParent() {
         return this.#parent;
     }
 
-    hasParent( parent ){
+    hasParent(parent) {
         return this.#parent ? true : false;
     }
 
-    has( instance ){
+    has(instance) {
         const primaryKey = instance[this.primaryKey];
-        if(primaryKey === null) return -1;
-        if( this.#indexes[this.primaryKey].indexOf(primaryKey) !== -1 ){}
+        if (primaryKey === null) return -1;
+        if (this.#indexes[this.primaryKey].indexOf(primaryKey) !== -1) {
+        }
     }
 
-    create( data={} ){
-        const instance = this.#prepare( data );
+    create(data = {}) {
+        const instance = this.#prepare(data);
         const idx = this.insert(instance);
-       // console.log('create',idx);
-        this.#changed.push( idx );
+        // console.log('create',idx);
+        this.#changed.push(idx);
         return instance;
     }
 
-    changed( reset ){
+    changed(reset) {
         const changed = this.extract(this.#changed);
-        if( reset ) this.#changed.reset();
+        if (reset) this.#changed.reset();
         return changed;
     }
 
-    hasIndex(key){
+    hasIndex(key) {
         return this.#indexes[key] ? true : false;
     }
 
-    searchIndex( key, value ){
+    searchIndex(key, value) {
         return this.#indexes[key].indexOf(value);
     }
 
-    searchIndexAll( key, value ){
-        return Util.Array.indexesOf( value, this.#indexes[key] );
+    searchIndexAll(key, value) {
+        return Util.Array.indexesOf(value, this.#indexes[key]);
     }
 
-
-    #prepare( record ){
+    #prepare(record) {
         //console.log('#prepare', record);
-        const instance = record instanceof this.Model ? record : new this.Model(record, { ...this.#options, ...{ parent: this.#parent }});
-         instance.parent = this.#parent;
+        const instance =
+            record instanceof this.Model
+                ? record
+                : new this.Model(record, { ...this.#options, ...{ parent: this.#parent } });
+        instance.parent = this.#parent;
         instance.collection = this;
-        instance.on('change', (prop, value) => {
+        instance.on("change", (prop, value) => {
             this.#changed.push(instance);
-            if (!this.silent) this.emit('change', instance, prop, value);
+            if (!this.silent) this.emit("change", instance, prop, value);
         });
         //console.log('prepare complete');
         return instance;
@@ -194,7 +200,7 @@ class SuperCollection extends Array {
      * @private
      */
 
-    #initialize(){
+    #initialize() {
         const { schema } = this.Model;
         const { indexes = [] } = this.#options;
         for (const key in schema) {
@@ -212,20 +218,20 @@ class SuperCollection extends Array {
         if (index === null) {
             index = this.getSortIndex(instance);
         }
-    
+
         // Check if the instance already exists in the collection
         const primaryKey = instance[this.primaryKey];
         const exists = instance.exists && this.#indexes[this.primaryKey]?.includes(primaryKey);
-    
+
         // Set up event listeners for the instance
         this.setupInstanceListeners(instance);
-    
+
         // Insert the instance at the specified index
         if (Number.isInteger(index)) {
             this.shiftRight(1, index);
             this[index] = instance;
         }
-    
+
         // Update the changed list and indexes
         if (exists) {
             this.#changed.push(instance);
@@ -235,31 +241,31 @@ class SuperCollection extends Array {
                 this.#indexes[prop][index] = instance[prop];
             }
         }
-    
+
         // Emit events for the insertion
         if (!this.silent) {
-            this.emit('change', instance, 'insert');
+            this.emit("change", instance, "insert");
         }
-        this.emit('insert', instance, index);
-    
+        this.emit("insert", instance, index);
+
         return index;
     }
 
     setupInstanceListeners(instance) {
-        instance.on('change', (prop, value) => {
+        instance.on("change", (prop, value) => {
             if (this.hasIndex(prop)) {
                 this.#indexes[prop][this.indexOfItem(instance)] = value;
             }
             this.#changed.push(instance);
-            if (!this.silent) this.emit('change', instance, prop, value);
+            if (!this.silent) this.emit("change", instance, prop, value);
         });
-    
-        instance.on('saved', () => {
+
+        instance.on("saved", () => {
             const idx = this.#changed.findIndex((inst) => inst === instance);
             this.#changed.splice(idx, 1);
         });
-    
-        instance.on('deleted', () => {
+
+        instance.on("deleted", () => {
             this.delete(instance);
         });
     }
@@ -269,48 +275,48 @@ class SuperCollection extends Array {
         if (index !== -1) {
             // Remove the instance from the collection
             this.splice(index, 1);
-            
+
             // Remove the instance from indexes
             for (const prop in this.#indexes) {
                 this.#indexes[prop].splice(index, 1);
             }
-            
+
             // Remove event listener
-            instance.removeListener('change', 'collectionChange');
-            
+            instance.removeListener("change", "collectionChange");
+
             // Emit delete event if not silent
             if (!this.silent) {
-                this.emit('delete', instance, index);
+                this.emit("delete", instance, index);
             }
-            
+
             // Mark the instance as deleted
             instance.deleted = Date.now();
-            
+
             // Shift remaining elements in the collection
             for (let i = index; i < this.length; i++) {
                 this[i] = this[i + 1];
             }
             this.pop();
-            
+
             // Remove instance index from indexes
             for (const prop in this.#indexes) {
                 this.#indexes[prop].splice(index, 1);
             }
-            
+
             // Emit delete event for the instance
-            this.emit('change', instance, 'deleted');
-            this.emit('change', instance, 'delete', instance.deleted);
-            instance.removeListener('change', 'collectionChange');
-            this.emit('delete', instance, index);
+            this.emit("change", instance, "deleted");
+            this.emit("change", instance, "delete", instance.deleted);
+            instance.removeListener("change", "collectionChange");
+            this.emit("delete", instance, index);
         }
     }
 
-    getSortIndex( item, sorter=this.defaultSort ){
+    getSortIndex(item, sorter = this.defaultSort) {
         let i = -1;
         let s = 1;
-        while( i < this.length && s == 1 ){
+        while (i < this.length && s == 1) {
             i++;
-            s = sorter( item, this[i] );
+            s = sorter(item, this[i]);
         }
         return i;
     }
@@ -320,7 +326,7 @@ class SuperCollection extends Array {
             this[i + increment] = this[i];
         }
     }
-    
+
     shiftLeft(increment, startAt = 0, endAt = this.length - 1) {
         const newLength = this.length - increment;
         for (let i = startAt; i <= endAt; i++) {
@@ -331,96 +337,90 @@ class SuperCollection extends Array {
         this.length = newLength;
     }
 
-    indexOfItem(item){
-        for(let i=0;i<this.length;i++){
-            if( this[i] === item ) return i;
+    indexOfItem(item) {
+        for (let i = 0; i < this.length; i++) {
+            if (this[i] === item) return i;
         }
     }
 
-    push( ...items ){
-        const idxs = items.map( item => {
-            return this.insert(this.#prepare( item ));
+    push(...items) {
+        const idxs = items.map((item) => {
+            return this.insert(this.#prepare(item));
         });
         return idxs.length == 1 ? idxs[0] : idxs;
     }
 
-    unshift( ...items ){
-        items = items.map( item => this.#prepare( item ) );
-        return super.unshift( ...items );
+    unshift(...items) {
+        items = items.map((item) => this.#prepare(item));
+        return super.unshift(...items);
     }
 
-    saveAll( force ){
+    saveAll(force) {
         const all = this.Model.all();
-        for(let i=0;i<all.length;i++){
+        for (let i = 0; i < all.length; i++) {
             all[i].save();
         }
     }
 
-    makePutPatch(){
+    makePutPatch() {
         const pk = this.Model.primaryKey;
         const patch = { insert: [], update: [], delete: [] };
-       // console.log('Make Patch', this.#changed);
+        // console.log('Make Patch', this.#changed);
         const inserts = [];
         const updates = [];
-        this.#changed.slice(0).forEach( (inst) => {
-
+        this.#changed.slice(0).forEach((inst) => {
             const changes = inst.getChanges();
-           /// console.log('changes',changes);
-            if(inst._delete){
-                patch.delete.push( inst[this.Model.primaryKey] );
-            }else if(!inst.exists){
-                patch.insert.push( changes );
+            /// console.log('changes',changes);
+            if (inst._delete) {
+                patch.delete.push(inst[this.Model.primaryKey]);
+            } else if (!inst.exists) {
+                patch.insert.push(changes);
                 inserts.push(inst);
-            }else{
-                patch.update.push( changes );
+            } else {
+                patch.update.push(changes);
             }
         });
-       // console.log('patch',patch);
+        // console.log('patch',patch);
 
-        if( ( patch.insert.length + patch.update.length + patch.delete.length ) > 0 ){
-            this.Model.patch( patch ).then( (response) => {
-             //   console.log(response);
+        if (patch.insert.length + patch.update.length + patch.delete.length > 0) {
+            this.Model.patch(patch).then((response) => {
+                //   console.log(response);
 
-                if(response.insert && response.insert.length ){
-                    for( let i=0;i<inserts.length;i++ ){
-                        inserts[i].afterSave(response.insert[i], 'created');
+                if (response.insert && response.insert.length) {
+                    for (let i = 0; i < inserts.length; i++) {
+                        inserts[i].afterSave(response.insert[i], "created");
                         this.#changed.remove(inserts[i]);
-                    } 
+                    }
                 }
 
-                if(response.update && response.update.length ){
-                    for( let i=0;i<response.update.length;i++ ){
+                if (response.update && response.update.length) {
+                    for (let i = 0; i < response.update.length; i++) {
                         const update = response.update[i];
-                        const instance =  this.findBy(pk, update[pk] );
-                        instance.afterSave(update, 'updated');
+                        const instance = this.findBy(pk, update[pk]);
+                        instance.afterSave(update, "updated");
                         this.#changed.remove(instance);
                     }
                 }
 
-                if(response.delete && response.delete.length ){
-                    for( let i=0;i<response.delete.length;i++ ){
-                        const instance =  this.findBy(pk, esponse.delete[i] );
-                        if(instance){
+                if (response.delete && response.delete.length) {
+                    for (let i = 0; i < response.delete.length; i++) {
+                        const instance = this.findBy(pk, esponse.delete[i]);
+                        if (instance) {
                             instance.delete();
                             this.#changed.remove(instance);
                         }
                     }
                 }
 
-                this.emit('saved');
+                this.emit("saved");
             });
         }
         return patch;
     }
-    
-    
 }
 
 export class CollectionArray extends SuperCollection {
-
-
-    
-/*
+    /*
     #validate( instance ){
 
         const { Model } = this;/
@@ -484,118 +484,101 @@ export class CollectionArray extends SuperCollection {
 
     */
 
-    
-    count(){
-        return this.filter( inst => inst !== null ).length;
+    count() {
+        return this.filter((inst) => inst !== null).length;
     }
 
-    
-
-    subset(data=[], options={}){
+    subset(data = [], options = {}) {
         const Collection = this.constructor;
-        return new Collection( data ).of( this.Model, options );
+        return new Collection(data).of(this.Model, options);
     }
 
-    
-    pluck(prop){
+    pluck(prop) {
         const plucked = [];
-        for(let i=0;i<this.length;i++){
-            plucked.push( this[i][prop] )
+        for (let i = 0; i < this.length; i++) {
+            plucked.push(this[i][prop]);
         }
         return plucked;
     }
-    
 
-   
-
-    removeAtIndex( index, ...replace ){
-        this.splice( index, 1, ...replace );
+    removeAtIndex(index, ...replace) {
+        this.splice(index, 1, ...replace);
     }
 
-    replace( olditem, newitem ){
+    replace(olditem, newitem) {
         const index = this.indexOfItem(olditem);
-        this[index].fill(newitem)
+        this[index].fill(newitem);
     }
 
-
-    sort( sorter=this.defaultSort ){
-        const sort = super.sort( sorter );
+    sort(sorter = this.defaultSort) {
+        const sort = super.sort(sorter);
         return sort;
     }
 
-
-
-    findBy(key, value, exclude, all=false ){
-        const indexes = this.findIndexBy( key, value, all, exclude );
-        if(indexes === null) return null;
+    findBy(key, value, exclude, all = false) {
+        const indexes = this.findIndexBy(key, value, all, exclude);
+        if (indexes === null) return null;
         return this.extract(indexes);
     }
 
-    findIndexBy( key, value, all=false, exclude ){
-        
-        if( !Util.type( key, 'array' ) ) key = [key];
-        if( !Util.type( value, 'array' ) ) value = [value];
-        if( exclude !== undefined && !Util.type( exclude, 'array' ) ) exclude = [exclude];
+    findIndexBy(key, value, all = false, exclude) {
+        if (!Util.type(key, "array")) key = [key];
+        if (!Util.type(value, "array")) value = [value];
+        if (exclude !== undefined && !Util.type(exclude, "array")) exclude = [exclude];
         const found = [];
 
-        for(let i=0;i<this.length;i++){
+        for (let i = 0; i < this.length; i++) {
             let match = true;
             const inst = this[i];
-            if(!(inst instanceof this.Model)) continue;
-            for(let k=0;k<key.length;k++){
+            if (!(inst instanceof this.Model)) continue;
+            for (let k = 0; k < key.length; k++) {
                 const _key = key[k];
                 const _value = value[k];
-                if(Util.type( _value, 'function')){
-                    
-                    if( _value( inst[_key] ) !== true ) match = false;
-                }else{
-                    if( inst[_key] !== _value ) match = false;
+                if (Util.type(_value, "function")) {
+                    if (_value(inst[_key]) !== true) match = false;
+                } else {
+                    if (inst[_key] !== _value) match = false;
                 }
 
-                if(!match) break;
+                if (!match) break;
             }
-            if(match && (!exclude || exclude.indexOf(i) === -1)) found.push( i );
-            if(found.length && !all) break;
+            if (match && (!exclude || exclude.indexOf(i) === -1)) found.push(i);
+            if (found.length && !all) break;
         }
-       // app.log('FIND INDEXES BY', key, value,found );
-       
-        return all ? found : ( found.length ? found[0] : null);
+        // app.log('FIND INDEXES BY', key, value,found );
+
+        return all ? found : found.length ? found[0] : null;
     }
 
-    extract( indexes ){
-        let output = 'array';
-        if(!Util.type(indexes, 'array')){
-            output = 'singular';
+    extract(indexes) {
+        let output = "array";
+        if (!Util.type(indexes, "array")) {
+            output = "singular";
             indexes = [indexes];
         }
         const results = [];
-        for(let i=0;i<indexes.length;i++){
-            if(this[indexes[i]])
-            results.push(this[indexes[i]]);
+        for (let i = 0; i < indexes.length; i++) {
+            if (this[indexes[i]]) results.push(this[indexes[i]]);
         }
-        return output == 'array' ? results : results[0];
+        return output == "array" ? results : results[0];
     }
 
-    
-
-    getIndex(instance){
-        for(let i=0;i<this.length;i++){
-            if(this[i] === instance) return i;
+    getIndex(instance) {
+        for (let i = 0; i < this.length; i++) {
+            if (this[i] === instance) return i;
         }
         return null;
     }
 
-    reset(records=[]){
-        while(this.length > 0) this.shift();
-        this.emit('reset');
-        if(records.length) {
+    reset(records = []) {
+        while (this.length > 0) this.shift();
+        this.emit("reset");
+        if (records.length) {
             this.push(...records);
-        } 
+        }
     }
 
-    
-
-/*
+    /*
     pushInstance(instance){
         const self = this;
         const { Model } = this;
@@ -617,68 +600,60 @@ export class CollectionArray extends SuperCollection {
         return i;
     }
 */
-   
 
-    updateAt( index, data ){
+    updateAt(index, data) {}
 
-    }
-
-    update( data, silent=false, saved = false ){
-        if(!data) return;
-        app.log('UPDATE COLLECTION', data, saved,this.Model.primaryKey  );
+    update(data, silent = false, saved = false) {
+        if (!data) return;
+        app.log("UPDATE COLLECTION", data, saved, this.Model.primaryKey);
         const pk = this.Model.primaryKey;
-        for( let i=0;i<data.length;i++ ){
-            const current = this.findBy( pk, data[i][pk] );
-            if(current && current.diff(data[i]) ){
+        for (let i = 0; i < data.length; i++) {
+            const current = this.findBy(pk, data[i][pk]);
+            if (current && current.diff(data[i])) {
                 current.fill(data[i]);
-            }else if(!current){
+            } else if (!current) {
                 this.push(data[i]);
             }
         }
     }
-/*
+    /*
     
 */
-   save(){
-
-        if(this.Model.collectionPatch){
+    save() {
+        if (this.Model.collectionPatch) {
             clearTimeout(this.saveTO);
-            this.saveTO = setTimeout(() => this.makePutPatch(), 500 );
+            this.saveTO = setTimeout(() => this.makePutPatch(), 500);
 
             return new Promise((resolve, reject) => {
-                this.once('saved', () => resolve() );
+                this.once("saved", () => resolve());
             });
-        }
-
-   }
-
-    each( fn ){
-        
-        for(let i=0;i<this.length;i++){
-            const boundFn = fn.bind(this[i]);
-            boundFn( this[i], this );
         }
     }
 
-    toArray(){
+    each(fn) {
+        for (let i = 0; i < this.length; i++) {
+            const boundFn = fn.bind(this[i]);
+            boundFn(this[i], this);
+        }
+    }
+
+    toArray() {
         const arr = [];
-        for(let i=0;i<this.length;i++){
-            if(!this[i].deleted)
-            arr.push(this[i].toJson());
+        for (let i = 0; i < this.length; i++) {
+            if (!this[i].deleted) arr.push(this[i].toJson());
         }
         return arr;
     }
 
-    toJson(){
+    toJson() {
         const json = [];
-        for(let i=0;i<this.length;i++){
-            if(!this[i].deleted)
-            json.push(this[i].toJson());
+        for (let i = 0; i < this.length; i++) {
+            if (!this[i].deleted) json.push(this[i].toJson());
         }
 
         return json;
     }
-/*
+    /*
     #createIndexes(){
         
         for( let prop in this.#indexes ){
@@ -695,45 +670,39 @@ export class CollectionArray extends SuperCollection {
 
 
     */
+}
 
- }
-
- function createModelCollection( Model, options={} ){
-
+function createModelCollection(Model, options = {}) {
     const modelName = Model.name;
-    const collectionName = modelName + 'Collection';
+    const collectionName = modelName + "Collection";
 
-    return { [collectionName]: class extends CollectionArray {
-
+    return {
+        [collectionName]: class extends CollectionArray {
             static Model = Model;
             static options = options;
 
-            constructor( ...items ){
-                super( ...items );
-                return this.of( this.constructor.Model, this.constructor.options );
-                
+            constructor(...items) {
+                console.log(items);
+                super(...items);
+                return this.of(this.constructor.Model, this.constructor.options);
             }
-
         }
-
     }[collectionName];
- }
-
- //Collection of model classes created by the collection function
- const SubCollections = {};
-
- function getSubCollection(collectionName, model){
-    if(SubCollections[collectionName] ){
-        //Model already added to SubCollections
-        return SubCollections[collectionName];
-    }else{
-        //Create Model and add to SubCollections
-        SubCollections[collectionName] = createModelCollection( model );
-        return SubCollections[collectionName];
-    }
-
 }
 
+//Collection of model classes created by the collection function
+const SubCollections = {};
+
+function getSubCollection(collectionName, model) {
+    if (SubCollections[collectionName]) {
+        //Model already added to SubCollections
+        return SubCollections[collectionName];
+    } else {
+        //Create Model and add to SubCollections
+        SubCollections[collectionName] = createModelCollection(model);
+        return SubCollections[collectionName];
+    }
+}
 
 /**
  * Collection provides a way to search arrays of Models and return specific items
@@ -743,12 +712,12 @@ export class CollectionArray extends SuperCollection {
  * @returns {Proxy} - A proxy object for the collection
  */
 function createNegativeTest(test) {
-    return value => value !== test;
+    return (value) => value !== test;
 }
 
 export function Collection(data = [], model, options = {}) {
     const modelName = model.name;
-    const collectionName = modelName + 'Collection';
+    const collectionName = modelName + "Collection";
     const ModelCollection = getSubCollection(collectionName, model);
     let collection = new ModelCollection(...data);
 
@@ -757,31 +726,33 @@ export function Collection(data = [], model, options = {}) {
     const collectionProxy = new Proxy(collection, {
         get(target, prop, receiver) {
             if (target[prop]) {
-                return typeof target[prop] === 'function' ? target[prop].bind(target) : target[prop];
+                return typeof target[prop] === "function" ? target[prop].bind(target) : target[prop];
             }
 
             const propStr = String(prop);
-            if (propStr.startsWith('sortBy')) {
-                const keys = unStudly(propStr).replace('sort_by_', '').split('_and_');
+            if (propStr.startsWith("sortBy")) {
+                const keys = unStudly(propStr).replace("sort_by_", "").split("_and_");
                 return function sortBy() {
                     for (const key of keys) {
-                        const order = key.includes('_asc') ? 'asc' : 'desc';
-                        const actualKey = key.replace(/_asc|_desc/g, '');
-                        collection.sort((a, b) => (order === 'asc' ? a[actualKey] < b[actualKey] : a[actualKey] > b[actualKey]) ? 1 : -1);
+                        const order = key.includes("_asc") ? "asc" : "desc";
+                        const actualKey = key.replace(/_asc|_desc/g, "");
+                        collection.sort((a, b) =>
+                            (order === "asc" ? a[actualKey] < b[actualKey] : a[actualKey] > b[actualKey]) ? 1 : -1
+                        );
                     }
                 };
             }
 
-            if (propStr.startsWith('findBy') || propStr.startsWith('findAllBy')) {
-                const all = propStr.startsWith('findAllBy');
-                const keys = unStudly(propStr).replace('find_by_', '').replace('find_all_by_', '').split('_and_');
-                const negative = keys.filter(key => key.includes('_not'));
+            if (propStr.startsWith("findBy") || propStr.startsWith("findAllBy")) {
+                const all = propStr.startsWith("findAllBy");
+                const keys = unStudly(propStr).replace("find_by_", "").replace("find_all_by_", "").split("_and_");
+                const negative = keys.filter((key) => key.includes("_not"));
 
                 return function (...values) {
                     if (negative.length) {
                         for (let i = 0; i < keys.length; i++) {
                             if (negative.includes(keys[i])) {
-                                keys[i] = keys[i].replace('_not', '');
+                                keys[i] = keys[i].replace("_not", "");
                                 values[i] = createNegativeTest(values[i]);
                             }
                         }
@@ -789,7 +760,11 @@ export function Collection(data = [], model, options = {}) {
 
                     const records = collection.findBy(keys, values, null, all);
 
-                    return (all ? records !== null && records.length > 0 : records !== null) ? records : (all ? [] : null);
+                    return (all ? records !== null && records.length > 0 : records !== null)
+                        ? records
+                        : all
+                        ? []
+                        : null;
                 };
             }
 
