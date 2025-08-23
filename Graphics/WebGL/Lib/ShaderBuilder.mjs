@@ -27,7 +27,7 @@ class ShaderBuilder {
     }
 
     addFunction(returnType, name, args, code) {
-        this.functions.push(`${returnType} ${name}(${args.join(", ")}) { ${code} }`);
+        this.functions.push(`//Function: ${name} \n${returnType} ${name}(${args.join(", ")}) {\n ${code} \n}`);
     }
 
     addStruct(name, fields) {
@@ -42,12 +42,12 @@ class ShaderBuilder {
             `
             ${this.precision ? this.precision : ""}
             ${this.structs.join("\n")}
-        ${this.functions.join("\n")}
-        ${this.head.length ? this.head.join("\n") : ""}   
+        \n${this.functions.join("\n\n")}
+        \n${this.head.length ? this.head.join("\n") : ""}   
 
-        ${this.definitions.join("\n")}
+        \n${this.definitions.join("\n")}
 
-        void main() { ${this.main.join("\n")} }
+        \nvoid main() {\n${this.main.join("\n")} \n}
     `;
         console.log(code);
         return code;

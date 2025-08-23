@@ -122,8 +122,8 @@ const formVdom = vForm.container({}, [
                 vForm.number("orbitPoint[2]", 0, {
                     labelInline: true,
                     label: "Z",
-                    min: -1,
-                    max: 1,
+                    min: -50.0,
+                    max: -3.0,
                     step: 0.001,
                     inline: true,
                 }),
@@ -307,10 +307,10 @@ class ParticleWorldComponent extends Component.HTMLElement {
         const controlForm = Form.fromVDom(formVdom, this.ref("control-form"));
         let refreshTO;
         controlForm.on("input", (name, value) => {
-            console.log(name, value);
+            //    console.log(name, value);
             setDotPath(PARTICLE_CONFIG, name, value);
-            console.log(this.particleViewer);
-            this.particleViewer.setValue(name, value);
+            //  console.log(this.particleViewer);
+            // this.particleViewer.setValue(name, value);
         });
         controlForm.on("change", (name, value) => {
             setDotPath(PARTICLE_CONFIG, name, value);

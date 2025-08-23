@@ -4,7 +4,7 @@ import VariableSettings from "../Variables/VariableSettings.mjs";
 export const ShaderTypes = Shader.ShaderTypes;
 import ShaderBuilder from "./ShaderBuilder.mjs";
 import VariableBase from "../Variables/VariableBase.mjs";
-import Uniform from "../Variables/Uniform.mjs";
+import { Uniform } from "../Variables/Variables.mjs";
 import FeedbackAttribute from "../Variables/FeedbackAttribute.mjs";
 import { createProgram, createShader, checkGLError } from "./Helper.mjs";
 
@@ -30,25 +30,24 @@ class TransformFeedback {
         return this._uniforms[name];
     }
 
-    addStruct(name, fields) {
-        this.builder.addStruct(name, fields);
+    addStruct(...args) {
+        this.builder.addStruct(...args);
     }
 
-    addFunction(returnType, name, args, code) {
-        this.builder.addFunction(returnType, name, args, code);
+    addFunction(...args) {
+        this.builder.addFunction(...args);
     }
 
-    addUniform(name, type, value) {
-        const uniform = new Uniform(name, type, value);
+    addUniform(name, type, value, ...rest) {
+        const uniform = new Uniform(name, type, value, ...rest);
         uniform.define(this.builder);
         this._uniforms[name] = uniform;
         return uniform;
     }
 
-    addVariable(name, type, data = []) {
+    addVariable(name, type, data = [], ...rest) {
         this.vIndex++;
-        const variable = new FeedbackAttribute(name, type, data);
-        variable.index = this.vIndex;
+        const variable = new FeedbackAttribute(name, type, data, ...rest);
         variable.define(this.builder);
         this._variables[name] = variable;
         return variable;
@@ -62,10 +61,29 @@ class TransformFeedback {
         this.builder.addMain(script);
     }
 
+    applyDownStreamData() {
+        Object.keys(this._variables).forEach((name) => {
+            const feedbackVar = this._variables[name];
+            const { gl, program, settings } = feedbackVar;
+            if (feedbackVar.children.length > 0) {
+                gl.useProgram(program);
+                const location = feedbackVar.children[0].location;
+                console.log("Applying down stream data", name, "SIZE", settings.args, location, settings.argType);
+                console.log(feedbackVar.download());
+                gl.bindBuffer(gl.ARRAY_BUFFER, feedbackVar.buffer.write);
+                gl.vertexAttribPointer(location, settings.args, gl[settings.argType], false, 0, 0);
+                gl.enableVertexAttribArray(location); // Enable the attribute
+            }
+        });
+    }
+
     build() {
         const { gl } = this;
-        console.log("Building transform feedback");
+        console.log("BUILDING TRANSFORM FEEDBACK");
+
         const vertexShader = this.createShader(gl.VERTEX_SHADER, this.builder.build());
+        console.log("Vertex shader created");
+
         const fragmentShader = this.createShader(
             gl.FRAGMENT_SHADER,
             `#version 300 es
@@ -76,42 +94,81 @@ class TransformFeedback {
             }
         `
         );
+        console.log("Fragment shader created");
 
         this.varyings = Object.keys(this._variables).map((name) => name + "Out");
-        console.log("Varyings", this.varyings);
+        console.log("Varyings defined:", this.varyings);
+
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
+        console.log("Vertex shader attached to program");
+
         gl.attachShader(program, fragmentShader);
+        console.log("Fragment shader attached to program");
 
         gl.transformFeedbackVaryings(program, this.varyings, gl.SEPARATE_ATTRIBS);
+        console.log("Transform feedback varyings set");
 
         gl.linkProgram(program);
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            throw new Error(`Program linking error: ${gl.getProgramInfoLog(program)}`);
+            const error = gl.getProgramInfoLog(program);
+            console.error("Program linking error:", error);
+            gl.deleteProgram(program);
+            throw new Error(`Program linking error: ${error}`);
         }
-
         console.log("Program linked successfully");
+
         this.program = program;
         gl.useProgram(this.program);
+        console.log("Program used");
 
-        //this.initVariables(program);
-        // this.transformFeedback = gl.createTransformFeedback();
-        // gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, this.transformFeedback);
-        //Create Buffers Link Program
-        Object.keys(this._uniforms).forEach((name) => this._uniforms[name].bind(gl, program));
+        this.vao = {
+            read: gl.createVertexArray(),
+            write: gl.createVertexArray(),
+        };
 
-        Object.keys(this._variables).forEach((name) => this._variables[name].bind(gl, program));
-
-        Object.keys(this._variables).forEach((name, i) => {
-            this._variables[name].bindInputBuffer();
-            //this._variables[name].bindOutputBuffer(i);
+        // Bind uniforms
+        Object.keys(this._uniforms).forEach((name) => {
+            this._uniforms[name].bind(gl, program);
         });
+
+        // Bind Feedback variables
+        Object.keys(this._variables).forEach((name) => {
+            console.log(`Binding variable ${name} ${this._variables[name].qualifier}`);
+            this._variables[name].bind(gl, program);
+        });
+
+        // Bind VAO
+        gl.bindVertexArray(this.vao.read);
+        //Bind Read Attributes to VAO
+        Object.keys(this._variables).forEach((name, i) => {
+            const variable = this._variables[name];
+            const settings = variable.settings;
+            gl.bindBuffer(gl.ARRAY_BUFFER, variable.buffer.read);
+            gl.enableVertexAttribArray(variable.location);
+            gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+        });
+
+        gl.bindVertexArray(this.vao.write);
+        //Bind Write Attributes to VAO
+        Object.keys(this._variables).forEach((name, i) => {
+            const variable = this._variables[name];
+            const settings = variable.settings;
+            gl.bindBuffer(gl.ARRAY_BUFFER, variable.buffer.write);
+            gl.enableVertexAttribArray(variable.location);
+            gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+        });
+
+        this.transformFeedback = gl.createTransformFeedback();
+
+        const log = gl.getProgramInfoLog(program);
+        console.log(log);
     }
 
     createShader(type, source) {
         const { setting, gl } = this;
-        console.log(source);
+        // console.log(source);
         const shader = gl.createShader(type);
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
@@ -127,22 +184,18 @@ class TransformFeedback {
         if (!this.program) return;
         const { gl } = this;
 
-        gl.useProgram(this.program);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(this.program);
 
-        // Set the delta time for updating particles
-        // gl.uniform1f(this.deltaTimeLocation, deltaTime);
+        // Discard Screen Rendering
+        gl.enable(gl.RASTERIZER_DISCARD);
+
+        gl.bindVertexArray(this.vao.read);
+        gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, this.transformFeedback);
 
         Object.keys(this._variables).map((name) => {
-            this._variables[name].swapBuffers();
-            //this._variables[name].bindOutputBuffer();
+            this._variables[name].attachCaptureBuffer();
         });
-
-        // Enable transform feedback
-        gl.enable(gl.RASTERIZER_DISCARD); // Disable rendering to the screen
-
-        // Bind the transform feedback object
-        gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, this.transformFeedback);
 
         // Begin transform feedback
         gl.beginTransformFeedback(gl.POINTS);
@@ -156,8 +209,14 @@ class TransformFeedback {
         // Disable transform feedback and rasterizer discard
         gl.disable(gl.RASTERIZER_DISCARD);
 
-        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+        Object.keys(this._variables).map((name) => {
+            this._variables[name].swapBuffers();
+        });
 
+        this.vao.tmp = this.vao.read;
+        this.vao.read = this.vao.write;
+        this.vao.write = this.vao.tmp;
+        delete this.vao.tmp;
         // Bind input (read) and output (write) buffers
     }
 
@@ -166,6 +225,8 @@ class TransformFeedback {
         this.builder = new ShaderBuilder(this.version);
         this.webgl = {};
 
+        const maxVaryings = gl.getParameter(gl.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS);
+        this.MAX_VARYINGS = maxVaryings;
         //this.builder.define("uniform", "float", "uDeltaTime");
     }
 }

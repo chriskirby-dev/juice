@@ -7,6 +7,14 @@ class CircularBuffer {
         this.length = 0; // Number of elements currently in the buffer
     }
 
+    get last() {
+        return this.buffer[this._last];
+    }
+
+    get first() {
+        return this.buffer[this._first];
+    }
+
     // Push (add to the end)
     push(element) {
         if (this.length === this.size) {
@@ -16,6 +24,7 @@ class CircularBuffer {
             this.length++;
         }
         this.buffer[this.head] = element;
+        this._last = this.head;
         this.head = (this.head + 1) % this.size;
     }
 
@@ -49,6 +58,7 @@ class CircularBuffer {
         }
         this.tail = (this.tail - 1 + this.size) % this.size;
         this.buffer[this.tail] = element;
+        this._first = this.tail;
     }
 
     // Get element at a specific index

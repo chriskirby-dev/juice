@@ -4,7 +4,7 @@
  * @company Kirby Creative
  * @date 10/02/2024
  */
-import Uniform from "../Variables/Uniform.mjs";
+import { Uniform } from "../Variables/Variables.mjs";
 import InputAttribute from "../Variables/InputAttribute.mjs";
 import OutputAttribute from "../Variables/OutputAttribute.mjs";
 import ShaderBuilder from "./ShaderBuilder.mjs";

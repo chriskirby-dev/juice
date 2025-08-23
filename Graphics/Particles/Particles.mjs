@@ -1,5 +1,7 @@
+import PerspectiveProjection from "../Projection/Perspective.mjs";
+
 import Transition from "../../Animation/Transitions/Transition.mjs";
-import { random, randomInt, randomBetween, cos, sin } from "../../Util/Math.mjs";
+import { random, randomInt, randomIntBetween, randomBetween, cos, sin } from "../../Util/Math.mjs";
 import { lerp } from "../../Util/Geometry.mjs";
 
 class Particles {
@@ -20,6 +22,7 @@ class Particles {
     coords;
 
     constructor(maxCount, width, height) {
+        maxCount = 100;
         this.maxCount = maxCount;
         this.positions = new Float32Array(maxCount * 3);
         this.lifes = new Float32Array(maxCount);
@@ -27,13 +30,47 @@ class Particles {
         this.destinations = new Float32Array(maxCount * 3);
         this.colors = new Float32Array(maxCount * 4);
         this.sizes = new Float32Array(maxCount);
-        this.states = new Float32Array(maxCount * 3);
+        this.states = new Float32Array(maxCount * 4);
         //StartTime, Duration, Easing, Complete
         this.transitions = new Float32Array(maxCount * 4);
 
         this.masks = [];
 
         this.resize(width, height);
+    }
+
+    setProjection(projectionType, options) {
+        const { width = this.width, height = this.height, near, far } = options;
+        let projectionMatrix;
+
+        this.projection = { type: projectionType, width, height, near, far, options };
+
+        switch (projectionType) {
+            case "perspective":
+                const { fov } = options;
+                this.projection = new PerspectiveProjection(fov, width / height, near, far);
+                break;
+
+            case "orthographic":
+                const { left, right, bottom, top } = options;
+                projectionMatrix = mat4.create();
+                Object.assign(this.projection, { left, right, bottom, top });
+                mat4.ortho(
+                    projectionMatrix,
+                    left || -width / 2, // left plane
+                    right || width / 2, // right plane
+                    bottom || -height / 2, // bottom plane
+                    top || height / 2, // top plane
+                    near, // near clipping plane
+                    far // far clipping plane
+                );
+                break;
+
+            default:
+                throw new Error('Unknown projection type. Use "perspective" or "orthographic".');
+        }
+
+        return this.projection.matrix;
     }
 
     loadMask(source) {
@@ -113,7 +150,7 @@ class Particles {
 
     build(maskIndex, options = {}) {
         const mask = maskIndex ? this.masks[maskIndex] : this.mask;
-
+        const aspectRatio = this.width / this.height;
         const count = Math.min(this.maxCount, maskIndex ? this.masks[maskIndex].length / 2 : this.maxCount);
         const exclude = [];
         for (let i = 0; i < count; i++) {
@@ -130,14 +167,22 @@ class Particles {
                 this.positions[i3 + 1] = y;
                 this.positions[i3 + 2] = 0;
             } else {
-                this.positions[i3] = randomBetween(-1, 1);
-                this.positions[i3 + 1] = randomBetween(-1, 1);
-                this.positions[i3 + 2] = randomBetween(0, 0);
+                //Get Depth Position
+                const { near, far, fov } = this.projection;
+
+                const zPosition = randomBetween(-near, -far);
+                const { left, right, top, bottom } = this.projection.getBoundsAtDepth(zPosition);
+
+                // console.log(left, right, top, bottom);
+                this.positions[i3] = randomBetween(left, right);
+                this.positions[i3 + 1] = randomBetween(top, bottom);
+                this.positions[i3 + 2] = zPosition;
             }
 
-            this.states[i3] = 0;
-            this.states[i3 + 1] = 0;
-            this.states[i3 + 2] = 0;
+            this.states[i4] = 0;
+            this.states[i4 + 1] = 0;
+            this.states[i4 + 2] = Math.random();
+            this.states[i4 + 3] = 0;
 
             this.velocities[i3] = randomBetween(-this.config.maxSpeed, this.config.maxSpeed);
             this.velocities[i3 + 1] = randomBetween(-this.config.maxSpeed, this.config.maxSpeed);
@@ -188,6 +233,9 @@ class Particles {
             this.normals.top = this.aspectRatio;
             this.normals.bottom = -this.aspectRatio;
             this.normals.height = 2 * this.aspectRatio;
+        }
+        if (this.projection) {
+            this.setProjection(this.projection.type, this.projection.options);
         }
     }
 

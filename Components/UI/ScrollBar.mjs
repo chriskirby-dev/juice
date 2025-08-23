@@ -134,7 +134,7 @@ class ScrollBar extends Component.HTMLElement {
 
         this.handle = this.ref("handle");
         this.bar = this.ref("bar");
-        this.content.addEventListener("wheel", this.onWheel.bind(this));
+        this.content.addEventListener("wheel", this.onWheel.bind(this), { passive: true });
         this.handle.addEventListener("pointerdown", this.onHandleDown, false);
     }
 

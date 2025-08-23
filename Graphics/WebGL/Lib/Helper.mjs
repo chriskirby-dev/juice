@@ -114,10 +114,10 @@ export function loadText(url) {
     });
 }
 
-export function checkGLError(gl) {
+export function checkGLError(gl, operation) {
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-        console.error("WebGL error:", error);
+        console.error("WebGL error:", error, operation);
         switch (error) {
             case gl.INVALID_ENUM:
                 console.error("INVALID_ENUM: An unacceptable value has been specified for an enumerated argument.");
@@ -140,5 +140,7 @@ export function checkGLError(gl) {
             default:
                 console.error("Unknown error code:", error);
         }
+    } else {
+        console.log("no error", operation);
     }
 }

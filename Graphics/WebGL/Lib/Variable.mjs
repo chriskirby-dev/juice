@@ -111,7 +111,7 @@ export class Variable {
     static OUT = "out";
     static INOUT = "inout";
 
-    static qualifiers = ["in", "const", "attribute", "uniform", "varying", "out", "inout"];
+    static qualifiers = Object.values(StorageQualifier);
 
     _location;
     _feedbackLocation;
@@ -142,6 +142,8 @@ export class Variable {
         if (this.options.feedback) {
             this.isFeedback = true;
         }
+
+        console.log("CREATING VARIABLE", qualifier, type, name);
     }
 
     bind(gl, program) {

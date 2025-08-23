@@ -1,3 +1,5 @@
+import CircularBuffer from "../../DataTypes/CircularBuffer.mjs";
+
 export class AnimationValue {
     //Animatiion Value
     HISTORY_LENGTH = 0;
@@ -5,11 +7,14 @@ export class AnimationValue {
 
     constructor(v, options = {}) {
         this._value = 0;
-        this.history = [];
+        this.history = new CircularBuffer(options.history || 3);
         if (options.debug) this.debug = true;
         if (options.type) this.type = options.type;
-        this.HISTORY_LENGTH = options.history || 1;
-        if (v !== undefined && v !== null) this._value = v;
+        if (v !== undefined && v !== null) {
+            this._value = v;
+            this.history.unshift(v);
+        }
+        this.options = options;
 
         if (this.type) {
             const type = this.type.charAt(0).toUpperCase() + this.type.slice(1);
@@ -40,6 +45,12 @@ export class AnimationValue {
             v = Math.floor(v);
         }
         this._value = v;
+        return true;
+    }
+
+    _setFloatType(v) {
+        this._value = parseFloat(v);
+        return true;
     }
 
     _setValue(v) {
@@ -61,10 +72,13 @@ export class AnimationValue {
     }
 
     save() {
-        if (this.HISTORY_LENGTH) {
-            //if history length is set store to history
+        if (!this.dirty) return;
+        if (this.history && this.history.size > 0) {
             this.history.unshift(this._value);
-            if (this.history.length > this.HISTORY_LENGTH) this.history.pop();
+            this.history.print();
+            console.log("saved");
+        } else {
+            console.log("no history");
         }
     }
 
@@ -73,7 +87,7 @@ export class AnimationValue {
     }
 
     get dirty() {
-        return this._value !== this.history[0];
+        return this._value !== this.history.first;
     }
 }
 

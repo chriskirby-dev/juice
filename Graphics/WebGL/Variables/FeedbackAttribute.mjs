@@ -2,12 +2,14 @@ import VariableBase from "./VariableBase.mjs";
 class FeedbackAttribute extends VariableBase {
     constructor(...args) {
         super("in", ...args);
+        this.LOCATION_LOOKUP = "getAttribLocation";
+        this.children = [];
     }
 
     define(builder) {
         const { settings, gl } = this;
         builder.define(
-            (this.location !== undefined ? `layout(location = ${this.location}) ` : "") + "in",
+            (this._locationId !== null ? `layout(location = ${this._locationId}) ` : "") + "in",
             this.name,
             this.type
         );
@@ -16,24 +18,21 @@ class FeedbackAttribute extends VariableBase {
 
     get definition() {
         return (
-            (this.location !== undefined ? `layout(location = ${this.location}) ` : "") +
+            (this._locationId !== null ? `layout(location = ${this._locationId}) ` : "") +
             `in ${this.type} ${this.name};
             out ${this.type} ${this.name}Out;
         `
         );
     }
 
-    lookupLocation() {
-        if (!this.bound) return;
-        const { gl } = this;
-        this.location = gl.getAttribLocation(this.program, this.name);
-        return this.location;
+    addChild(attribute) {
+        this.children.push(attribute);
     }
 
     upload() {
         const { settings, gl } = this;
         if (!this.buffer) this.createBuffers();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.input);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.write);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value), gl.DYNAMIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -42,49 +41,41 @@ class FeedbackAttribute extends VariableBase {
     download() {
         const { settings, gl } = this;
         const data = new Float32Array(this._value.length);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.input);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.read);
         gl.getBufferSubData(gl.ARRAY_BUFFER, 0, data);
         return data;
     }
 
-    unbindOutputBuffer() {
+    attachCaptureBuffer() {
+        const { gl, index = 0, name } = this;
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, index, this.buffer.write);
+    }
+
+    unbindBuffer() {
         gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
     }
 
-    bindOutputBuffer() {
-        const { gl, index = 0, name } = this;
-        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, index, this.buffer.output);
-    }
-
-    bindInputBuffer() {
-        const { settings, gl } = this;
-        if (!this.buffer) this.createBuffers();
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.input);
-        gl.enableVertexAttribArray(this.location);
-        gl.vertexAttribPointer(this.location, 3, gl.FLOAT, false, 0, 0);
-    }
-
-    bindBuffers() {
-        if (!this.buffer) this.createBuffers();
-        this.bindInputBuffer();
-        this.bindOutputBuffer();
-    }
-
     createBuffers() {
+        console.log("CREATE BUFFERS", this.name);
         const { settings, gl } = this;
         this.buffer = {
-            input: gl.createBuffer(),
-            output: gl.createBuffer(),
+            read: gl.createBuffer(),
+            write: gl.createBuffer(),
         };
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.input);
-        if (this._value) {
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value.length), gl.DYNAMIC_DRAW);
+        if (!this.buffer.read || !this.buffer.write) {
+            throw new Error(`Failed to create buffers for ${this.name}`);
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.output);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._value), gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.read);
+        if (this._value) {
+            gl.bufferData(gl.ARRAY_BUFFER, this._value, gl.DYNAMIC_DRAW);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.write);
+        if (this._value) {
+            gl.bufferData(gl.ARRAY_BUFFER, this._value, gl.DYNAMIC_DRAW);
+        }
 
         //Clean up
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -94,15 +85,13 @@ class FeedbackAttribute extends VariableBase {
         const { settings, gl } = this;
         if (!this.buffer) return;
 
-        const temp = this.buffer.input;
-        this.buffer.input = this.buffer.output;
-        this.buffer.output = temp;
-
-        this.bindInputBuffer();
-        this.bindOutputBuffer();
+        const temp = this.buffer.read;
+        this.buffer.read = this.buffer.write;
+        this.buffer.write = temp;
     }
 
     onBound() {
+        console.log("onBound", this.name);
         if (!this.buffer) {
             this.createBuffers();
         }
