@@ -24,7 +24,7 @@ export class PortalConnection extends EventEmitter {
         this.name = name;
         this.options = options;
         console.log("PortalConnection", name, options);
-        this.address = Math.random().toString(36).substr(2, 9);
+        this.address = crypto.randomUUID();
         this.onMessage = this.onMessage.bind(this);
         this.initialize();
     }
@@ -49,7 +49,7 @@ export class PortalConnection extends EventEmitter {
                 localPort.postMessage({
                     id: message.id,
                     type: "portal:connected",
-                    from: this.name,
+                    from: this.name
                 });
                 const portal = new Portal(localPort, this);
                 portal.to = message.from;
@@ -61,18 +61,18 @@ export class PortalConnection extends EventEmitter {
         const message = {
             id: requestId,
             from: this.name,
-            type: "portal:connect",
+            type: "portal:connect"
         };
 
         this.sent.push(message.id);
-        target.postMessage(message, "*", [remotePort]);
+        target.postMessage(message, this.options.origin || "*", [remotePort]);
     }
 
     identity() {
         return {
             time: Date.now(),
             address: this.address,
-            name: this.name,
+            name: this.name
         };
     }
 
@@ -138,7 +138,7 @@ export class PortalConnection extends EventEmitter {
         const response = {
             id: this.name + "-" + request.id,
             from: this.identity(),
-            type: "portal:handshake",
+            type: "portal:handshake"
         };
         this.sent.push(response.id);
         port.postMessage(response);

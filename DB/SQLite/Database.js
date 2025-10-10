@@ -204,6 +204,10 @@ class SQLiteDatabase extends Database {
         return this._prepared[modelName]?.[name] ? true : false;
     }
 
+    getModel(modelName) {
+        return this.models[modelName];
+    }
+
     /**
      * Adds a model to the database.
      * This method is responsible for setting up the database structure for

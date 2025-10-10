@@ -80,6 +80,13 @@ class Model extends EventEmitter {
         return [];
     }
 
+    static create(data = {}) {
+        const record = new this();
+        record.fill(data);
+        record.save();
+        return record;
+    }
+
     /**
      * Deletes records from the database table that match the given conditions.
      *
@@ -101,7 +108,7 @@ class Model extends EventEmitter {
     }
 
     static exists(conditions = {}) {
-        return new ModelSQLBuilder(this).where(conditions).exists();
+        return new ModelSQLBuilder(this).where(conditions).exists;
     }
 
     static max(property, conditions = {}) {
@@ -227,14 +234,6 @@ class Model extends EventEmitter {
         if (!this.foreignKey) this.foreignKey = this.key + "_" + this.primaryKey;
         if (!this.localKey) this.localKey = this.primaryKey;
         //Set the initializedf flag
-
-        this.component.tagName = dashed(this.name);
-
-        this.component.attributes = {
-            id(model) {
-                return self.component.tagName + "-" + model[model.primaryKey];
-            }
-        };
 
         if (!this.primaryLabel) {
             let primaryLabel = ["name", "key", "label"].filter((k) => Object.keys(this.schema).includes(k));
@@ -457,6 +456,7 @@ class Model extends EventEmitter {
     update(data) {
         this.fill(data);
         this.emit("updated");
+        return this;
     }
 
     /**
@@ -475,6 +475,9 @@ class Model extends EventEmitter {
 
         //Prepare data for db
         for (let prop in data) {
+            if (schema[prop] && schema[prop].type == "boolean") {
+                data[prop] = data[prop] ? 1 : 0;
+            }
             if (schema[prop] && schema[prop].type == "json") {
                 //If property has JSON type in schema serialize for save
                 if (type(data[prop], "object") || type(data[prop], "array")) data[prop] = JSON.stringify(data[prop]);
@@ -515,7 +518,9 @@ class Model extends EventEmitter {
                 return onComplete();
             }
         } else {
-            if (this.beforeCreate) data = this.beforeCreate(data);
+            let cbValue;
+            if (this.beforeCreate) cbValue = this.beforeCreate(data);
+            if (cbValue) data = cbValue;
             if (this.hasColumn("created_at")) {
                 data.created_at = new Date().toISOString();
             }
@@ -536,6 +541,8 @@ class Model extends EventEmitter {
                 return onComplete();
             }
         }
+
+        return this;
     }
 
     saveRelated() {
@@ -702,48 +709,6 @@ class Model extends EventEmitter {
         return json;
     }
 
-    hasComponent() {
-        return this.component !== undefined;
-    }
-
-    createComponent() {
-        const { component: cmp } = this.static;
-        // console.log(cmp);
-        const component = document.createElement(cmp.tagName);
-        // console.log(component);
-        for (let prop in cmp.attributes) {
-            component.setAttribute(
-                prop,
-                type(cmp.attributes[prop], "function") ? cmp.attributes[prop](this) : cmp.attributes[prop]
-            );
-        }
-
-        component.addModel(this, { copyToData: true });
-
-        this.component = component;
-        return component;
-    }
-
-    linkComponent(component) {
-        const { component: settings } = this.static;
-        // console.log(component);
-        if (settings.attributes) {
-            for (let prop in settings.attributes) {
-                component.setAttribute(
-                    prop,
-                    type(settings.attributes[prop], "function")
-                        ? settings.attributes[prop](this)
-                        : settings.attributes[prop]
-                );
-            }
-        }
-
-        component.addModel(this, { copyToData: true });
-
-        this.component = component;
-        return component;
-    }
-
     #getProperty(prop) {
         const accessor = studly(`get_${prop}_attribute`);
         if (this[accessor]) return this[accessor](this.#data[prop]);
@@ -776,7 +741,7 @@ class Model extends EventEmitter {
             }
         }
 
-        if (schema.type == "int" && value !== null) value = parseInt(value);
+        if (["int", "integer"].includes(schema.type) && value !== null) value = parseInt(value);
 
         if (schema.type == "url" && type(value, "string")) {
             value = encodeURI(value);
@@ -1033,6 +998,7 @@ class Model extends EventEmitter {
     }
 
     initialize(data = {}) {
+        this.#data = data;
         //console.log('INITIALIZE MODEL', data);
         const schema = this.static.schema;
 
