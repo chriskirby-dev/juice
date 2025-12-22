@@ -81,6 +81,10 @@ class GLParticles {
 
         //Create Transform Feedback Worker
         this.feedback = new TransformFeedback(this.maxParticles, gl);
+        // Enable transform-feedback build diagnostics (must be set before build())
+        //this.feedback.debug = true;
+
+        // this.feedback.debugReadback = true;
 
         const maxVaryings = this.feedback.MAX_VARYINGS;
         console.log("Max Transform Feedback Varyings:", maxVaryings);
@@ -166,8 +170,9 @@ class GLParticles {
         //Uniforms stay constant between draw call
 
         this.uTargetPoint = this.feedback.addUniform("uTargetPoint", VariableTypes.FLOAT_VEC4, [0.0, 0.0, -2.0, 0.0], {
-            debug: true,
+            debug: true
         });
+        //this.uTime = this.feedback.addUniform("uTime", VariableTypes.FLOAT_VEC4, [0.0, 0.0, 0.0, 0.0]);
         //this.uSpeed = this.feedback.addUniform("uSpeed", VariableTypes.FLOAT, this.speed.value);
         //this.uMovement = this.feedback.addUniform("uMovement", VariableTypes.FLOAT_VEC4, [0.0, 0.0, 0.0, 0.3]);
         this.uScene = this.feedback.addUniform(
@@ -177,9 +182,9 @@ class GLParticles {
                 parseFloat(this.canvas.width), //Width
                 parseFloat(this.canvas.height), //Height
                 0.0, //Time
-                -1.0, //Time Delta
+                -1.0 //Time Delta
             ],
-            { debug: true }
+            { debug: false, clearGLErrors: false }
         );
 
         // this.uForce = this.feedback.addUniform("uForce", VariableTypes.FLOAT_VEC3, [0.0, 0.0, 0.0]);
@@ -644,15 +649,22 @@ class GLParticles {
 
         gl.useProgram(this.feedback.program);
 
-        this.uScene.value = [
-            parseFloat(this.canvas.width),
-            parseFloat(this.canvas.height),
-            parseFloat(this.time.current),
-            parseFloat(this.time.delta),
-        ];
+        try {
+            this.uScene.value = [
+                parseFloat(this.canvas.width),
+                parseFloat(this.canvas.height),
+                parseFloat(this.time.current),
+                parseFloat(this.time.delta)
+            ];
+        } catch (error) {
+            console.error("Error updating uScene:", error);
+            console.error("uScene object:", this.uScene);
+            console.error("uScene type:", typeof this.uScene);
+            throw error;
+        }
 
-        // this.uTime.value = [this.time, timeDelta, 0.0, 0.0];
-        /*
+        //this.uTime.value = [this.time, this.time.delta, 0.0, 0.0];
+
         if (this.state.dirty && (this.uState.value = this.state.value) !== false) {
             this.state.save();
         }
@@ -678,7 +690,7 @@ class GLParticles {
                 this.repelParams.clean();
             }
         }
-*/
+
         if (this.orbit.dirty && (this.uOrbit.value = this.orbit.value) !== false) {
             this.orbit.save();
         }

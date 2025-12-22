@@ -21,7 +21,7 @@ class VDom {
     containerVDom = {
         tag: "div",
         attributes: { class: "vdom--container" },
-        children: [],
+        children: []
     };
 
     /**
@@ -90,7 +90,7 @@ class VDom {
         } else {
             stagedVdom = this.package(VDomParser.parse(content, this.scope));
         }
-        console.log(stagedVdom);
+        //console.log(stagedVdom);
         return stagedVdom;
     }
 
@@ -175,7 +175,7 @@ class VDom {
         if (!this.#staged) return false;
 
         const patch = VirtualDom.diff(this.currentVDom, this.#staged);
-        console.log("rootFragment", this.rootFragment);
+        //console.log("rootFragment", this.rootFragment);
         patch(this.rootFragment);
 
         const refs = this.rootFragment.querySelectorAll("[id]");
@@ -227,7 +227,7 @@ class VDom {
             },
             prepend(...children) {
                 element.children.unshift(...children);
-            },
+            }
         };
     }
 
@@ -250,7 +250,7 @@ class VDom {
             this.rootFragment = this.container;
             this.containerVDom = {
                 tag: this.container.tagName,
-                attributes: {},
+                attributes: {}
             };
 
             for (const attribute of this.container.attributes) {

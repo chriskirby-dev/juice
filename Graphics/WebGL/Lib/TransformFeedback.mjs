@@ -6,7 +6,7 @@ import ShaderBuilder from "./ShaderBuilder.mjs";
 import VariableBase from "../Variables/VariableBase.mjs";
 import { Uniform } from "../Variables/Variables.mjs";
 import FeedbackAttribute from "../Variables/FeedbackAttribute.mjs";
-import { createProgram, createShader, checkGLError } from "./Helper.mjs";
+import { createProgram, createShader } from "./Helper.mjs";
 
 class TransformFeedback {
     version = 2;
@@ -18,6 +18,8 @@ class TransformFeedback {
         this.gl = gl;
         this.points = points;
         VariableBase.gl = gl;
+
+        this.debug = false; // set true for verbose TF build diagnostics
 
         this.initialize();
     }
@@ -49,6 +51,8 @@ class TransformFeedback {
         this.vIndex++;
         const variable = new FeedbackAttribute(name, type, data, ...rest);
         variable.define(this.builder);
+        // make the variable aware of the TF particle count so it can size buffers
+        variable.points = this.points;
         this._variables[name] = variable;
         return variable;
     }
@@ -68,21 +72,26 @@ class TransformFeedback {
             if (feedbackVar.children.length > 0) {
                 gl.useProgram(program);
                 const location = feedbackVar.children[0].location;
-                console.log("Applying down stream data", name, "SIZE", settings.args, location, settings.argType);
-                console.log(feedbackVar.download());
                 gl.bindBuffer(gl.ARRAY_BUFFER, feedbackVar.buffer.write);
-                gl.vertexAttribPointer(location, settings.args, gl[settings.argType], false, 0, 0);
-                gl.enableVertexAttribArray(location); // Enable the attribute
+                if (!(location === null || location === undefined || location === -1)) {
+                    gl.vertexAttribPointer(location, settings.args, gl[settings.argType], false, 0, 0);
+                    gl.enableVertexAttribArray(location);
+                }
             }
         });
     }
 
     build() {
         const { gl } = this;
-        console.log("BUILDING TRANSFORM FEEDBACK");
-
-        const vertexShader = this.createShader(gl.VERTEX_SHADER, this.builder.build());
-        console.log("Vertex shader created");
+        const vertexSource = this.builder.build();
+        if (this.debug) {
+            try {
+                console.log("[TF DEBUG] Vertex shader (pre-compile):\n", vertexSource);
+            } catch (e) {
+                /* ignore logging errors */
+            }
+        }
+        const vertexShader = this.createShader(gl.VERTEX_SHADER, vertexSource);
 
         const fragmentShader = this.createShader(
             gl.FRAGMENT_SHADER,
@@ -94,20 +103,12 @@ class TransformFeedback {
             }
         `
         );
-        console.log("Fragment shader created");
-
         this.varyings = Object.keys(this._variables).map((name) => name + "Out");
-        console.log("Varyings defined:", this.varyings);
 
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
-        console.log("Vertex shader attached to program");
-
         gl.attachShader(program, fragmentShader);
-        console.log("Fragment shader attached to program");
-
         gl.transformFeedbackVaryings(program, this.varyings, gl.SEPARATE_ATTRIBS);
-        console.log("Transform feedback varyings set");
 
         gl.linkProgram(program);
 
@@ -117,27 +118,40 @@ class TransformFeedback {
             gl.deleteProgram(program);
             throw new Error(`Program linking error: ${error}`);
         }
-        console.log("Program linked successfully");
-
         this.program = program;
         gl.useProgram(this.program);
-        console.log("Program used");
 
-        this.vao = {
-            read: gl.createVertexArray(),
-            write: gl.createVertexArray(),
-        };
+        // Debug: optionally print the built vertex shader source, varyings, and variable locations
+        if (this.debug) {
+            try {
+                console.log("[TF DEBUG] Vertex Shader Source:\n", vertexSource);
+                console.log("[TF DEBUG] Varyings:", this.varyings);
+                Object.keys(this._variables).forEach((name) => {
+                    const v = this._variables[name];
+                    const bufInfo = v.buffer
+                        ? {
+                              hasRead: !!v.buffer.read,
+                              hasWrite: !!v.buffer.write,
+                              valueLen: v._value ? v._value.length || v._value.byteLength || null : null
+                          }
+                        : null;
+                    console.log(`[TF DEBUG] variable=${name}`, { location: v.location, buffer: bufInfo });
+                    if (v.children && v.children.length) {
+                        v.children.forEach((c) => console.log(`[TF DEBUG]  child=${c.name}`, { location: c.location }));
+                    }
+                });
+            } catch (e) {
+                console.warn("[TF DEBUG] Failed to print diagnostics:", e.message);
+            }
+        }
+
+        this.vao = { read: gl.createVertexArray(), write: gl.createVertexArray() };
 
         // Bind uniforms
-        Object.keys(this._uniforms).forEach((name) => {
-            this._uniforms[name].bind(gl, program);
-        });
+        Object.keys(this._uniforms).forEach((name) => this._uniforms[name].bind(gl, program));
 
         // Bind Feedback variables
-        Object.keys(this._variables).forEach((name) => {
-            console.log(`Binding variable ${name} ${this._variables[name].qualifier}`);
-            this._variables[name].bind(gl, program);
-        });
+        Object.keys(this._variables).forEach((name) => this._variables[name].bind(gl, program));
 
         // Bind VAO
         gl.bindVertexArray(this.vao.read);
@@ -146,24 +160,29 @@ class TransformFeedback {
             const variable = this._variables[name];
             const settings = variable.settings;
             gl.bindBuffer(gl.ARRAY_BUFFER, variable.buffer.read);
-            gl.enableVertexAttribArray(variable.location);
-            gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+            if (!(variable.location === null || variable.location === undefined || variable.location === -1)) {
+                gl.enableVertexAttribArray(variable.location);
+                gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+            }
         });
-
+        // Ensure ARRAY_BUFFER isn't left bound to a capture buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.bindVertexArray(this.vao.write);
         //Bind Write Attributes to VAO
         Object.keys(this._variables).forEach((name, i) => {
             const variable = this._variables[name];
             const settings = variable.settings;
             gl.bindBuffer(gl.ARRAY_BUFFER, variable.buffer.write);
-            gl.enableVertexAttribArray(variable.location);
-            gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+            if (!(variable.location === null || variable.location === undefined || variable.location === -1)) {
+                gl.enableVertexAttribArray(variable.location);
+                gl.vertexAttribPointer(variable.location, settings.args, gl[settings.argType], false, 0, 0);
+            }
         });
 
-        this.transformFeedback = gl.createTransformFeedback();
+        // Ensure ARRAY_BUFFER isn't left bound to a capture buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        const log = gl.getProgramInfoLog(program);
-        console.log(log);
+        this.transformFeedback = gl.createTransformFeedback();
     }
 
     createShader(type, source) {
@@ -198,6 +217,11 @@ class TransformFeedback {
         });
 
         // Begin transform feedback
+        // Debug: check for GL errors before begin
+        if (this.debug) {
+            let e;
+            while ((e = gl.getError()) !== gl.NO_ERROR) console.warn("[TF DEBUG] pre-begin glError:", e);
+        }
         gl.beginTransformFeedback(gl.POINTS);
 
         // Draw the particles using POINTS
@@ -205,6 +229,10 @@ class TransformFeedback {
 
         // End transform feedback
         gl.endTransformFeedback();
+        if (this.debug) {
+            let e;
+            while ((e = gl.getError()) !== gl.NO_ERROR) console.warn("[TF DEBUG] post-end glError:", e);
+        }
 
         // Disable transform feedback and rasterizer discard
         gl.disable(gl.RASTERIZER_DISCARD);

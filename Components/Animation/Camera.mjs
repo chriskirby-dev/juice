@@ -9,12 +9,12 @@ class Camera {
     max = {
         x: 0,
         y: 0,
-        z: 0,
+        z: 0
     };
     min = {
         x: 0,
         y: 0,
-        z: 0,
+        z: 0
     };
 
     constructor(viewer) {
@@ -51,13 +51,13 @@ class Camera {
                 if (index > -1) {
                     this.filters[index].options;
                 }
-            },
+            }
         };
     }
 
     update(time) {
         if (this.target) {
-            if (this.target.locked) {
+            if (this.target.frozen) {
                 if (this.target.velocity.hasValue()) {
                     this.x += this.target.velocity.x;
                     this.y += this.target.velocity.y;

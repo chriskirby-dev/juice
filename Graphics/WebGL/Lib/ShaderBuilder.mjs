@@ -49,7 +49,7 @@ class ShaderBuilder {
 
         \nvoid main() {\n${this.main.join("\n")} \n}
     `;
-        console.log(code);
+        // debug logs removed for performance
         return code;
     }
 }

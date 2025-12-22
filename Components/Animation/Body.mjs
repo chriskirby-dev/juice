@@ -43,15 +43,15 @@ export class AnimationBody extends Component.HTMLElement {
             rz: { type: "number", route: "rotation.z", default: 0, linked: true },
             scale: { type: "number", route: "s.value", default: 1, linked: true },
             anchor: { type: "string", default: "center", linked: true },
-            debug: { type: "exists", default: false, linked: true },
-        },
+            debug: { type: "exists", default: false, linked: true }
+        }
     };
 
     static get observed() {
         return {
             all: ["anchor", "x", "y", "z", "r", "rx", "ry", "rz", "scale", "vx", "vy", "width", "height", "debug"],
             attributes: ["offset", "position", "", "rx", "ry", "rz"],
-            properties: [],
+            properties: []
         };
     }
 
@@ -65,13 +65,13 @@ export class AnimationBody extends Component.HTMLElement {
                     height: "0px",
                     left: "0px",
                     top: "0px",
-                    transform: "translate3D(var(--x), var(--y), var(--z))",
+                    transform: "translate3D(var(--x), var(--y), var(--z))"
                 },
                 "#html": {
                     position: "absolute",
                     top: "0px",
                     left: "0px",
-                    rotate: "90deg",
+                    rotate: "45deg"
                 },
                 "#body": {
                     position: "absolute",
@@ -80,16 +80,16 @@ export class AnimationBody extends Component.HTMLElement {
                     translate: "calc( -100% * var(--anchor-x)) calc( -100% * var(--anchor-y))",
                     transformOrigin: "calc(var(--anchor-x) * 100%) calc(var(--anchor-y) * 100%)",
                     scale: "var(--scale)",
-                    rotate: "var(--rotation)",
+                    rotate: "var(--rotation)"
                 },
                 slot: {
                     position: "relative",
                     display: "block",
                     width: "100%",
-                    height: "100%",
+                    height: "100%"
                 },
                 ":host([debug]) #body": {
-                    outline: "1px solid lime",
+                    outline: "1px solid lime"
                 },
                 ".anchor": {
                     width: "10px",
@@ -99,7 +99,7 @@ export class AnimationBody extends Component.HTMLElement {
                     zIndex: 100,
                     top: "-5px",
                     left: "-5px",
-                    borderRadius: "50%",
+                    borderRadius: "50%"
                 },
                 ".anchor .x": {
                     position: "absolute",
@@ -108,7 +108,7 @@ export class AnimationBody extends Component.HTMLElement {
                     backgroundColor: "red",
                     top: "50%",
                     left: "50%",
-                    transform: "translate(-50%, -50%)",
+                    transform: "translate(-50%, -50%)"
                 },
                 ".anchor .x:before": {
                     display: "block",
@@ -119,7 +119,7 @@ export class AnimationBody extends Component.HTMLElement {
                     position: "absolute",
                     left: "0%",
                     rotate: "-90deg",
-                    transformOrigin: "top left",
+                    transformOrigin: "top left"
                 },
                 ".anchor .y": {
                     position: "absolute",
@@ -128,7 +128,7 @@ export class AnimationBody extends Component.HTMLElement {
                     backgroundColor: "red",
                     top: "50%",
                     left: "50%",
-                    transform: "translate(-50%, -50%)",
+                    transform: "translate(-50%, -50%)"
                 },
                 ".anchor .y:before": {
                     display: "block",
@@ -138,7 +138,7 @@ export class AnimationBody extends Component.HTMLElement {
                     fontSize: "8px",
                     position: "absolute",
                     left: "calc(50% + 5px)",
-                    top: "5px",
+                    top: "5px"
                     // rotate: "-90deg",
                 },
                 ".anchor .debug-stats": {
@@ -151,7 +151,7 @@ export class AnimationBody extends Component.HTMLElement {
                     color: "white",
                     padding: "5px",
                     rotate: "-90deg",
-                    whiteSpace: "nowrap",
+                    whiteSpace: "nowrap"
                 },
                 ".anchor .debug-stats .bg": {
                     position: "absolute",
@@ -162,7 +162,7 @@ export class AnimationBody extends Component.HTMLElement {
                     background: "#000",
                     opacity: 0.6,
                     zIndex: -1,
-                    borderRadius: "5px",
+                    borderRadius: "5px"
                 },
                 ".anchor .debug-stats .bg:before": {
                     display: "block",
@@ -173,12 +173,12 @@ export class AnimationBody extends Component.HTMLElement {
                     top: "-6px",
                     left: "calc(50% - 6px)",
                     rotate: "45deg",
-                    background: "#000",
+                    background: "#000"
                 },
                 ".anchor .debug-stats .stat:after": {
-                    content: "attr(data-value)",
-                },
-            },
+                    content: "attr(data-value)"
+                }
+            }
         ];
     }
 
@@ -208,13 +208,18 @@ export class AnimationBody extends Component.HTMLElement {
 
     //scale = 1;
 
+    freezeAt(x, y, z) {
+        this.freeze = new Vector3D(x, y, z);
+        this.position.set(x, y, z);
+    }
+
     get innerContentBox() {
         const { width: w, height: h, scale, _anchor } = this;
         const width = w * scale;
         const height = h * scale;
         const anchor = {
             x: _anchor.x * width,
-            y: _anchor.y * height,
+            y: _anchor.y * height
         };
         return {
             width,
@@ -222,7 +227,7 @@ export class AnimationBody extends Component.HTMLElement {
             top: anchor.y,
             left: anchor.x,
             right: width - anchor.x,
-            bottom: height - anchor.y,
+            bottom: height - anchor.y
         };
     }
 
@@ -236,7 +241,7 @@ export class AnimationBody extends Component.HTMLElement {
             anchor: self._anchor,
             bottom: () => {
                 return self.y + (1 - self._anchor.y * self.height) * Math.sin(radians(self.rotation.value));
-            },
+            }
         };
     }
 
@@ -247,22 +252,22 @@ export class AnimationBody extends Component.HTMLElement {
         this.position = new Vector3D(0, 0, 0);
         this.velocity = new Vector3D(0, 0, 0);
         this.s = new AnimationValue(1, {
-            min: 0,
+            min: 0
         });
         this.w = new AnimationValue(0, {
-            min: 0,
+            min: 0
         });
         this.h = new AnimationValue(0, {
-            min: 0,
+            min: 0
         });
 
         Object.defineProperty(this, "offset", {
             get: () => {
                 return {
                     x: this._offset.x * this.parent.width,
-                    y: this._offset.y * this.parent.height,
+                    y: this._offset.y * this.parent.height
                 };
-            },
+            }
         });
 
         if (this.hasAttribute("anchor")) {
@@ -387,7 +392,7 @@ export class AnimationBody extends Component.HTMLElement {
     setOffset(left, top) {
         this.styles.update(":host", {
             top: top,
-            left: left,
+            left: left
         });
         const parentRect = this.parentNode.getBoundingClientRect();
         const rect = this.getBoundingClientRect();
@@ -406,6 +411,15 @@ export class AnimationBody extends Component.HTMLElement {
         );
     }
 
+    /**
+     * Returns the relative position of the given element with respect to this element.
+     * If the given element is not in the stack of this element, the absolute position
+     * of this element is subtracted from the absolute position of the given element.
+     * Otherwise, the given element is sliced from the stack and the relative position is calculated
+     * by summing the positions of the elements in the slice.
+     * @param {HTMLElement} realitaveTo - The element to compute the relative position to.
+     * @returns {Object} - An object with x and y properties that represent the relative position of the given element.
+     */
     relativePosition(realitaveTo) {
         let stack;
         if (this.stack.indexOf(realitaveTo) === -1) {
@@ -426,6 +440,11 @@ export class AnimationBody extends Component.HTMLElement {
         );
     }
 
+    /**
+     * Returns the position of the element with respect to the stage.
+     * This is calculated by subtracting the position of the stage from the position of the element.
+     * @returns {Object} - An object with x and y properties that represent the position of the element with respect to the stage.
+     */
     getStagePosition() {
         const element = this.viewer.stage || this.viewer;
         const pos = this.viewerPosition();
@@ -494,7 +513,7 @@ export class AnimationBody extends Component.HTMLElement {
             {
                 root: this.viewer,
                 rootMargin: "0px",
-                threshold: [0, 1],
+                threshold: [0, 1]
             }
         );
 

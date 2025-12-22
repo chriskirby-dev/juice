@@ -9,7 +9,7 @@ export const StorageQualifiers = {
     OUT: "out",
     INOUT: "inout",
     CONST: "const",
-    SHARED: "shared",
+    SHARED: "shared"
 };
 
 const QUALIFIER_VALUES = Object.values(StorageQualifiers);
@@ -45,7 +45,6 @@ class VariableBase {
         this.LOCATION_LOOKUP = `get${qualifier[0].toUpperCase()}${qualifier.slice(1).toLowerCase()}Location`;
         this.LOOKUP_TYPE =
             this.LOCATION_LOOKUP === "getUniformLocation" ? WebGLRenderingContext.UNIFORM : WebGLUniformLocation;
-        console.log("CREATING", qualifier.toUpperCase(), "VARIABLE", type, name);
     }
 
     linkGL(webgl) {
@@ -75,14 +74,10 @@ class VariableBase {
         if (!this.bound) return;
         const { gl, program, name } = this;
         gl.useProgram(program);
-
         this._location = gl[this.LOCATION_LOOKUP](program, name);
-        console.log(this.LOCATION_LOOKUP, this._location, Number.isNaN(this._location));
-        if (Number.isNaN(this._location)) {
+        if (this._location === null) {
             this.lookupError = true;
-            console.log(this._location);
-            checkGLError(gl, `Location Lookup for ${name}`);
-            console.warn("Failed to get uniform location:", name);
+            console.error(`Uniform "${name}" not found in shader.`);
         }
         return this._location;
     }
@@ -96,8 +91,13 @@ class VariableBase {
         }
         this._value = value;
         if (this.options.debug) console.log("Uploading Value", this.qualifier, this.name, value);
-        if (Number.isNaN(this._location)) {
-            throw new Error(`Variable ${this.name} has no location`);
+        // Ensure we have a location; attempt a lookup if not present
+        if (this._location === null) {
+            const loc = this.location; // triggers lookupLocation if bound
+            if (loc === null || loc === undefined) {
+                if (this.options.debug) console.error(`Variable ${this.name} has no location.`);
+                return false;
+            }
         }
         if (this.bound && this.upload) return this.upload();
 
@@ -128,27 +128,27 @@ class VariableBase {
      */
     bind(gl, program) {
         if (this.bound) return this; // Return if already bound
-        console.log(`${this.qualifier} ${this.name} binding`);
         this.gl = gl;
         this.program = program;
 
-        // Initialize the index map for the program if it doesn't exist
         if (!VariableBase.indexMap.has(this.program)) {
             VariableBase.indexMap.set(this.program, {});
         }
 
-        // Retrieve or create the map for this qualifier in the program
         const programMap = VariableBase.indexMap.get(this.program);
-        if (!programMap[this.qualifier]) {
-            programMap[this.qualifier] = [];
-        }
+        if (!programMap[this.qualifier]) programMap[this.qualifier] = [];
 
-        // Add this variable to the program's qualifier map and set its index
         programMap[this.qualifier].push(this);
         this.index = programMap[this.qualifier].indexOf(this);
 
-        this.bound = true; // Mark as bound
-        console.log(`${this.qualifier} ${this.name} bound`);
+        this.bound = true;
+
+        // Attempt to resolve location immediately after binding
+        try {
+            this.lookupLocation();
+        } catch (e) {
+            // ignore lookup errors here
+        }
 
         // Trigger any additional logic required upon binding
         if (this.onBound) this.onBound(gl, program);
@@ -159,9 +159,6 @@ class VariableBase {
             this._value = null;
             this.value = tmp;
         }
-
-        // If a download function is provided, log the downloaded value
-        if (this._value) console.log("Download", this.name, this.location, this.download());
 
         return this; // Return the instance for chaining
     }
