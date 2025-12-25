@@ -59,12 +59,13 @@ class JuiceQueue {
 
     /**
      * Iterates through each item in the queue, calling the provided function.
-     * @param {string} queueName - The name of the queue (not used in current implementation)
+     * Note: This is a placeholder implementation. The actual iteration logic should be implemented.
+     * @param {string} queueName - The name of the queue (currently unused)
      * @param {Function} fn - Function to call for each item
      */
     each(queueName, fn) {
-        function nextItem() {
-            fn(this.next(queueName));
+        while (!this.empty) {
+            fn(this.next());
         }
     }
 

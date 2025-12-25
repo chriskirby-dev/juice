@@ -60,11 +60,12 @@ class JuiceStorage {
 
     /**
      * Converts a stored value back to its original type based on the index metadata.
+     * @param {string} key - The key of the value in the index
      * @param {*} value - The value to convert
      * @param {string} [type] - The type to convert to (if known)
      * @returns {*} The converted value
      */
-    accessor(value, type) {
+    accessor(key, value, type) {
         return this.currentIndex
             ? this.currentIndex[key]
                 ? this.currentIndex[key].type
@@ -125,10 +126,10 @@ class JuiceStorage {
     }
 
     /**
-     * Saves the current state (placeholder method).
+     * Saves the current state to localStorage.
      */
     save() {
-        this.set();
+        localStorage.setItem(this.internalPath, JSON.stringify(this._index));
     }
 
     /**

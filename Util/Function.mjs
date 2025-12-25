@@ -20,4 +20,5 @@ export function parseString(string) {
         .shift()
         .split(",")
         .map((arg) => arg.replace(/['"]/g, "").trim());
+    return parse;
 }
