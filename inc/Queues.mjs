@@ -59,11 +59,10 @@ class JuiceQueue {
 
     /**
      * Iterates through each item in the queue, calling the provided function.
-     * Note: This is a placeholder implementation. The actual iteration logic should be implemented.
-     * @param {string} queueName - The name of the queue (currently unused)
+     * Continues until the queue is empty.
      * @param {Function} fn - Function to call for each item
      */
-    each(queueName, fn) {
+    each(fn) {
         while (!this.empty) {
             fn(this.next());
         }
@@ -79,13 +78,15 @@ class JuiceQueue {
 }
 
 /**
- * JuiceQueues manages multiple named queues.
- * Provides a centralized way to create, access, and remove queues.
+ * JuiceQueues manages multiple named queues as simple arrays.
+ * Provides a centralized way to create, access, and remove queue arrays.
+ * Note: This manages arrays, not JuiceQueue instances.
  * @class JuiceQueues
  * @example
  * const queues = new JuiceQueues();
  * queues.create('tasks');
  * const taskQueue = queues.use('tasks');
+ * taskQueue.push(item);
  */
 class JuiceQueues {
     queues = {};
@@ -96,7 +97,7 @@ class JuiceQueues {
     constructor() {}
 
     /**
-     * Gets a queue by name.
+     * Gets a queue array by name.
      * @param {string} queueName - The name of the queue to retrieve
      * @returns {Array|undefined} The queue array, or undefined if it doesn't exist
      */
@@ -113,7 +114,7 @@ class JuiceQueues {
     }
 
     /**
-     * Creates a new empty queue with the given name.
+     * Creates a new empty queue array with the given name.
      * @param {string} queueName - The name of the queue to create
      */
     create(queueName) {
