@@ -1,23 +1,66 @@
+/**
+ * File utility module providing file path manipulation and type detection.
+ * Includes functions for path parsing, file signature detection, and MIME type identification.
+ * @module File
+ */
+
+/**
+ * Checks if a path is relative (not absolute).
+ * @param {string} pathStr - The path to check
+ * @returns {boolean} True if path is relative
+ * @example
+ * isRelative("./file.txt") // returns true
+ * isRelative("/absolute/path") // returns false
+ */
 export function isRelative(pathStr) {
     return !/^(\/|\\|[a-zA-Z]:)/.test(pathStr);
 }
 
+/**
+ * Extracts the file extension from a path.
+ * @param {string} pathStr - The file path
+ * @returns {string} The file extension without the dot
+ * @example
+ * extention("file.txt") // returns "txt"
+ */
 export function extention(pathStr) {
     return pathStr.replace(/.*\./, "");
 }
 
+/**
+ * Extracts the directory path from a full file path.
+ * @param {string} pathStr - The file path
+ * @returns {string} The directory path
+ * @example
+ * directory("/path/to/file.txt") // returns "/path/to"
+ */
 export function directory(pathStr) {
     return pathStr.replace(/\/?[^\/]*$/, "");
 }
 
+/**
+ * Extracts the filename extension from a path.
+ * @param {string} path - The file path
+ * @returns {string} The file extension
+ */
 export function filename(path) {
     return path.replace(/.*\./, "");
 }
 
+/**
+ * Extracts the basename (directory) from a path.
+ * @param {string} path - The file path
+ * @returns {string} The directory path without filename
+ */
 export function basename(path) {
     return path.replace(/\/?[^\/]*$/, "");
 }
 
+/**
+ * File signature database for identifying file types by their byte headers.
+ * Each entry contains the byte signature, file type name, and MIME type.
+ * @type {Array<{signature: Array<number>, fileType: string, mimeType: string}>}
+ */
 const fileSignatures = [
     { signature: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], fileType: "PNG", mimeType: "image/png" },
     { signature: [0xff, 0xd8, 0xff], fileType: "JPEG", mimeType: "image/jpeg" },
@@ -73,6 +116,16 @@ const fileSignatures = [
     { signature: [0x38, 0x42, 0x50, 0x53], fileType: "PSD", mimeType: "image/vnd.adobe.photoshop" },
 ];
 
+/**
+ * Detects the file type and MIME type from a file URL by examining its byte signature.
+ * Fetches the first 4KB of the file to identify its type.
+ * @param {string} url - URL of the file to detect
+ * @returns {Promise<{fileType: string, mimeType: string}>} The detected file type and MIME type
+ * @throws {Error} If HTTP request fails
+ * @example
+ * const type = await filetype("https://example.com/image.png");
+ * console.log(type.fileType, type.mimeType); // "PNG", "image/png"
+ */
 export async function filetype(url) {
     const response = await fetch(url, {
         method: "GET",
@@ -91,4 +144,10 @@ export async function filetype(url) {
     return detectMimeType(byteArray);
 }
 
+/**
+ * Detects MIME type from a byte array by matching file signatures.
+ * @private
+ * @param {Uint8Array} byteArray - The byte array to analyze
+ * @returns {Object|undefined} Detected file type information
+ */
 function detectMimeType(byteArray) {}

@@ -1,5 +1,16 @@
+/**
+ * Operators utility module providing comparison and type validation functions.
+ * Defines operator functions for use in conditional expressions and data validation.
+ * @module Operators
+ */
+
 import Util from './Core.mjs'
 
+/**
+ * Object containing comparison and type validation operators.
+ * Each operator is a function that takes a value and optionally a target for comparison.
+ * @type {Object<string, Function>}
+ */
 const operators = {
     '>': ( value, target ) => value > target,
     '<': ( value, target ) => value < target,
