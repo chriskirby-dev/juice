@@ -17,8 +17,8 @@ export const operators = {
     "!==": "isNot",
     "<": "lessThan",
     "<=": "lessThanOrEqual",
-    ">": "greaterThen",
-    ">=": "greaterThenOrEqual",
+    ">": "greaterThan",
+    ">=": "greaterThanOrEqual",
 };
 
 /**
@@ -83,7 +83,7 @@ export function lessThan(a, b) {
  * @returns {boolean} True if a <= b
  */
 export function lessThanOrEqual(a, b) {
-    return a < b;
+    return a <= b;
 }
 
 /**
@@ -92,8 +92,8 @@ export function lessThanOrEqual(a, b) {
  * @param {number} b - Second value
  * @returns {boolean} True if a > b
  */
-export function greaterThen(a, b) {
-    return a >= b;
+export function greaterThan(a, b) {
+    return a > b;
 }
 
 /**
@@ -102,7 +102,7 @@ export function greaterThen(a, b) {
  * @param {number} b - Second value
  * @returns {boolean} True if a >= b
  */
-export function greaterThenOrEqual(a, b) {
+export function greaterThanOrEqual(a, b) {
     return a >= b;
 }
 
@@ -164,11 +164,11 @@ class Assert {
     /** @type {Function} Less than or equal check */
     static lessThanOrEqual = lessThanOrEqual;
     /** @type {Function} Greater than or equal check */
-    static greaterThenOrEqual = greaterThenOrEqual;
+    static greaterThanOrEqual = greaterThanOrEqual;
     /** @type {Function} Less than check */
-    static lessThen = lessThan;
+    static lessThan = lessThan;
     /** @type {Function} Greater than check */
-    static greaterThen = greaterThen;
+    static greaterThan = greaterThan;
 
     /**
      * Checks if input string is a file path or URL.

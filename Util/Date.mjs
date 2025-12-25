@@ -370,8 +370,8 @@ class DateUtil {
      * DateUtil.agoString(new Date(Date.now() - 3661000), 2) // returns "1 hours 1 minutes ago"
      */
     static agoString( date, stop=4, stopStr='' ){
-        if( ago < 1000 * 60) return 'Just Now';
         const ago = this.ago( date );
+        if( ago < 1000 * 60) return 'Just Now';
         let parts = [];
         let max_unit = null;
         for( let unit in ago ){

@@ -51,7 +51,7 @@ export function isFalse(value) {
  * falseish("true") // returns false
  */
 export function falseish(value) {
-    return ["false", "null", "undefined", "0", "-0", "NaN", "0n", "-0n", false, null, undefined].includes(str);
+    return ["false", "null", "undefined", "0", "-0", "NaN", "0n", "-0n", false, null, undefined].includes(value);
 }
 
 /**
