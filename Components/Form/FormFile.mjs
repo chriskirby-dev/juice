@@ -1,5 +1,14 @@
+/**
+ * File upload form component with custom styling.
+ * @module Components/Form/FormFile
+ */
 import Component from "../Component.mjs";
 
+/**
+ * File input component with styled file selector button.
+ * @class FormFile
+ * @extends Component.HTMLElement
+ */
 class FormFile extends Component.HTMLElement {
     static tag = "form-file";
 

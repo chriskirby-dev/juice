@@ -1,5 +1,15 @@
+/**
+ * Base form input component with form association and validation support.
+ * @module Components/Form/FormBaseComponents
+ */
 import Component from "../Component.mjs";
 
+/**
+ * Base input component that can be used as a form element.
+ * Extends Component with form-associated behavior and internals API.
+ * @class BaseInput
+ * @extends Component.HTMLElement
+ */
 export class BaseInput extends Component.HTMLElement {
     static tag = "form-field";
 
