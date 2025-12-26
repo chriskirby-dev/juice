@@ -1,8 +1,19 @@
+/**
+ * Virtual DOM utilities for rendering and diffing.
+ * Provides functions for rendering vNodes to DOM elements and updating elements.
+ * @module VirtualDom/Render
+ */
+
 import { default as vElement, nextId } from "./Element.mjs";
 import Parser from "./Parser.mjs";
 
 import { type, empty } from "../Util/Core.mjs";
 
+/**
+ * Property name aliases for virtual DOM nodes.
+ * Maps canonical names to alternative property names.
+ * @private
+ */
 const aliases = {
     attributes: ["attrs"],
     ns: ["namespace"],
@@ -10,6 +21,12 @@ const aliases = {
     children: ["content"],
 };
 
+/**
+ * Conforms a vNode to standard property names using aliases.
+ * @param {Object} vNode - Virtual node to conform
+ * @returns {Object} Conformed virtual node
+ * @private
+ */
 function conform(vNode) {
     for (const key in aliases) {
         if (empty(vNode[key])) {
@@ -29,14 +46,35 @@ function conform(vNode) {
     return vNode;
 }
 
+/**
+ * Mounts a virtual node to the DOM.
+ * @param {Object} vnode - Virtual node to mount
+ * @param {Element} container - Container element
+ * @private
+ */
 function mount(vnode, container) {
     const el = (vnode.el = document.createElement(vnode.tag));
 }
 
+/**
+ * Checks if two nodes have changed and need updating.
+ * @param {*} node1 - First node
+ * @param {*} node2 - Second node
+ * @returns {boolean} True if nodes are different
+ * @private
+ */
 function changed(node1, node2) {
     return typeof node1 !== typeof node2 || (typeof node1 === "string" && node1 !== node2) || node1.type !== node2.type;
 }
 
+/**
+ * Updates a DOM element by comparing old and new virtual nodes.
+ * Efficiently patches only the changed parts of the DOM tree.
+ * @param {Element} $parent - Parent DOM element
+ * @param {Object} newNode - New virtual node
+ * @param {Object} oldNode - Old virtual node
+ * @param {number} [index=0] - Child index
+ */
 export const updateElement = ($parent, newNode, oldNode, index = 0) => {
     if (!oldNode) {
         $parent.appendChild(render(newNode));
