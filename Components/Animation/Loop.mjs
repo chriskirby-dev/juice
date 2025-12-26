@@ -1,7 +1,16 @@
+/**
+ * Animation loop component for repeating animations with from/to states.
+ * @module Components/Animation/Loop
+ */
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 
+/**
+ * Component for creating looped animations between two states.
+ * @class AnimationLoop
+ * @extends Component.HTMLElement
+ */
 class AnimationLoop extends Component.HTMLElement {
     static tag = "animation-loop";
 

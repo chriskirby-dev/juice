@@ -1,9 +1,22 @@
+/**
+ * Sprite animation component for displaying and animating sprite sheets.
+ * @module Components/Animation/Sprite
+ */
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import { Canvas, CanvasImageData } from "../../Graphics/Canvas.mjs";
 import GraphicAsset from "../../Asset/Graphic.mjs";
 import { AnimationValue } from "../../Animation/Properties/Value.mjs";
 import SpriteSheet from "../../Graphics/WebGL/SpriteSheet.mjs";
+
+/**
+ * Generates a tile map for a sprite sheet.
+ * @param {Object} tileSize - Size of each tile
+ * @param {number} sheetSize - Size of the sprite sheet
+ * @param {number} startX - Starting X position
+ * @param {number} startY - Starting Y position
+ * @returns {Array<Object>} Array of tile positions
+ */
 export function sheetMap(tileSize, sheetSize, startX, startY) {
     const map = [];
     for (let y = startY; y < sheetSize; y += tileSize) {
@@ -16,6 +29,11 @@ export function sheetMap(tileSize, sheetSize, startX, startY) {
     return map;
 }
 
+/**
+ * Sprite component for displaying and animating sprite sheet frames.
+ * @class AnimationSprite
+ * @extends Component.HTMLElement
+ */
 export class AnimationSprite extends Component.HTMLElement {
     static tag = "animation-sprite";
 
