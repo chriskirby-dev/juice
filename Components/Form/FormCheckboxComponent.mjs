@@ -1,3 +1,8 @@
+/**
+ * Checkbox form component.
+ * @module Components/Form/FormCheckboxComponent
+ */
+
 import Component from "../Component.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
 import { load as loadSASS } from "../../Style/SASS.mjs";
@@ -8,6 +13,11 @@ const { formInputCSS, formLayoutCSS, inputsCSS } = loadSASS(
     ["component--form-input.scss", "form--layout.scss", "form--inputs.scss"].map((name) => `${__dirname}/sass/${name}`)
 );*/
 
+/**
+ * FormCheckboxComponent provides a styled checkbox input with custom appearance.
+ * @class FormCheckboxComponent
+ * @extends BaseInput
+ */
 class FormCheckboxComponent extends BaseInput {
     static tag = "form-checkbox";
 

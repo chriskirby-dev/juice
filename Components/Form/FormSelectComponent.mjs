@@ -1,3 +1,8 @@
+/**
+ * Select dropdown form component.
+ * @module Components/Form/FormSelectComponent
+ */
+
 import Component from "../Component.mjs";
 import { type } from "../../Util/Core.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
@@ -8,6 +13,11 @@ const { _filename, __dirname } = currentFile(import.meta);
 
 //const formInputCSS = await loadFileToString(`${__dirname}/sass/component--form-input.scss`);
 
+/**
+ * FormSelectBox provides a customizable dropdown select input.
+ * @class FormSelectBox
+ * @extends BaseInput
+ */
 class FormSelectBox extends BaseInput {
     static tag = "form-select";
     options = [];
