@@ -1,3 +1,8 @@
+/**
+ * CSS stylesheet management with vendor prefixing support.
+ * @module Style/CSS
+ */
+
 import Browser from '../Client/Browser.mjs';
 import Styles from './Styles.mjs';
 
@@ -21,6 +26,12 @@ const prefixed = ['animation', 'animation-name', 'animation-duration', 'animatio
 let activeSheet = null;
 const browserPrefix = null;
 
+/**
+ * Gets or creates a style scope.
+ * @param {Document} scope - The scope to get or create
+ * @returns {Object} The scope object with sheets
+ * @private
+ */
 function getScope(scope){
 	const idx = Object.keys(scopes).length;
 	if(!scopes[scope]) scopes[scope] = { id: `s-${idx}`, sheets: {} }
