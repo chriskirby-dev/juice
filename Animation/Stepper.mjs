@@ -1,9 +1,31 @@
+/**
+ * AnimationStepper manages stepped animations with keyframe-based property interpolation.
+ * Supports parsing percentage-based steps with unit values and smooth transitions between steps.
+ * @module Animation/Stepper
+ */
+
 import { type } from "../Util/Core.mjs";
 import { lerp } from "../Util/Geometry.mjs";
 import UnitValue from "../Value/Unit.mjs";
+
+/**
+ * Manages stepped animations with interpolation between keyframes.
+ * @class AnimationStepper
+ * @param {Object} steps - Keyframe steps with percentage keys and property values
+ * @param {number} duration - Total animation duration
+ * @example
+ * const stepper = new AnimationStepper({
+ *   '0%': { opacity: '0', scale: '1' },
+ *   '50%': { opacity: '1', scale: '1.5' },
+ *   '100%': { opacity: '0', scale: '1' }
+ * }, 2000);
+ */
 class AnimationStepper {
+    /** @type {Array<number>} Step percentage positions */
     steps = [];
+    /** @type {Object} Parsed properties at each step */
     properties = {};
+    /** @type {number} Current step index */
     index = 0;
 
     constructor(steps, duration) {
@@ -11,6 +33,11 @@ class AnimationStepper {
         this.parse(steps);
     }
 
+    /**
+     * Finds the step index for a given percentage.
+     * @param {number} percent - Progress percentage (0-100)
+     * @returns {number|null} Step index or null if not found
+     */
     findStep(percent) {
         for (let i = 0; i < this.steps.length; i++) {
             if (percent <= this.steps[i]) {
