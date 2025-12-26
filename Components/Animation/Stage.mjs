@@ -31,13 +31,13 @@ class AnimationStage extends Component.HTMLElement {
             frction: { default: 0.6, type: "number", unit: "coefficient" },
             gravity: { default: 9.81, type: "number", unit: "meters per second sq" },
             fps: { default: 10, type: "number", unit: "frames per second", linked: true },
-            state: { default: "initial", type: "string", allowed: AnimationStage.allowedStates },
-        },
+            state: { default: "initial", type: "string", allowed: AnimationStage.allowedStates }
+        }
     };
 
     static get observed() {
         return {
-            all: ["width", "height", "friction", "gravity", "state", "fps", "x", "y", "anchor"],
+            all: ["width", "height", "friction", "gravity", "state", "fps", "x", "y", "anchor"]
         };
     }
 
@@ -53,20 +53,20 @@ class AnimationStage extends Component.HTMLElement {
                     height: "100%",
                     overflow: "hidden",
                     bottom: 0,
-                    zIndex: 0,
+                    zIndex: 0
                 },
                 slot: {
                     display: "block",
                     position: "relative",
                     width: "100%",
                     height: "100%",
-                    zIndex: 100,
+                    zIndex: 100
                 },
                 "#background": {
                     display: "block",
                     position: "absolute",
                     width: "100%",
-                    height: "100%",
+                    height: "100%"
                 },
                 "#background > *": {
                     display: "block",
@@ -74,9 +74,9 @@ class AnimationStage extends Component.HTMLElement {
                     width: "100%",
                     height: "100%",
                     left: 0,
-                    top: 0,
-                },
-            },
+                    top: 0
+                }
+            }
         ];
     }
 
@@ -88,7 +88,7 @@ class AnimationStage extends Component.HTMLElement {
     }
 
     beforeCreate() {
-        this.position = new Position(0, 0);
+        this.position = new Position(0, 0, { history: 3 });
     }
 
     get dimentions() {
@@ -171,16 +171,22 @@ class AnimationStage extends Component.HTMLElement {
         this.ref("background").appendChild(element);
         this.backgrounds.push({
             element: element,
-            ...options,
+            ...options
         });
     }
 
-    update(data) {}
+    update(data) {
+        if (this.position.dirty) {
+            this.queued.position = this.position.toObject();
+            this.position.save();
+        }
+    }
 
     render(data) {
+        const { position } = this.queued;
         if (this.viewer) {
-            if (this.position.dirty) {
-                const translate = `translate3d(${this.position.x}px, ${this.position.y}px,0)`;
+            if (position) {
+                const translate = `translate3d(${position.x}px, ${position.y}px,0)`;
                 this.style.transform = translate;
             }
         }

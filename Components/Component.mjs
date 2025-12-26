@@ -9,7 +9,6 @@ import Emitter from "../Event/Emitter.mjs";
 import Util, { type } from "../Util/Core.mjs";
 import { camelCase } from "../Util/String.mjs";
 import Observe from "../Dom/Observe/Observe.mjs";
-import VirtualDom from "../VirtualDom/VirtualDom.mjs";
 import VDom from "../VirtualDom/VDom.mjs";
 import Attributes from "../Dom/Attributes.mjs";
 import SyncedValue from "../DataTypes/SyncedValue.mjs";
@@ -21,7 +20,7 @@ const DEFAULT_CONFIG = {
     shadow: true,
     closed: false,
     properties: {},
-    renderable: true,
+    renderable: true
 };
 
 const Custom = {};
@@ -202,7 +201,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 get: function (customElement, prop, receiver) {
                     if (customElement[prop]) return customElement[prop];
                     return "";
-                },
+                }
             };
 
             // Override to set custom html to component as string or literal
@@ -232,7 +231,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 return {
                     all: [],
                     attributes: [],
-                    properties: [],
+                    properties: []
                 };
             }
 
@@ -356,12 +355,13 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     const clone = this.constructor.template.clone();
                     this.root.appendChild(clone);
                     this.#content = this.root.querySelector(".component--html");
+
                     //Initialize VDOM by parsing the component html
-                    //this.#vdom = VirtualDom.parseDom(this.#content);
                     this.#vdom = new VDom(this.#content, {
                         container: this.#content,
-                        containerAsRoot: true,
+                        containerAsRoot: true
                     });
+
                     this.#styles.default = new StyleSheet("default", this.root.querySelector("style"));
                 }
 
@@ -436,7 +436,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     replace: function (styles, sheetName = "default") {
                         getStyleSheet(sheetName).clear();
                         getStyleSheet(sheetName).add(styles);
-                    },
+                    }
                 };
             }
 
@@ -560,7 +560,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         }
 
                         return true;
-                    },
+                    }
                 });
 
                 const aliases = property
@@ -572,7 +572,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         get: () => this[property],
                         set: (value) => {
                             this[property] = value;
-                        },
+                        }
                     });
                 }
 
@@ -607,7 +607,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                 // Dispatch property change event
                 this.dispatchEvent(
                     new CustomEvent("propertychange", {
-                        detail: { property, oldValue, newValue },
+                        detail: { property, oldValue, newValue }
                     })
                 );
 
@@ -667,7 +667,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                         this.#resize(this.offsetWidth, this.offsetHeight)
                     );
                     this.mutationObserver.observe(this, {
-                        attributes: true,
+                        attributes: true
                     });
                 }
 
@@ -681,7 +681,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.positionObserver.observe(this, {
                         attributes: true,
                         childList: true,
-                        subtree: true,
+                        subtree: true
                     });
                 }
 
@@ -728,7 +728,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     });
 
                     this.mutationObserver.observe(this, {
-                        childList: true,
+                        childList: true
                     });
 
                     this.onChildren(Array.from(this.children));
@@ -852,6 +852,11 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             #render(refresh) {
                 //console.trace( this.rendered );
+
+                // Skip VDom rendering if useVirtualDom is false
+                if (this.config.useVirtualDom === false && this.rendered > 0) {
+                    return;
+                }
 
                 if (refresh) {
                     //Reset HTML
@@ -1030,7 +1035,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
                 if (this.onAttributeChanged) this.onAttributeChanged(property, oldValue, newValue);
             }
-        },
+        }
 
         //END Custom Class
     }[name];
@@ -1049,7 +1054,7 @@ function createComponent(name, Extends) {
             else Defined[name] = ComponentCompiler(name, Extends);
             return Defined[name];
         },
-        set: () => false,
+        set: () => false
     });
 }
 

@@ -96,7 +96,7 @@ export class Vector2D extends Float32Array {
      */
     static parse(arg1, arg2) {
         //Handle x, y
-
+        console.log(type(arg1), arg1, type(arg2), arg2);
         if (type(arg1, "number")) return new this(arg1, arg2);
         //Handle [x, y]
         if (type(arg1, "array")) return new this(...arg1);
@@ -115,7 +115,7 @@ export class Vector2D extends Float32Array {
     }
 
     toArray() {
-        return this;
+        return [this[0], this[1]];
     }
 
     get x() {
@@ -190,7 +190,17 @@ export class Vector2D extends Float32Array {
     }
 
     diff(x, y) {
-        return this.constructor.parse(this[0] - x, this[1] - y);
+        console.log(arguments);
+        if (x instanceof Vector2D || type(x, "array")) {
+            return this.constructor.parse(this[0] - x[0], this[1] - x[1]);
+        } else if (arguments.length === 1 && x !== undefined) {
+            const v = this.constructor.parse(x);
+            return this.constructor.parse(this[0] - v[0], this[1] - v[1]);
+        } else if (arguments.length === 2 && x !== undefined && y !== undefined) {
+            return this.constructor.parse(this[0] - x, this[1] - y);
+        } else {
+            return this.constructor.parse(0, 0);
+        }
     }
 
     clamp() {
@@ -208,11 +218,14 @@ export class Vector2D extends Float32Array {
     }
 
     save() {
-        this.last = this.saved;
-        this.saved = this.slice();
+        console.log("Saving Vector2D", this[0], this[1]);
+        this.last = this.history[0];
+        this.saved = this.toArray();
         if (this.options.history && this.options.history > 0) {
             this.history.unshift(this.saved);
+            this.history.print();
         }
+        console.log("Saved", this.last, this.saved);
     }
 
     get dirty() {
@@ -233,6 +246,15 @@ export class Vector2D extends Float32Array {
 
     getChanges(i = 0) {
         const saved = this.history[i];
+        return this.diff(...this.saved);
+    }
+
+    delta() {
+        const saved = this.last || this.history[0];
+        return this.diff(saved);
+    }
+
+    savedDelta() {
         return this.diff(this.saved);
     }
 }
@@ -378,6 +400,7 @@ export class Vector3D extends Float32Array {
     }
 
     save() {
+        this.last = this.saved;
         this.saved = [this[0], this[1], this[2]];
         if (this.options.history && this.options.history > 0) {
             this.history.unshift(this.saved);
@@ -441,6 +464,14 @@ export class Vector3D extends Float32Array {
     }
 
     getChanges() {
+        return this.diff(this.saved);
+    }
+
+    delta() {
+        return this.diff(this.last);
+    }
+
+    savedDelta() {
         return this.diff(this.saved);
     }
 }

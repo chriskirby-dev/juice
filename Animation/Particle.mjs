@@ -43,6 +43,7 @@ export class Particle {
         this.opacity = new AnimationValue(options.opacity || 1);
         this.rotation = options.rotation || 0;
         this.vars = options.vars || {};
+        this.data = options.data || {};
         if (options.floor) this.floor = options.floor;
 
         if (this.steps) {

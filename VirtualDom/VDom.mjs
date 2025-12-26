@@ -86,10 +86,15 @@ class VDom {
      */
 
     package(vdom) {
-        const container = { ...this.containerVDom };
-        container.children = Array.isArray(vdom) ? [...vdom] : [vdom];
-
-        this.#staged = container;
+        // If containerAsRoot, don't wrap in container - content goes directly into root
+        if (this.options.containerAsRoot) {
+            this.#staged = Array.isArray(vdom) ? vdom : [vdom];
+        } else {
+            // Otherwise wrap in container
+            const container = { ...this.containerVDom };
+            container.children = Array.isArray(vdom) ? [...vdom] : [vdom];
+            this.#staged = container;
+        }
         return this.#staged;
     }
 

@@ -220,6 +220,14 @@ export class Vector3D {
         return this;
     }
 
+    get() {
+        return {
+            x: this.data[0],
+            y: this.data[1],
+            z: this.data[2]
+        };
+    }
+
     /**
      * Adds a given vector to the current vector.
      * @param {Vector3D} v - The vector to add to the current vector.
@@ -355,6 +363,10 @@ export class Vector3D {
      */
     toArray() {
         return [this.data[0], this.data[1], this.data[2]];
+    }
+
+    toObject() {
+        return { x: this.x, y: this.y, z: this.z };
     }
 }
 

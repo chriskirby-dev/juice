@@ -282,6 +282,10 @@ export class Rotation3D extends Float32Array {
     getAxis(axis) {
         return new Rotation(this[axis]);
     }
+
+    toArray() {
+        return [this[0], this[1], this[2]];
+    }
 }
 
 export default Rotation;

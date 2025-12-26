@@ -21,12 +21,12 @@ class Camera {
         this.viewer = viewer;
     }
 
-    set x(x) {
-        this.viewer.stage.y = y;
+    set x(value) {
+        this.viewer.stage.position.x = -value;
     }
 
-    set y(y) {
-        this.viewer.stage.y = y;
+    set y(value) {
+        this.viewer.stage.position.y = -value;
     }
 
     follow(target) {

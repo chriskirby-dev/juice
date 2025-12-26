@@ -5,26 +5,26 @@ class AnimationStats extends Component.HTMLElement {
 
     static config = {
         name: "animation-stats",
+        useVirtualDom: false, // Bypass VDom - we manage content manually
         properties: {
             fps: { default: 0, type: "integer", unit: "per Second" },
-            time: { default: 0, type: "number", unit: "Seconds" },
-        },
+            time: { default: 0, type: "number", unit: "Seconds" }
+        }
     };
 
     static get observed() {
         return {
             all: ["fps", "time"],
             attributes: [],
-            properties: [],
+            properties: []
         };
     }
 
-    static html() {
+    static html(data = {}) {
         return `<ul id="list">
-        <li>FPS: <span id="fps">${this.fps}</span></li>
-        <li>Time: <span id="time">${this.time}</span></li>
-        <li>Memory: <span id="memory">${this.memory}</span></li>
-
+        <li>FPS: <span id="fps">0</span></li>
+        <li>Time: <span id="time">0</span></li>
+        <li>Memory: <span id="memory">0</span></li>
         </ul>`;
     }
 
@@ -33,7 +33,7 @@ class AnimationStats extends Component.HTMLElement {
             {
                 ":host": {
                     position: "absolute",
-                    zIndex: 1000,
+                    zIndex: 100000,
                     display: "block",
                     width: "auto",
                     height: "auto",
@@ -41,34 +41,35 @@ class AnimationStats extends Component.HTMLElement {
                     color: "white",
                     padding: "10px",
                     top: 0,
-                    lrft: 0,
+                    lrft: 0
                 },
                 ul: {
                     margin: 0,
                     padding: 0,
-                    display: "block",
+                    display: "block"
                 },
                 "ul li": {
                     display: "block",
                     margin: 0,
                     padding: 0,
-                    fontSize: "12px",
-                },
-            },
+                    fontSize: "12px"
+                }
+            }
         ];
     }
 
-    constructor() {
-        super();
-    }
-
     addStat(key, value) {
-        let label = StringUtil.ucwords(key);
         const item = document.createElement("li");
-        item.innerText = `${label}: `;
+
+        const label = document.createElement("label");
+        label.innerText = StringUtil.ucwords(key);
+
         const span = document.createElement("span");
         span.innerText = value;
+
+        item.appendChild(label);
         item.appendChild(span);
+
         this.ref("list").appendChild(item);
         this["_" + key] = value;
         Object.defineProperty(this, key, {
@@ -77,7 +78,7 @@ class AnimationStats extends Component.HTMLElement {
                 if (this["_" + key] == value) return;
                 this["_" + key] = value;
                 span.innerText = value;
-            },
+            }
         });
     }
 

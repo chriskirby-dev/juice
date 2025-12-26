@@ -71,7 +71,7 @@ export class AnimationBody extends Component.HTMLElement {
                     position: "absolute",
                     top: "0px",
                     left: "0px",
-                    rotate: "45deg"
+                    rotate: "90deg"
                 },
                 "#body": {
                     position: "absolute",
@@ -247,6 +247,7 @@ export class AnimationBody extends Component.HTMLElement {
 
     beforeCreate() {
         this.animationBody = true;
+        this.visible = true;
         this.rotation = new Rotation3D(-90, 0, 0);
         this.rotation.OFFSET.x = 90;
         this.position = new Vector3D(0, 0, 0);
@@ -295,8 +296,8 @@ export class AnimationBody extends Component.HTMLElement {
         this.y = y;
     }
 
-    onPropertyChanged(property, prevous, value) {
-        console.trace(this.constructor.name, this.RESIZE_ACTION, property, value);
+    onPropertyChanged(property, previous, value) {
+        if (this.debug) console.log(`[${this.constructor.name}] ${property}=${value}`);
         switch (property) {
             case "r":
                 this.rotation.x.value = value;
@@ -316,8 +317,24 @@ export class AnimationBody extends Component.HTMLElement {
         }
     }
 
-    update() {
-        // console.log(this.velocity.dirty);
+    isInViewport() {
+        if (!this.viewer) return true;
+        const rect = this.getBoundingClientRect();
+        const viewerRect = this.viewer.getBoundingClientRect();
+
+        return !(
+            rect.bottom < viewerRect.top ||
+            rect.top > viewerRect.bottom ||
+            rect.right < viewerRect.left ||
+            rect.left > viewerRect.right
+        );
+    }
+
+    update(time) {
+        this.visible = this.isInViewport();
+
+        if (!this.visible) return;
+
         if (this.velocity.dirty()) {
             this.position.add(this.velocity);
             this.velocity.clean();
@@ -327,65 +344,68 @@ export class AnimationBody extends Component.HTMLElement {
         }
     }
     render(time) {
+        if (!this.visible) return;
+
         const updates = {};
-        if (this.debug) {
-            if (this.position.dirty()) {
-                this.ref("debug-position").setAttribute(
-                    "data-value",
-                    `${this.position.x.toFixed(2)},${this.position.y.toFixed(2)}`
-                );
-            }
-            if (this.rotation.dirty("y")) {
-                // console.log(this.rotation.y);
-                this.ref("debug-rotation").setAttribute("data-value", `${this.rotation.y.toFixed(2)}deg`);
-            }
-            if (this.dirty("scale")) {
-                this.ref("debug-scale").setAttribute("data-value", `${this.scale.toFixed(2)}x`);
-            }
-            if (this.w.dirty || this.h.dirty) {
-                this.ref("debug-size").setAttribute(
-                    "data-value",
-                    `${this.w.value.toFixed(2)}px, ${this.h.value.toFixed(2)}px`
-                );
-            }
-        }
+        const debugUpdates = {};
 
         if (this.w.dirty) {
-            const w = this.w.value;
-            updates["--width"] = w + "px";
+            updates["--width"] = this.w.value + "px";
             this.w.save();
-            //this.ref("html").style.setProperty("--width", w + "px");
         }
 
         if (this.h.dirty) {
-            const h = this.h.value;
-            updates["--height"] = h + "px";
+            updates["--height"] = this.h.value + "px";
             this.h.save();
-            //this.ref("html").style.setProperty("--height", h + "px");
         }
 
-        //console.log("position", this.position.dirty);
         if (this.position.dirty()) {
-            updates[`--x`] = this.position.x + "px";
-            updates[`--y`] = this.position.y + "px";
-            updates[`--z`] = this.position.z + "px";
-
+            updates["--x"] = this.position.x + "px";
+            updates["--y"] = this.position.y + "px";
+            updates["--z"] = this.position.z + "px";
             this.position.clean();
+
+            if (this.debug) {
+                debugUpdates["position"] = `${this.position.x.toFixed(2)},${this.position.y.toFixed(2)}`;
+            }
         }
 
         if (this.rotation.dirty("x")) {
-            //  console.log("rotation dirty");
             updates["--rotation"] = `${this.rotation.x}deg`;
             this.rotation.clean("x");
+
+            if (this.debug) {
+                debugUpdates["rotation"] = `${this.rotation
+                    .toArray()
+                    .map((v) => v.toFixed(2))
+                    .join("deg ,")}deg`;
+            }
         }
 
         if (this.s.dirty) {
-            updates[`--scale`] = `${this.scale}`;
+            updates["--scale"] = `${this.scale}`;
             this.s.save();
+
+            if (this.debug) {
+                debugUpdates["scale"] = `${this.scale.toFixed(2)}x`;
+            }
+        }
+
+        if (this.w.dirty || this.h.dirty) {
+            if (this.debug) {
+                debugUpdates["size"] = `${this.w.value.toFixed(2)}px, ${this.h.value.toFixed(2)}px`;
+            }
         }
 
         if (Object.keys(updates).length) {
             this.writeStyleVars(updates);
+        }
+
+        if (Object.keys(debugUpdates).length) {
+            Object.entries(debugUpdates).forEach(([key, value]) => {
+                const el = this.ref(`debug-${key}`);
+                if (el) el.setAttribute("data-value", value);
+            });
         }
     }
 
@@ -401,65 +421,123 @@ export class AnimationBody extends Component.HTMLElement {
     }
 
     absolutePosition() {
-        return this.stack.reduce(
-            (acc, el) => {
-                acc.x += el.x;
-                acc.y += el.y;
-                return acc;
-            },
-            { x: 0, y: 0 }
-        );
+        let x = this._offset.x;
+        let y = this._offset.y;
+        for (let i = 0; i < this.stack.length; i++) {
+            x += this.stack[i].x || 0;
+            y += this.stack[i].y || 0;
+        }
+        return { x, y };
     }
 
     /**
-     * Returns the relative position of the given element with respect to this element.
-     * If the given element is not in the stack of this element, the absolute position
-     * of this element is subtracted from the absolute position of the given element.
-     * Otherwise, the given element is sliced from the stack and the relative position is calculated
-     * by summing the positions of the elements in the slice.
-     * @param {HTMLElement} realitaveTo - The element to compute the relative position to.
-     * @returns {Object} - An object with x and y properties that represent the relative position of the given element.
+     * Returns position relative to viewer (cached for performance).
+     * This is the fast path called during animation updates.
+     * @returns {Object} - An object with x and y properties
      */
-    relativePosition(realitaveTo) {
-        let stack;
-        if (this.stack.indexOf(realitaveTo) === -1) {
-            stack = this.stack.slice(this.stack.indexOf(realitaveTo));
+    viewerPosition() {
+        let isDirty = false;
+
+        // Check if any element in stack has dirty position
+        if (!this._cachedViewerPos) {
+            isDirty = true;
         } else {
-            const abs = this.absolutePosition();
-            const rel = realitaveTo.absolutePosition();
-            return { x: abs.x - rel.x, y: abs.y - rel.y };
+            for (let i = 0; i < this.stack.length; i++) {
+                if (
+                    this.stack[i].position &&
+                    typeof this.stack[i].position.dirty === "function" &&
+                    this.stack[i].position.dirty()
+                ) {
+                    isDirty = true;
+                    break;
+                }
+            }
         }
 
-        return stack.reduce(
-            (acc, el) => {
-                acc.x += el.x;
-                acc.y += el.y;
-                return acc;
-            },
-            { x: 0, y: 0 }
-        );
+        if (isDirty) {
+            let x = this._offset.x;
+            let y = this._offset.y;
+
+            for (let i = 0; i < this.stack.length; i++) {
+                x += this.stack[i].x || 0;
+                y += this.stack[i].y || 0;
+            }
+
+            this._cachedViewerPos = { x, y };
+
+            // ✅ Clean the dirt flags so next frame won't recalculate
+            for (let i = 0; i < this.stack.length; i++) {
+                if (this.stack[i].position && typeof this.stack[i].position.clean === "function") {
+                    this.stack[i].position.clean();
+                }
+            }
+        }
+
+        return this._cachedViewerPos;
+    }
+
+    get stage() {
+        return this.viewer?.stage;
     }
 
     /**
      * Returns the position of the element with respect to the stage.
-     * This is calculated by subtracting the position of the stage from the position of the element.
+     * This is calculated by subtracting the stage position from the viewer position.
      * @returns {Object} - An object with x and y properties that represent the position of the element with respect to the stage.
      */
     getStagePosition() {
-        const element = this.viewer.stage || this.viewer;
-        const pos = this.viewerPosition();
-        return { x: -element.x + pos.x, y: -element.y + pos.y };
+        const viewPos = this.viewerPosition();
+
+        // Get stage position - handle both stage and viewer
+        let stageX = 0;
+        let stageY = 0;
+
+        if (this.viewer && this.viewer.stage) {
+            const stage = this.viewer.stage;
+            stageX = stage.position?.x || 0;
+            stageY = stage.position?.y || 0;
+        }
+
+        return {
+            x: viewPos.x - stageX,
+            y: viewPos.y - stageY
+        };
     }
 
-    viewerPosition() {
-        return this.stack.reduce(
-            (acc, el) => {
-                acc.x += el.x;
-                acc.y += el.y;
-                return acc;
-            },
-            { x: this._offset.x, y: this._offset.y }
-        );
+    /**
+     * Returns position relative to a specific ancestor element (optimized fast path).
+     * @param {HTMLElement} relativeTo - The element to compute relative position to.
+     * @returns {Object} - An object with x and y properties that represent the relative position of the given element.
+     */
+    relativePosition(relativeTo) {
+        // Find the element in the stack
+        const index = this.stack.indexOf(relativeTo);
+
+        if (index === -1) {
+            // Not in stack - fallback to full calculation
+            let x = this.x || 0;
+            let y = this.y || 0;
+            let el = this.parentNode;
+
+            while (el && el !== relativeTo && el.animationComponent) {
+                x += el.x || 0;
+                y += el.y || 0;
+                el = el.parentNode;
+            }
+
+            return { x, y };
+        }
+
+        // Fast path: element is in stack, sum from index onwards
+        let x = this._offset.x;
+        let y = this._offset.y;
+
+        for (let i = 0; i <= index; i++) {
+            x += this.stack[i].x || 0;
+            y += this.stack[i].y || 0;
+        }
+
+        return { x, y };
     }
 
     topParent() {
@@ -478,50 +556,7 @@ export class AnimationBody extends Component.HTMLElement {
             }
         }
         this.stack = stack;
-        console.log("stack", this.stack);
-        //this.animation.update();
-        //this.animation.render();
-        this.setupObservers();
-        document.addEventListener("resize", () => {});
-    }
-
-    setupObservers() {
-        let intersectionObserver = new IntersectionObserver(
-            (entries, observer) => {
-                // console.log("INTERSECT", entries);
-                const isVisible = entries[0].isVisible;
-                const rect = entries[0].boundingClientRect;
-                const rootBounds = entries[0].rootBounds;
-                if (this.visible !== isVisible) {
-                    if (
-                        rect.top > rootBounds.bottom ||
-                        rect.bottom < rootBounds.top ||
-                        rect.left > rootBounds.right ||
-                        rect.right < rootBounds.left
-                    ) {
-                        this.visible = false;
-                    } else {
-                        this.visible = true;
-                    }
-                }
-
-                if (this.visible) {
-                    if (rect.top > rootBounds.bottom || rect.bottom < rootBounds.top) {
-                    }
-                }
-            },
-            {
-                root: this.viewer,
-                rootMargin: "0px",
-                threshold: [0, 1]
-            }
-        );
-
-        intersectionObserver.observe(this);
-    }
-
-    onObservePosition(rect) {
-        console.log("onPosition", this, rect);
+        if (this.debug) console.log("stack", this.stack);
     }
 }
 

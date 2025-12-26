@@ -17,8 +17,8 @@ class ScrollBar extends Component.HTMLElement {
             color: { type: "string", default: "#000000", linked: true },
             bgcolor: { type: "string", default: "#ffffff", linked: true },
             align: { type: "string", default: "right", linked: true },
-            value: { type: "number", default: 0, linked: true },
-        },
+            value: { type: "number", default: 0, linked: true }
+        }
     };
 
     offset = 0;
@@ -29,12 +29,12 @@ class ScrollBar extends Component.HTMLElement {
     scroll = {
         current: {
             percent: 0,
-            value: 0,
+            value: 0
         },
         target: {
             percent: 0,
-            value: 0,
-        },
+            value: 0
+        }
     };
     constructor() {
         super();
@@ -46,7 +46,7 @@ class ScrollBar extends Component.HTMLElement {
 
     static get observed() {
         return {
-            all: ["color", "bgcolor", "axis", "align", "width", "height", "hidden"],
+            all: ["color", "bgcolor", "axis", "align", "width", "height", "hidden"]
         };
     }
 
@@ -65,37 +65,37 @@ class ScrollBar extends Component.HTMLElement {
                     position: "absolute",
                     display: "block",
                     zIndex: 10,
-                    overflow: "hidden",
+                    overflow: "hidden"
                 },
                 ":host([hidden])": {
-                    display: "none",
+                    display: "none"
                 },
                 ':host([axis="x"])': {
                     width: "100%",
                     position: "absolute",
-                    height: "20px",
+                    height: "20px"
                 },
                 ':host([axis="y"])': {
                     height: "100%",
                     position: "absolute",
-                    width: "20px",
+                    width: "20px"
                 },
 
                 ':host([align="right"])': {
                     top: 0,
-                    right: 0,
+                    right: 0
                 },
                 ':host([align="left"])': {
                     top: 0,
-                    left: 0,
+                    left: 0
                 },
                 ':host([align="top"])': {
                     top: 0,
-                    left: 0,
+                    left: 0
                 },
                 ':host([align="bottom"])': {
                     bottom: 0,
-                    left: 0,
+                    left: 0
                 },
                 "#handle": {
                     position: "absolute",
@@ -104,22 +104,22 @@ class ScrollBar extends Component.HTMLElement {
                     height: "25px",
                     overflow: "hidden",
                     backgroundColor: "#666",
-                    cursor: "grab",
+                    cursor: "grab"
                 },
                 "#bar": {
                     position: "relative",
                     display: "block",
                     width: "100%",
                     height: "100%",
-                    overflow: "hidden",
+                    overflow: "hidden"
                 },
                 ':host([axis="y"]) #handle': {
-                    width: "100%",
+                    width: "100%"
                 },
                 ':host([axis="x"]) #handle': {
-                    height: "100%",
-                },
-            },
+                    height: "100%"
+                }
+            }
         ];
     }
 
@@ -139,7 +139,7 @@ class ScrollBar extends Component.HTMLElement {
     }
 
     onWheel(event) {
-        event.preventDefault();
+        //event.preventDefault();
         //  console.log(this.clamp);
         // Normalize the scroll delta
         const delta = event.deltaY || event.detail || event.wheelDelta;
@@ -159,7 +159,7 @@ class ScrollBar extends Component.HTMLElement {
         const rect = this.getBoundingClientRect();
         const elementOffset = {
             x: e.pageX + e.target.offsetLeft,
-            y: e.pageY + e.target.offsetTop,
+            y: e.pageY + e.target.offsetTop
         };
 
         this.offset = e[clientProp] - elementOffset[this.axis];
@@ -169,7 +169,7 @@ class ScrollBar extends Component.HTMLElement {
             client: e[clientProp],
             offset: this.offset,
             rect,
-            elementOffset: elementOffset,
+            elementOffset: elementOffset
         };
 
         this.handle.setPointerCapture(e.pointerId);
@@ -283,14 +283,14 @@ class ScrollBar extends Component.HTMLElement {
             this.handleSize = this.width * this.scale;
             this.styles.update("#handle", {
                 width: this.handleSize + "px",
-                height: "100%",
+                height: "100%"
             });
             this.maxOffset = this.width - this.handleSize;
         } else {
             this.handleSize = this.height * this.scale;
             this.styles.update("#handle", {
                 width: "100%",
-                height: this.handleSize + "px",
+                height: this.handleSize + "px"
             });
             this.maxOffset = this.height - this.handleSize;
         }

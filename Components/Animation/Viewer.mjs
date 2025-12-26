@@ -4,6 +4,7 @@ import { Vector3D, Vector2D } from "../../Animation/Properties/Vector.mjs";
 import AnimationStage from "./Stage.mjs";
 import AnimationBody from "./Body.mjs";
 import AnimationSprite from "./Sprite.mjs";
+import AnimationStats from "./Stats.mjs";
 import Camera from "./Camera.mjs";
 export class AnimationViewer extends Component.HTMLElement {
     static tag = "animation-viewer";
@@ -20,13 +21,13 @@ export class AnimationViewer extends Component.HTMLElement {
             fps: { default: 60, type: "number", unit: "frames per second", linked: true },
             state: { default: "initial", type: "string", allowed: AnimationViewer.allowedStates },
             follow: { default: false, type: "string" },
-            debug: { default: false, type: "exists", linked: true },
-        },
+            debug: { default: false, type: "exists", linked: true }
+        }
     };
 
     static get observed() {
         return {
-            all: ["width", "height", "fps", "state", "follow", "debug"],
+            all: ["width", "height", "fps", "state", "follow", "debug"]
         };
     }
 
@@ -38,15 +39,15 @@ export class AnimationViewer extends Component.HTMLElement {
                     display: "block",
                     width: "100%",
                     height: "100%",
-                    overflow: "hidden",
+                    overflow: "hidden"
                 },
                 slot: {
                     display: "block",
                     position: "relative",
                     width: "100%",
-                    height: "100%",
-                },
-            },
+                    height: "100%"
+                }
+            }
         ];
     }
 
@@ -101,11 +102,11 @@ export class AnimationViewer extends Component.HTMLElement {
 
         this.max = {
             x: stageWidth - this.width,
-            y: stageHeight - this.height,
+            y: stageHeight - this.height
         };
         this.min = {
             x: 0,
-            y: 0,
+            y: 0
         };
 
         stage.onViewerConnect(this);

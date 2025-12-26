@@ -16,8 +16,8 @@ import { Vector2D, Vector3D } from "./Vector.mjs";
  * const pos = new Position2D(100, 200);
  */
 export class Position2D extends Vector2D {
-    constructor(x = 0, y = 0) {
-        super(x, y);
+    constructor(x = 0, y = 0, options = { history: 3 }) {
+        super(x, y, options);
     }
 }
 
@@ -38,13 +38,18 @@ export const Position = Position2D;
  * const pos = new Position3D(100, 200, 50);
  */
 export class Position3D extends Vector3D {
-    constructor(x = 0, y = 0, z = 0) {
-        super(x, y, z);
+    constructor(x = 0, y = 0, z = 0, options = { history: 3 }) {
+        super(x, y, z, options);
     }
 }
 
 export default {
     Position3D,
     Position2D,
+<<<<<<< Updated upstream
     Position,
 };
+=======
+    Position
+};
+>>>>>>> Stashed changes
