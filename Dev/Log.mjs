@@ -1,3 +1,8 @@
+/**
+ * Logging utility with console styling support for colored output.
+ * @module Dev/Log
+ */
+
 const root = window || global;
 const config = {};
 
@@ -41,6 +46,10 @@ const consoleStyles = {
     RESET: "\x1B[0m",
 };
 
+/**
+ * Log class for managing console logging with styling.
+ * @class Log
+ */
 class Log {
     get parseTrace() {
         this.log = [];

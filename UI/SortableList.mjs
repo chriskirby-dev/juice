@@ -1,5 +1,13 @@
+/**
+ * Sortable list implementation with drag and drop support.
+ * @module UI/SortableList
+ */
 import { deepClone } from "../Dom/Clone.mjs";
 
+/**
+ * Clone element for drag operations with position tracking.
+ * @class SortableClone
+ */
 class SortableClone {
 
     box;
