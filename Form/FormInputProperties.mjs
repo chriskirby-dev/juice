@@ -1,5 +1,20 @@
+/**
+ * Form input properties base class with validation and state management.
+ * Provides getters/setters for common input properties with event emission.
+ * @module Form/FormInputProperties
+ */
+
 import { Emitter } from "../Event/Event.mjs";
 
+/**
+ * Base class for form input properties with dirty tracking and validation.
+ * @class FormInputProperties
+ * @extends Emitter
+ * @example
+ * class MyInput extends FormInputProperties {
+ *   // Custom input logic
+ * }
+ */
 class FormInputProperties extends Emitter {
     /**
      * @typedef {Object} FormInputProperties~Private
