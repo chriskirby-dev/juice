@@ -33,6 +33,7 @@ export class Scale extends AnimationValue {
  */
 export class Scale2D extends Float32Array {
     constructor(x = 1, y = 1) {
+        super(2);
         this[0] = x;
         this[1] = y || x;
     }

@@ -20,7 +20,7 @@ class Velocity {
     /** @type {string} Constant for Cartesian coordinate system */
     CARTESIAN = "cartesian";
     /** @type {string} Constant for polar coordinate system */
-    POLOR = "polor";
+    POLAR = "polar";
     /** @type {Array<AnimationValue>} Internal coordinate storage */
     coords = [0, 0];
     
