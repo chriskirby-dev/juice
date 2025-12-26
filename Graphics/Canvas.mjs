@@ -1,7 +1,18 @@
+/**
+ * Canvas utilities for 2D graphics rendering and manipulation.
+ * @module Graphics/Canvas
+ */
+
 import { random } from "../Util/Math.mjs";
 import PropertyArray from "../DataTypes/PropertyArray.mjs";
 import Observe from "../Dom/Observe/Observe.mjs";
 
+/**
+ * Parses a target to extract canvas and context.
+ * @param {Canvas|HTMLCanvasElement|OffscreenCanvas|CanvasRenderingContext2D} target - The target to parse
+ * @returns {{canvas: HTMLCanvasElement|OffscreenCanvas, ctx: CanvasRenderingContext2D}} Canvas and context
+ * @private
+ */
 function parseTarget(target) {
     let ctx = target;
     let canvas = target;
@@ -19,7 +30,17 @@ function parseTarget(target) {
     return { canvas, ctx };
 }
 
+/**
+ * CanvasImageData provides pixel-level manipulation of canvas image data.
+ * @class CanvasImageData
+ */
 export class CanvasImageData {
+    /**
+     * Creates a new CanvasImageData instance.
+     * @param {HTMLCanvasElement} canvas - The canvas element
+     * @param {number} width - Width of the image data
+     * @param {number} height - Height of the image data
+     */
     constructor(canvas, width, height) {
         const ctx = canvas.getContext("2d");
         this.raw = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -70,8 +91,18 @@ export class CanvasImageData {
     }
 }
 
+/**
+ * Canvas class for creating and managing 2D canvas contexts.
+ * @class Canvas
+ */
 export class Canvas {
     static instances = [];
+    /**
+     * Creates an offscreen canvas from an existing context.
+     * @param {CanvasRenderingContext2D} ctx - The source context
+     * @returns {CanvasRenderingContext2D} New offscreen context
+     * @static
+     */
     static createOffscreenFromContext(ctx) {
         const canvas = ctx.canvas;
         return this.createOffscreenContext(canvas.width, canvas.height);
