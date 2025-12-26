@@ -1,5 +1,16 @@
+/**
+ * DOM element extension utilities for enhanced DOM manipulation and observation.
+ * Provides extended functionality for DOM elements including shadow DOM support and custom methods.
+ * @module Dom/Extend
+ */
+
 import Observe from "./Observe/Observe.mjs";
 
+/**
+ * DOM node type constants mapping.
+ * @type {Array<string|null>}
+ * @private
+ */
 const NODE_TYPES = [
     null,
     "ELEMENT_NODE",
@@ -12,13 +23,37 @@ const NODE_TYPES = [
     "DOCUEMNT_FRAGMENT_NODE",
 ];
 
+/**
+ * Observable event types.
+ * @type {Array<string>}
+ * @private
+ */
 const observables = ["resize", "childList"];
 
+/**
+ * Custom methods to be assigned to extended elements.
+ * @type {Object}
+ * @private
+ */
 const customMethods = {};
 
+/**
+ * Extends DOM elements with additional functionality and custom methods.
+ * Provides shadow DOM utilities and method assignment capabilities.
+ * @class ElementExtend
+ * @param {HTMLElement} node - The DOM element to extend
+ * @example
+ * const extended = new ElementExtend(document.querySelector('div'));
+ * if (extended.inShadow) console.log('Element is in shadow DOM');
+ */
 class ElementExtend {
+    /** @type {HTMLElement} The wrapped DOM node */
     node;
 
+    /**
+     * Creates a new ElementExtend instance.
+     * @param {HTMLElement} node - The DOM element to extend
+     */
     constructor(node) {
         this.node = node;
         if (Object.keys(customMethods).length) {
@@ -26,18 +61,37 @@ class ElementExtend {
         }
     }
 
+    /**
+     * Assigns a custom method to this instance.
+     * @param {string} name - Method name
+     * @param {Function} fn - Method function
+     * @private
+     */
     assignMethod(name, fn) {
         this[name] = fn.bind(this);
     }
 
+    /**
+     * Checks if the element is inside a shadow DOM.
+     * @type {boolean}
+     */
     get inShadow() {
         return this.node.getRootNode().host ? true : false;
     }
 
+    /**
+     * Gets the shadow DOM host element if element is in shadow DOM.
+     * @type {HTMLElement|undefined}
+     */
     get shadowHost() {
         return this.node.getRootNode().host;
     }
 
+    /**
+     * Gets the custom element parent (element with hyphenated tag name).
+     * Checks both direct parent and shadow host.
+     * @type {HTMLElement|null}
+     */
     get customParent() {
         if (this.node.parentNode?.tagName.includes("-")) {
             return this.node.parentNode;

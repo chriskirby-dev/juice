@@ -1,24 +1,68 @@
+/**
+ * Portal communication system for establishing connections between windows/contexts.
+ * Uses MessageChannel API for bidirectional communication with event-based messaging.
+ * @module Portal/Connection
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 import Portal from "./Portal.mjs";
 import PortalMessage from "./Message.mjs";
 import { type, empty } from "../Util/Core.mjs";
 
+/**
+ * Represents a basic connection between two endpoints.
+ * @class Connection
+ * @extends EventEmitter
+ * @param {MessagePort} port - The message port for communication
+ * @param {*} remote - The remote endpoint
+ * @param {*} local - The local endpoint
+ * @private
+ */
 class Connection extends EventEmitter {
+    /** @type {*} Local endpoint */
     local;
+    /** @type {*} Remote endpoint */
     remote;
+    /** @type {MessagePort} Communication port */
     port;
 
     constructor(port, remote, local) {}
 }
 
+/**
+ * Manages portal connections for cross-context communication.
+ * Handles connection establishment, message routing, and lifecycle management.
+ * @class PortalConnection
+ * @extends EventEmitter
+ * @param {string} name - Unique name for this connection
+ * @param {Object} [options={}] - Configuration options
+ * @fires PortalConnection#connect When a new portal connection is established
+ * @example
+ * const connection = new PortalConnection('main-worker');
+ * connection.on('connect', (portal) => {
+ *   portal.send('hello', 'world');
+ * });
+ * connection.connect(workerWindow);
+ */
 export class PortalConnection extends EventEmitter {
+    /** @type {string} Unique address for this connection */
     address;
+    /** @type {string} Name of this connection */
     name;
+    /** @type {Array} Active connections */
     connections = [];
+    /** @type {Array} Sent message IDs */
     sent = [];
+    /** @type {Object} Configuration options */
     options = {};
+    /** @type {Object<string, Function>} Action hooks */
     hooks = {};
 
+    /**
+     * Creates a new PortalConnection instance.
+     * @param {string} name - Unique name for this connection
+     * @param {Object} [options={}] - Configuration options
+     */
     constructor(name, options = {}) {
         super();
         this.name = name;
@@ -29,6 +73,14 @@ export class PortalConnection extends EventEmitter {
         this.initialize();
     }
 
+    /**
+     * Registers or retrieves an action hook.
+     * @param {string} action - The action name
+     * @param {Function} [fn] - The hook function (if registering)
+     * @returns {Function|undefined} The hook function if retrieving
+     * @example
+     * connection.hook('authenticate', (data) => { ... });
+     */
     hook(action, fn) {
         if (fn) {
             this.hooks[action] = fn;
@@ -37,6 +89,14 @@ export class PortalConnection extends EventEmitter {
         }
     }
 
+    /**
+     * Establishes a connection to a target window or context.
+     * Creates a MessageChannel and initiates handshake protocol.
+     * @param {Window} [target=window] - The target window to connect to
+     * @fires PortalConnection#connect When connection is established
+     * @example
+     * connection.connect(iframe.contentWindow);
+     */
     connect(target = window) {
         const channel = new MessageChannel();
         const localPort = channel.port1;
