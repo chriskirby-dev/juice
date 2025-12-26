@@ -1,11 +1,37 @@
+/**
+ * Debugger wrapper for Chrome DevTools Protocol debugger functionality.
+ * Provides methods for setting breakpoints and handling debugging events.
+ * @module ChromeProtocol/Debugger
+ */
+
 import DomainWrapper from "./DomainWrapper.js";
 
+/**
+ * Wrapper for Chrome DevTools Protocol Debugger domain.
+ * Manages breakpoints, DOM debugging, and pause events.
+ * @class Debugger
+ * @extends DomainWrapper
+ */
 class Debugger extends DomainWrapper {
 
+    /**
+     * List of CDP domains this wrapper uses.
+     * @type {string[]}
+     * @static
+     */
     static uses = ['Page', 'DOMDebugger', 'Debugger', 'Runtime'];
 
+    /**
+     * Storage for registered breakpoints.
+     * @type {Object}
+     */
     breakpoints = {};
 
+    /**
+     * Injects a click event listener into the viewport for debugging.
+     * Captures click events with target information and coordinates.
+     * @returns {Promise<void>}
+     */
     async clickListener(){
 
         await this.isReady();
@@ -31,6 +57,12 @@ class Debugger extends DomainWrapper {
         debug('executeJavaScript');
     }
 
+    /**
+     * Sets an event listener breakpoint.
+     * @param {string} eventName - The name of the event (e.g., 'click', 'keydown')
+     * @param {string} [targetName='*'] - Target selector (default: all targets)
+     * @returns {Promise<void>}
+     */
     async setBreakpoint( eventName, targetName='*' ){
         //debug('setBreakpoint', eventName, targetName);
         await this.isReady();
@@ -42,6 +74,12 @@ class Debugger extends DomainWrapper {
         });
     }
 
+    /**
+     * Sets a DOM breakpoint on a specific node.
+     * @param {string} eventName - The event name
+     * @param {string} [targetName='*'] - Target selector (default: all targets)
+     * @returns {Promise<void>}
+     */
     async setDomBreakpoint( eventName, targetName='*' ){
         //debug('setBreakpoint', eventName, targetName);
         await this.isReady();
@@ -53,6 +91,11 @@ class Debugger extends DomainWrapper {
         });
     }
 
+    /**
+     * Initializes the debugger by setting up event listeners.
+     * Listens for pause and breakpoint resolution events.
+     * @returns {boolean}
+     */
     initialize(){
         //debug('Debug init');
         const { Debugger } = this.domains;
