@@ -1,7 +1,16 @@
+/**
+ * Text input form component with label and disabled state styling.
+ * @module Components/Form/FormTextComponent
+ */
 import Component from "../Component.mjs";
 import Attributes from "../../Dom/Attributes.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
 
+/**
+ * Text input component with floating label and lock icon when disabled.
+ * @class FormTextComponent
+ * @extends BaseInput
+ */
 class FormTextComponent extends BaseInput {
     static tag = "form-text";
 

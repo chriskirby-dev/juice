@@ -1,3 +1,7 @@
+/**
+ * Form input component with label, validation status, and loading states.
+ * @module Components/Form/FormInputComponent
+ */
 import Component from "../Component.mjs";
 
 import { BaseInput } from "./FormBaseComponents.mjs";
@@ -11,6 +15,11 @@ const { formInputCSS, formLayoutCSS, inputsCSS } = loadSASS(
 );
 */
 
+/**
+ * Form input component extending BaseInput with enhanced UI features.
+ * @class FormInputComponent
+ * @extends BaseInput
+ */
 class FormInputComponent extends BaseInput {
     static tag = "form-input";
 
