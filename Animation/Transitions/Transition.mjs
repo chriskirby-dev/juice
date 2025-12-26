@@ -1,8 +1,19 @@
+/**
+ * Transition animation system with easing and property interpolation.
+ * @module Animation/Transitions/Transition
+ */
+
 import Easing from "../Easing.mjs";
 import { getDotPath, setDotPath, parseDotPath } from "../../Util/DotNotation.mjs";
 import EventEmitter from "../../Event/Emitter.mjs";
 
 const valueRegExp = /^-?\d+(\.\d+)?/;
+/**
+ * Parses a value string into numeric value and unit.
+ * @param {string} input - Value string like "10px"
+ * @returns {{value: number, unit: string|null}} Parsed value and unit
+ * @private
+ */
 function parseValue(input) {
     const match = input.match(valueRegExp);
     const value = parseFloat(match[0]);
