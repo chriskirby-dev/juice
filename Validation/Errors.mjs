@@ -1,17 +1,42 @@
+/**
+ * Validation error classes and error collection management.
+ * Provides error tracking with event emission and DOM tag generation.
+ * @module Validation/Errors
+ */
+
 import Emitter from "../Event/Emitter.mjs";
 
-
+/**
+ * Manages validation errors for multiple properties with event emission.
+ * @class ValidationErrors
+ * @extends Emitter
+ * @param {Object} scope - Parent validator scope
+ * @example
+ * const errors = new ValidationErrors(validator);
+ * errors.set('email', emailError);
+ * console.log(errors.has('email')); // true
+ */
 export class ValidationErrors extends Emitter {
-
+    /** @type {Object} Parent validator scope */
     scope;
+    /** @type {Object<string, Array>} Errors grouped by property */
     properties = {};
-
+    /** @type {boolean} Overall validation state */
     _valid = true;
+    
     constructor( scope ){
         super();
         this.scope = scope;
     }
 
+    /**
+     * Adds an error for a property.
+     * @param {string} property - Property name
+     * @param {ValidationError} error - Error object to add
+     * @fires ValidationErrors#error
+     * @fires ValidationErrors#property:invalid
+     * @fires ValidationErrors#invalid
+     */
     set( property, error ) {
         //console.warn( 'SET ERROR', property, error );
 
@@ -31,6 +56,14 @@ export class ValidationErrors extends Emitter {
         
     }
 
+    /**
+     * Resolves errors for a property by error type.
+     * @param {string} property - Property name
+     * @param {Array<string>} [errorTypes=[]] - Error types to resolve
+     * @fires ValidationErrors#resolve
+     * @fires ValidationErrors#property:valid
+     * @fires ValidationErrors#valid
+     */
     resolve( property, errorTypes=[] ){
         console.log('RESOLVE',property, errorTypes, this.properties[property], this.scope );
         this.get(property).filter( err => errorTypes.includes( err.type )).map( err => err.resolve() );
@@ -51,6 +84,12 @@ export class ValidationErrors extends Emitter {
         }
     }
 
+    /**
+     * Checks if property has validation errors.
+     * @param {string} property - Property name
+     * @param {string} [errorType] - Specific error type to check
+     * @returns {boolean} True if property has errors
+     */
     has( property, errorType ){
 
         if( !this.properties[property] || this.properties[property].length == 0 ) return false;
@@ -60,30 +99,63 @@ export class ValidationErrors extends Emitter {
         return true;
     }
 
+    /**
+     * Gets all errors grouped by property.
+     * @returns {Object<string, Array>} All errors
+     */
     all() {
         return this.properties;
     }
 
+    /**
+     * Gets errors for a specific property.
+     * @param {string} property - Property name
+     * @returns {Array<ValidationError>} Array of errors
+     */
     get(property) {
         return this.properties[property] || [];
     }
 
+    /**
+     * Alias for get().
+     * @param {string} property - Property name
+     * @returns {Array<ValidationError>} Array of errors
+     */
     of(property){
         return this.get(property);
     }
 
+    /**
+     * Checks if there are no errors.
+     * @type {boolean}
+     */
     get empty() {
         return Object.keys(this.properties).filter(key => this.properties[key].length > 0).length == 0;
     }
 
+    /**
+     * Gets count of properties with errors.
+     * @type {number}
+     */
     get length() {
         return Object.keys(this.properties).filter(key => this.properties[key].length > 0).length;
     }
 }
 
 
+/**
+ * Base validation error with DOM tag generation and resolution callbacks.
+ * @class ValidationError
+ * @extends Error
+ * @param {Object} rule - Validation rule that failed
+ * @param {*} target - Target being validated
+ * @example
+ * const error = new ValidationError(rule, target);
+ * error.onResolved(() => console.log('Error fixed'));
+ * error.resolve();
+ */
 export class ValidationError extends Error {
-
+    /** @type {Array<Function>} Callbacks to execute when resolved */
     resolvedCallbacks = [];
 
     constructor( rule, target ){
@@ -119,6 +191,9 @@ export class ValidationError extends Error {
  
     }
 
+    /**
+     * Resolves the error, removing DOM tag and calling callbacks.
+     */
     resolve(){
         if(this.etag.parentNode) this.etag.parentNode.removeChild(this.etag);
         for(var i=0;i<this.resolvedCallbacks.length;i++){
@@ -126,23 +201,42 @@ export class ValidationError extends Error {
         }
     }
 
+    /**
+     * Registers callback to execute when error is resolved.
+     * @param {Function} fn - Callback function
+     */
     onResolved(fn){
         this.resolvedCallbacks.push(fn);
     }
 }
 
+/**
+ * Type validation error.
+ * @class TypeValidationError
+ * @extends TypeError
+ */
 export class TypeValidationError extends TypeError {
     constructor( rule ){
         super(``);
     }
 }
 
+/**
+ * Invalid timestamp error.
+ * @class InvalidTimestamp
+ * @extends TypeError
+ */
 export class InvalidTimestamp extends TypeError {
     constructor( rule ){
 
     }
 }
 
+/**
+ * Required value error.
+ * @class ValueRequiredError
+ * @extends Error
+ */
 export class ValueRequiredError extends Error {
     constructor( rule ){
     const message = `Property: ${rule.property} is a required property and no value is set.`;
@@ -151,6 +245,11 @@ export class ValueRequiredError extends Error {
 }
 
 
+/**
+ * Maximum length validation error.
+ * @class MaxLengthError
+ * @extends Error
+ */
 export class MaxLengthError extends Error {
     constructor( rule ){
         const message = `Property: ${rule.property} value '${rule.value}' exceeds the maximum allowed length of ${rule.args[0]}`;
@@ -160,6 +259,11 @@ export class MaxLengthError extends Error {
     }
 }
 
+/**
+ * Minimum length validation error.
+ * @class MinLengthError
+ * @extends Error
+ */
 export class MinLengthError extends Error {
     constructor( rule ){
     
@@ -169,6 +273,11 @@ export class MinLengthError extends Error {
     }
 }
 
+/**
+ * Postal code validation error.
+ * @class PostalValidationError
+ * @extends Error
+ */
 export class PostalValidationError extends Error {
     constructor( rule ){
     
@@ -178,6 +287,11 @@ export class PostalValidationError extends Error {
     }
 }
 
+/**
+ * Address validation error.
+ * @class AddressValidationError
+ * @extends Error
+ */
 export class AddressValidationError extends Error {
     constructor( rule ){
     
@@ -187,6 +301,11 @@ export class AddressValidationError extends Error {
     }
 }
 
+/**
+ * Phone number validation error.
+ * @class PhoneValidationError
+ * @extends Error
+ */
 export class PhoneValidationError extends Error {
     constructor( rule ){
     
@@ -197,6 +316,11 @@ export class PhoneValidationError extends Error {
 }
 
 
+/**
+ * Email validation error.
+ * @class EmailValidationError
+ * @extends Error
+ */
 export class EmailValidationError extends Error {
     constructor( rule ){
     
@@ -207,6 +331,11 @@ export class EmailValidationError extends Error {
 }
 
 
+/**
+ * Not equal validation error.
+ * @class NotEqualError
+ * @extends Error
+ */
 export class NotEqualError extends Error {
     constructor( rule ){
     
@@ -217,6 +346,11 @@ export class NotEqualError extends Error {
 }
 
 
+/**
+ * Value not in allowed set validation error.
+ * @class InSetError
+ * @extends Error
+ */
 export class InSetError extends Error {
     constructor( rule ){
     
