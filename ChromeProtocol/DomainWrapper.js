@@ -1,9 +1,29 @@
+/**
+ * DomainWrapper provides a base class for Chrome DevTools Protocol domain wrappers.
+ * Manages connection state, domain initialization, and readiness events.
+ * @module ChromeProtocol/DomainWrapper
+ */
+
 import EventListener from "events";
 import ChromeProtocol from "./ChromeProtocol.js";
 
+/**
+ * Base class for wrapping Chrome DevTools Protocol domains.
+ * Handles setup, initialization, and lifecycle management for CDP domains.
+ * @class DomainWrapper
+ * @extends EventListener
+ */
 class DomainWrapper extends EventListener {
+    /**
+     * Indicates whether the domain wrapper is ready for use.
+     * @type {boolean}
+     */
     ready = false;
 
+    /**
+     * Creates a new DomainWrapper instance.
+     * @param {ChromeProtocol} cdp - The Chrome DevTools Protocol instance
+     */
     constructor(cdp) {
         super();
         this.cdp = cdp;
@@ -14,16 +34,31 @@ class DomainWrapper extends EventListener {
         }
     }
 
+    /**
+     * Gets the viewport/webContents from the CDP instance.
+     * @returns {*} The viewport object
+     */
     get viewport() {
         return this.cdp.webContents;
     }
 
+    /**
+     * Gets the CDP client instance.
+     * @returns {*} The client object
+     */
     get client() {
         return this.cdp.client;
     }
 
+    /**
+     * Starts the domain wrapper. Override in subclasses.
+     */
     start() {}
 
+    /**
+     * Returns a promise that resolves when the domain wrapper is ready.
+     * @returns {Promise<boolean>} Resolves to true when ready
+     */
     async isReady() {
         if (this.ready) return Promise.resolve(true);
         return new Promise((resolve, reject) => {
@@ -31,6 +66,11 @@ class DomainWrapper extends EventListener {
         });
     }
 
+    /**
+     * Sets up the domain wrapper by enabling required CDP domains.
+     * Calls addListeners() and initialize() if defined in subclasses.
+     * @returns {Promise<void>}
+     */
     async setup() {
         //debug('wrapper setup', this.constructor.name, this.constructor.uses);
 

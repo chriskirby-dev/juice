@@ -1,10 +1,31 @@
+/**
+ * ProxyEmitter combines Proxy functionality with EventEmitter to provide reactive objects.
+ * Automatically emits events when object properties change.
+ * @module Proxy/ProxyEmitter
+ */
+
 import EventEmitter from '../Event/Emitter.mjs';
 import { type, empty } from '../Util/Core.mjs';
 
-
+/**
+ * ProxyEmitter extends EventEmitter to create reactive proxy objects.
+ * Property changes automatically trigger events that can be listened to.
+ * @class ProxyEmitter
+ * @extends EventEmitter
+ * @example
+ * const emitter = new ProxyEmitter();
+ * emitter.on('propertyChange', (path, value) => console.log(path, value));
+ * emitter.myProp = 'value'; // triggers event
+ */
 class ProxyEmitter extends EventEmitter {
 
-
+    /**
+     * Creates a new ProxyEmitter instance.
+     * Returns a Proxy that intercepts property changes and emits events.
+     * @param {Object} handeler - Handler configuration
+     * @param {Object} [options={}] - Options for the proxy emitter
+     * @param {Array<string>} [options.ignore] - Property names to ignore (default: ['event', 'on', 'emit'])
+     */
     constructor( handeler, options={} ){
         super();
         const self = this;
@@ -20,6 +41,12 @@ class ProxyEmitter extends EventEmitter {
         });
     }
 
+    /**
+     * Called when a property changes.
+     * Emits events to registered listeners for the property path.
+     * @param {string} path - The property path that changed
+     * @param {*} value - The new value
+     */
     onChange(path, value){
         debug('onChange', path, value);
         const listeners = this.listenersOf( path );
@@ -30,6 +57,11 @@ class ProxyEmitter extends EventEmitter {
         }
     }
 
+    /**
+     * Checks if a property exists on this object.
+     * @param {string} property - The property name to check
+     * @returns {boolean} True if the property exists
+     */
     has(property){
         return this[property] !== undefined;
     }

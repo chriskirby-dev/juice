@@ -1,3 +1,14 @@
+/**
+ * MIME type detection utilities for files.
+ * Detects file types based on file signatures (magic numbers) and content inspection.
+ * @module File/MimeType
+ */
+
+/**
+ * Array of file signatures for various file formats.
+ * Each entry contains the byte signature, file type, and MIME type.
+ * @type {Array<{signature: Array<number>|string, fileType: string, mimeType: string}>}
+ */
 const fileSignatures = [
     { signature: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], fileType: "PNG", mimeType: "image/png" },
     { signature: [0xff, 0xd8, 0xff], fileType: "JPEG", mimeType: "image/jpeg" },
@@ -55,6 +66,14 @@ const fileSignatures = [
     { signature: "<svg", fileType: "SVG", mimeType: "image/svg+xml" },
 ];
 
+/**
+ * Detects the MIME type of file content based on its signature (magic numbers).
+ * @param {string|Uint8Array} content - The file content to analyze
+ * @returns {string|undefined} The detected MIME type, or undefined if not recognized
+ * @example
+ * const mimeType = detectMimeType(fileContent);
+ * console.log(mimeType); // 'image/png'
+ */
 export function detectMimeType(content) {
     for (let i = 0; i < fileSignatures.length; i++) {
         const { signature, mimeType } = fileSignatures[i];
