@@ -1,10 +1,35 @@
+/**
+ * Deep watch handler for creating deeply nested reactive proxies.
+ * Provides proxy handlers that recursively watch nested objects and arrays for changes.
+ * @module Proxy/Handler
+ */
+
 import { type, empty } from '../Util/Core.mjs';
 import { unproxy } from './Helper.mjs';
 
+/**
+ * Creates a deep watch handler for proxy objects.
+ * Recursively wraps nested objects/arrays in proxies to track all changes in the object tree.
+ * @param {Function} callback - Callback function called when properties change (path, value) => {}
+ * @param {Array<string>} [paths=[]] - Current property path array
+ * @param {Object} [options={}] - Handler options
+ * @param {Array<string>} [options.ignore=[]] - Property names to ignore
+ * @param {Object} [options.invoke={}] - Custom invoke handlers for properties
+ * @returns {Object} Proxy handler object with get, set, and deleteProperty traps
+ * @example
+ * const handler = deepWatch((path, value) => console.log(path, value), [], {});
+ * const proxy = new Proxy(obj, handler);
+ */
 export function deepWatch( callback, paths=[], options={} ){
 
     const { ignore=[], invoke={} } = options;
 
+    /**
+     * Gets the full property path as a dot-separated string.
+     * @param {string} property - The property name to append
+     * @returns {string} The full property path
+     * @private
+     */
     function getPropertyPath(property){
         const path = paths.slice(0);
         path.push(property);
