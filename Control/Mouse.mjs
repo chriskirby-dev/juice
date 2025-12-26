@@ -1,3 +1,12 @@
+/**
+ * Mouse event management for tracking mouse interactions.
+ * @module Control/Mouse
+ */
+
+/**
+ * Mouse controller for managing mouse events.
+ * @class Mouse
+ */
 class Mouse {
     constructor(name) {
         this.name = name;

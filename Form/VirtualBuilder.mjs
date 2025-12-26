@@ -1,3 +1,7 @@
+/**
+ * Virtual form builder for creating form elements from structured data.
+ * @module Form/VirtualBuilder
+ */
 import { VirtualDom, vElement } from "../VirtualDom/VirtualDom.mjs";
 import Str from "../Util/String.mjs";
 import { last, first, intersect } from "../Util/Array.mjs";
