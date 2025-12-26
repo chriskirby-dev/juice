@@ -1,6 +1,13 @@
+/**
+ * Timeline and ticker system for managing frame-based animations.
+ * Provides requestAnimationFrame-based animation loop with multiple timeline support.
+ * @module Animation/Timeline
+ */
+
 import AniUtil from "./Util.mjs";
 import AnimationTime from "./Time.mjs";
 
+// Polyfill for requestAnimationFrame
 window.requestAnimationFrame =
     window.requestAnimationFrame ||
     window.mozRequestAnimationFrame ||
@@ -10,6 +17,7 @@ window.requestAnimationFrame =
         return setTimeout(f, 1000 / 60);
     }; // simulate calling code 60
 
+// Polyfill for cancelAnimationFrame
 window.cancelAnimationFrame =
     window.cancelAnimationFrame ||
     window.mozCancelAnimationFrame ||
@@ -17,17 +25,32 @@ window.cancelAnimationFrame =
         clearTimeout(requestID);
     }; //fall back
 
+/**
+ * Manages multiple timelines with a single requestAnimationFrame loop.
+ * @class Ticker
+ * @param {...Timeline} timelines - Initial timelines to manage
+ * @example
+ * const ticker = new Ticker();
+ * ticker.add(timeline1, timeline2);
+ * ticker.start();
+ */
 class Ticker {
+    /** @type {boolean} Whether ticker is active */
     active = false;
+    /** @type {Array<Timeline>} Managed timelines */
     timelines = [];
+    /** @type {number} Current timestamp in milliseconds */
     ms = 0;
-
+    /** @type {AnimationTime} Time tracking instance */
     time = new AnimationTime();
 
     constructor(...timelines) {
         this.timelines = timelines;
     }
 
+    /**
+     * Starts the animation ticker loop.
+     */
     start() {
         const self = this;
         self.active = true;
@@ -52,16 +75,29 @@ class Ticker {
         window.requestAnimationFrame(tick);
     }
 
+    /**
+     * Stops the animation ticker loop.
+     * @param {Function} [fn] - Optional function handle to cancel
+     */
     stop(fn) {
         this.active = false;
         if (fn) window.cancelAnimationFrame(fn);
     }
 
+    /**
+     * Adds timelines to the ticker and starts if not active.
+     * @param {...Timeline} timelines - Timelines to add
+     */
     add(...timelines) {
         for (let i = 0; i < timelines.length; i++) this.timelines.push(timelines[i]);
         if (!this.active) this.start();
     }
 
+    /**
+     * Removes a timeline from the ticker.
+     * Stops ticker if no timelines remain.
+     * @param {Timeline} timeline - Timeline to remove
+     */
     remove(timeline) {
         for (let i = 0; i < this.timelines.length; i++) {
             if (this.timelimes[i] === timeline) {
@@ -75,8 +111,19 @@ class Ticker {
     }
 }
 
+/**
+ * Global ticker instance for managing timelines.
+ * @type {Ticker}
+ */
 const ticker = new Ticker();
 
+/**
+ * Timeline class for managing time-based animations.
+ * @class Timeline
+ * @example
+ * const timeline = new Timeline();
+ * ticker.add(timeline);
+ */
 class Timeline {
     static instances = [];
     debugging = false;
