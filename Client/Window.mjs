@@ -1,15 +1,29 @@
+/**
+ * Window utilities for managing browser window properties and events.
+ * Provides getters/setters for dimensions, scroll position, and event handling.
+ * @module Client/Window
+ */
+
 import EventEmitter from '../Event/Emitter.mjs'; 
 
 import Ease from '../Animate/Ease.mjs';
 import Coordinates from '../Math/Coordinates.mjs';
 
-//window.screen.availWidth
-//window.screen.availHeight
-
+/**
+ * Window management class with dimension and scroll utilities.
+ * @class Window
+ * @extends EventEmitter
+ * @example
+ * const win = new Window();
+ * console.log(win.width, win.height);
+ * win.scrollTop = 500;
+ */
 class Window extends EventEmitter{
-
+    /** @type {boolean} Whether window is currently scrolling */
     scrolling = false;
+    /** @type {number} Current Y scroll position */
     scrollY = 0;
+    /** @type {number} Current X scroll position */
     scrollX = 0;
 
     constructor(){
@@ -17,46 +31,86 @@ class Window extends EventEmitter{
         this.initialize();
     }
 
+    /**
+     * Gets window width.
+     * @type {number}
+     */
     get width(){
         return window.innerWidth
         || document.documentElement.clientWidth
         || document.body.clientWidth;
     }
 
+    /**
+     * Sets window width (resizes window).
+     * @type {number}
+     */
     set width( width ){
         window.resizeTo( width, this.height );
     }
 
+    /**
+     * Gets window height.
+     * @type {number}
+     */
     get height(){
         return window.innerHeight
         || document.documentElement.clientHeight
         || document.body.clientHeight;
     }
 
+    /**
+     * Sets window height (resizes window).
+     * @type {number}
+     */
     set height( height ){
         window.resizeTo( this.width, height );
     }
 
+    /**
+     * Gets vertical scroll position.
+     * @type {number}
+     */
     get scrollTop(){
         return document.body.scrollTop || document.documentElement.scrollTop;
     }
 
+    /**
+     * Sets vertical scroll position.
+     * @type {number}
+     */
     set scrollTop( px ){
         return window.scrollTo( this.scrollLeft, px );
     }
 
+    /**
+     * Gets maximum vertical scroll position.
+     * @type {number}
+     */
     get scrollTopMax(){
         return document.documentElement.scrollHeight - document.documentElement.clientHeight;
     }
 
+    /**
+     * Gets horizontal scroll position.
+     * @type {number}
+     */
     get scrollLeft(){
         return document.body.scrollLeft || document.documentElement.scrollLeft;
     }
 
+    /**
+     * Sets horizontal scroll position.
+     * @type {number}
+     */
     set scrollLeft( px ){
         return window.scrollTo( px, this.scrollTop );
     }
 
+    /**
+     * Gets maximum horizontal scroll position.
+     * @type {number}
+     */
     get scrollLeftMax(){
         return document.documentElement.scrollWidth - document.documentElement.clientWidth;
     }
