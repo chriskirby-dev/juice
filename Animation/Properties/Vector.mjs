@@ -1,10 +1,30 @@
+/**
+ * Vector classes for 2D, 3D, and 4D mathematical vectors with history tracking.
+ * Provides vector operations, interpolation, and dimension-agnostic base class.
+ * @module Animation/Properties/Vector
+ */
+
 import { type } from "../../Util/Core.mjs";
 import { lerp } from "../../Util/Geometry.mjs";
 import CircularBuffer from "../../DataTypes/CircularBuffer.mjs";
 
+/**
+ * Base vector class with flexible dimensions.
+ * @class VectoX
+ * @extends Float32Array
+ * @param {...number} args - Component values
+ * @example
+ * const vec = new VectoX(1, 2, 3);
+ */
 export class VectoX extends Float32Array {
+    /** @type {Array<string>} Dimension accessor names */
     static dimentions = ["x", "y", "z", "w"];
 
+    /**
+     * Parses arguments to create vector instance.
+     * @param {...*} args - Values or array to parse
+     * @returns {VectoX} New vector instance
+     */
     parse(...args) {
         if (args.length === 1) {
             args = args[0];
@@ -39,6 +59,12 @@ export class VectoX extends Float32Array {
         }
     }
 
+    /**
+     * Initializes property accessors for vector dimensions.
+     * @param {number} i - Component index
+     * @param {*} value - Initial value
+     * @private
+     */
     initProperty(i, value) {
         const accessor = this.constructor.dimentions[i];
         Object.defineProperty(this, accessor, { get: () => this[i], enumerable: true });
@@ -46,7 +72,28 @@ export class VectoX extends Float32Array {
 
     //TODO: Add Other Vector Methods set, clone, add, sub, mul, div, dot, cross, length, normalize, lerp
 }
+
+/**
+ * Represents a 2D vector with x and y components.
+ * @class Vector2D
+ * @extends Float32Array
+ * @param {number} [x=0] - X component
+ * @param {number} [y=0] - Y component
+ * @param {Object} [options={}] - Configuration options
+ * @param {number} [options.history=3] - History buffer size
+ * @example
+ * const vec = new Vector2D(10, 20);
+ * vec.x = 15;
+ * vec.lerp(new Vector2D(50, 50), 0.5);
+ */
 export class Vector2D extends Float32Array {
+    /**
+     * Parses various input formats to create Vector2D.
+     * @param {number|Array|Vector2D|Object} arg1 - X value, array, vector, or object with x/y
+     * @param {number} [arg2] - Y value (if arg1 is number)
+     * @returns {Vector2D} New Vector2D instance
+     * @static
+     */
     static parse(arg1, arg2) {
         //Handle x, y
 
