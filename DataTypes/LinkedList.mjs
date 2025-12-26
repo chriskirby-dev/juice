@@ -1,17 +1,49 @@
+/**
+ * LinkedList data structure implementation.
+ * Provides a singly-linked list with standard operations like push, pop, shift, and unshift.
+ * @module DataTypes/LinkedList
+ */
+
+/**
+ * Node represents a single element in the LinkedList.
+ * @class Node
+ * @private
+ */
 class Node {
+    /**
+     * Creates a new Node.
+     * @param {*} value - The value to store in the node
+     */
     constructor(value) {
         this.value = value;
         this.next = null;
     }
 }
 
+/**
+ * LinkedList provides a singly-linked list data structure.
+ * @class LinkedList
+ * @example
+ * const list = new LinkedList();
+ * list.push('first');
+ * list.push('second');
+ * const value = list.pop(); // 'second'
+ */
 class LinkedList {
+    /**
+     * Creates a new LinkedList.
+     */
     constructor() {
         this.head = null;
         this.tail = null;
         this.size = 0;
     }
 
+    /**
+     * Gets the node at the specified index.
+     * @param {number} i - The index to retrieve
+     * @returns {Node|null} The node at the index, or null if not found
+     */
     index(i) {
         let current = this.head;
         let count = 0;
@@ -25,7 +57,10 @@ class LinkedList {
         return null;
     }
 
-    // Push (append to the end)
+    /**
+     * Appends a value to the end of the list.
+     * @param {*} value - The value to append
+     */
     push(value) {
         const newNode = new Node(value);
         if (this.tail) {
@@ -37,7 +72,10 @@ class LinkedList {
         this.size++;
     }
 
-    // Pop (remove from the end)
+    /**
+     * Removes and returns the last value from the list.
+     * @returns {*} The removed value, or null if list is empty
+     */
     pop() {
         if (!this.head) return null;
 
