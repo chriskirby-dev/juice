@@ -71,13 +71,13 @@ class ReaderBase {
     /**
      * Reads a specified number of characters from the current position.
      * @param {number} length - Number of characters to read
-     * @param {boolean} [slient=false] - If true, doesn't advance the index
+     * @param {boolean} [silent=false] - If true, doesn't advance the index
      * @returns {string} The read content
      */
-    read(length, slient = false) {
+    read(length, silent = false) {
         const start = this.index;
         const end = this.index + length;
-        if (!slient) this.index += length;
+        if (!silent) this.index += length;
         this.lastRead = { start, end, content: this.content.slice(start, end) };
         return this.lastRead.content;
     }
@@ -86,13 +86,13 @@ class ReaderBase {
      * Reads a chunk of content from a specific position.
      * @param {number} start - Starting index
      * @param {number} length - Number of characters to read
-     * @param {boolean} [slient=false] - If true, doesn't advance the index
+     * @param {boolean} [silent=false] - If true, doesn't advance the index
      * @returns {string} The read content
      */
-    readChunk(start, length, slient = false) {
+    readChunk(start, length, silent = false) {
         const end = start + length;
         this.lastRead = { start, end, content: this.content.slice(start, end) };
-        if (!slient) this.index = end;
+        if (!silent) this.index = end;
         return this.lastRead.content;
     }
 
@@ -100,13 +100,13 @@ class ReaderBase {
      * Reads characters around the current position.
      * @param {number} charsLeft - Number of characters to read before current position
      * @param {number} charsRight - Number of characters to read after current position
-     * @param {boolean} [slient=false] - If true, doesn't advance the index
+     * @param {boolean} [silent=false] - If true, doesn't advance the index
      * @returns {string} The read content
      */
-    readAround(charsLeft, charsRight, slient = false) {
+    readAround(charsLeft, charsRight, silent = false) {
         const start = this.index - charsLeft;
         const end = this.index + charsRight;
-        if (!slient) this.index += charsRight;
+        if (!silent) this.index += charsRight;
         return this.readChunk(start, end);
     }
 
@@ -114,27 +114,27 @@ class ReaderBase {
      * Reads content until a specific character is found.
      * @param {string} char - The character to read until
      * @param {number} [offset=0] - Additional offset after the found character
-     * @param {boolean} [slient=false] - If true, doesn't advance the index
+     * @param {boolean} [silent=false] - If true, doesn't advance the index
      * @returns {string} The read content
      */
-    readUntil(char, offset = 0, slient = false) {
+    readUntil(char, offset = 0, silent = false) {
         const start = this.index;
         const end = this.content.indexOf(char, this.index);
-        if (end == -1) return this.readOut(slient);
-        if (!slient) this.index = end + offset;
-        return this.read(end + offset - start, slient);
+        if (end == -1) return this.readOut(silent);
+        if (!silent) this.index = end + offset;
+        return this.read(end + offset - start, silent);
     }
 
     /**
      * Reads all remaining content from the current position to the end.
-     * @param {boolean} [slient=false] - If true, doesn't advance the index
+     * @param {boolean} [silent=false] - If true, doesn't advance the index
      * @returns {string} The remaining content
      */
-    readOut(slient = false) {
+    readOut(silent = false) {
         const start = this.index;
         const end = this.content.length;
-        if (!slient) this.index = this.content.length + 1;
-        return this.readChunk(start, end, slient);
+        if (!silent) this.index = this.content.length + 1;
+        return this.readChunk(start, end, silent);
     }
 
     /**

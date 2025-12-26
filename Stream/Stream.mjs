@@ -55,6 +55,7 @@ class Stream extends Emitter {
      * @param {number} [chunkSize=1] - Size of chunks to read
      */
     constructor( data=[], chunkSize=1 ){
+        super();
         this.#cache = data;
         this.chunkSize = chunkSize;
     }

@@ -32,6 +32,6 @@ class ArrayProxy {
      * @returns {Proxy} A proxy wrapping the array
      */
     constructor( array ){
-        return new Proxy( array );
+        return new Proxy( array, ArrayProxyHandeler );
     }
 }

@@ -45,7 +45,8 @@ class UnitValue {
     }
 
     /**
-     * Converts the value to a percentage.
+     * Converts the value to a percentage (currently returns original value if already %).
+     * Note: Full conversion logic not yet implemented for other units.
      * @param {number} total - The total value to calculate percentage from
      * @returns {string|number} The value as a percentage or original value with unit
      */
@@ -55,9 +56,10 @@ class UnitValue {
     }
 
     /**
-     * Converts the value to pixels.
+     * Converts the value to pixels (currently incomplete implementation).
+     * Note: Conversion from percentage partially implemented but returns incorrect format.
      * @param {number} total - The total value for percentage calculations
-     * @returns {string|number} The value in pixels or converted from percentage
+     * @returns {string|number} The value in pixels or calculated value
      */
     toPx(total) {
         if (this._unit == "px") return this._value;
