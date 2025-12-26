@@ -1,7 +1,19 @@
+/**
+ * WebGL utilities for 3D graphics rendering.
+ * @module Graphics/WebGL/Lib/GL
+ */
+
 import Shader from "./Shader.mjs";
 import Plane from "./Plane.mjs";
 
+/**
+ * GL class provides WebGL utilities for shader and geometry management.
+ * @class GL
+ */
 class GL {
+    /**
+     * Creates a new GL instance.
+     */
     constructor() {
         this._gl = null;
     }

@@ -1,10 +1,23 @@
+/**
+ * Keyboard input management with event handling.
+ * @module Control/Keyboard
+ */
+
 import KeyCodes from "./KeyCodes.mjs";
 import EventEmitter from "../Event/Emitter.mjs";
 
+/**
+ * Keyboard class manages keyboard input and emits events for key presses.
+ * @class Keyboard
+ * @extends EventEmitter
+ */
 class Keyboard extends EventEmitter {
     pressed = [];
     only = [];
     global = false;
+    /**
+     * Creates a new Keyboard instance and sets up event listeners.
+     */
     constructor() {
         super();
         this.keys = {};

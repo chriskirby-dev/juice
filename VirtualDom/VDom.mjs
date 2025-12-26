@@ -1,3 +1,9 @@
+/**
+ * VDom class for virtual DOM management and rendering.
+ * Provides staging, rendering, and diffing capabilities.
+ * @module VirtualDom/VDom
+ */
+
 import { type, empty } from "../Util/Core.mjs";
 import VirtualDom from "./VirtualDom.mjs";
 import VDomParser from "./Parser.mjs";
@@ -9,6 +15,11 @@ import VDomParser from "./Parser.mjs";
  * @param {*} options - Options object.
  */
 
+/**
+ * Virtual DOM manager for staging, rendering, and updating DOM content.
+ * Manages the lifecycle of virtual DOM nodes and their rendering to actual DOM.
+ * @class VDom
+ */
 class VDom {
     #references = {};
     html = "";
@@ -50,6 +61,12 @@ class VDom {
         }
     }
 
+    /**
+     * Initializes container element from options.
+     * @private
+     * @param {string|Element} containerOption - Container selector or element
+     * @returns {Element} The container element
+     */
     initializeContainer(containerOption) {
         if (containerOption) {
             return typeof containerOption === "string" ? document.querySelector(containerOption) : containerOption;

@@ -1,9 +1,18 @@
+/**
+ * Particle system for 3D graphics with GPU acceleration.
+ * @module Graphics/Particles/Particles
+ */
+
 import PerspectiveProjection from "../Projection/Perspective.mjs";
 
 import Transition from "../../Animation/Transitions/Transition.mjs";
 import { random, randomInt, randomIntBetween, randomBetween, cos, sin } from "../../Util/Math.mjs";
 import { lerp } from "../../Util/Geometry.mjs";
 
+/**
+ * Particles class manages a particle system with positions, velocities, colors, and transitions.
+ * @class Particles
+ */
 class Particles {
     config = {
         normalize: true,

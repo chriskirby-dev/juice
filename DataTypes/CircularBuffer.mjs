@@ -1,3 +1,22 @@
+/**
+ * CircularBuffer provides a fixed-size buffer with automatic wraparound.
+ * When full, new elements overwrite the oldest elements.
+ * Supports push, pop, shift, unshift operations like arrays.
+ * @module DataTypes/CircularBuffer
+ */
+
+/**
+ * Fixed-size circular buffer that overwrites oldest elements when full.
+ * @class CircularBuffer
+ * @param {number} size - Maximum buffer capacity
+ * @example
+ * const buffer = new CircularBuffer(3);
+ * buffer.push(1);
+ * buffer.push(2);
+ * buffer.push(3);
+ * buffer.push(4); // Overwrites 1
+ * console.log(buffer.first); // 2
+ */
 class CircularBuffer {
     constructor(size) {
         this.size = size;
@@ -7,15 +26,27 @@ class CircularBuffer {
         this.length = 0; // Number of elements currently in the buffer
     }
 
+    /**
+     * Gets the most recently added element.
+     * @type {*}
+     */
     get last() {
         return this.buffer[this._last];
     }
 
+    /**
+     * Gets the oldest element in the buffer.
+     * @type {*}
+     */
     get first() {
         return this.buffer[this._first];
     }
 
-    // Push (add to the end)
+    /**
+     * Adds element to the end (most recent).
+     * Overwrites oldest element if buffer is full.
+     * @param {*} element - Element to add
+     */
     push(element) {
         if (this.length === this.size) {
             // Buffer is full, overwrite the oldest element
@@ -28,7 +59,10 @@ class CircularBuffer {
         this.head = (this.head + 1) % this.size;
     }
 
-    // Pop (remove from the end)
+    /**
+     * Removes and returns element from the end (most recent).
+     * @returns {*|undefined} The removed element or undefined if empty
+     */
     pop() {
         if (this.length === 0) return undefined; // Buffer is empty
 
@@ -38,7 +72,10 @@ class CircularBuffer {
         return element;
     }
 
-    // Shift (remove from the beginning)
+    /**
+     * Removes and returns element from the beginning (oldest).
+     * @returns {*|undefined} The removed element or undefined if empty
+     */
     shift() {
         if (this.length === 0) return undefined; // Buffer is empty
 
@@ -48,7 +85,11 @@ class CircularBuffer {
         return element;
     }
 
-    // Unshift (add to the beginning)
+    /**
+     * Adds element to the beginning (becomes oldest).
+     * Overwrites newest element if buffer is full.
+     * @param {*} element - Element to add
+     */
     unshift(element) {
         if (this.length === this.size) {
             // Buffer is full, overwrite the oldest element

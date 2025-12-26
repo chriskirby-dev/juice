@@ -1,5 +1,20 @@
+/**
+ * WebGL Program for managing shader programs and buffers.
+ * @module Graphics/WebGL/Lib/Program
+ */
+
+/**
+ * Program class manages WebGL shader programs, attributes, and buffers.
+ * @class Program
+ */
 class Program {
     buffers = {};
+    /**
+     * Creates a new WebGL program.
+     * @param {WebGLRenderingContext} gl - The WebGL context
+     * @param {Shader} vertexShader - The vertex shader
+     * @param {Shader} fragmentShader - The fragment shader
+     */
     constructor(gl, vertexShader, fragmentShader) {
         this.gl = gl;
         this.vertexShader = vertexShader;

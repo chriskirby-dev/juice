@@ -1,29 +1,24 @@
+/**
+ * DistinctArray maintains an array of unique values with automatic deduplication.
+ * @module DataTypes/DistinctArray
+ */
+
 import Util from "../Util/Core.mjs";
 
 /**
- *     merge(...arrays):
-        Merges multiple arrays into a new DistinctArray instance, removing duplicate values.
-
-    constructor(items = []):
-        Initializes the DistinctArray with the provided items. Duplicates are automatically removed.
-
-    push(...items):
-        Overrides the push method of Array to add items only if they are not already present in the array.
-
-    remove(...items):
-        Removes specified items from the DistinctArray.
-
-    has(item):
-        Checks if the given item exists in the DistinctArray.
-
-    index(item):
-        Returns the index of the specified item if it exists in the DistinctArray, otherwise, returns false.
-
-    reset():
-        Clears the DistinctArray.
+ * DistinctArray extends Array to automatically prevent duplicate values.
+ * @class DistinctArray
+ * @extends Array
+ * @example
+ * const arr = new DistinctArray(1, 2, 3, 2, 1);
+ * // arr contains [1, 2, 3]
  */
-
 class DistinctArray extends Array {
+    /**
+     * Merges multiple arrays into a new DistinctArray, removing duplicates.
+     * @param {...Array} arrays - Arrays to merge
+     * @returns {DistinctArray} New DistinctArray with unique values
+     */
     merge(...arrays) {
         const set = new Set(this);
         arrays.forEach((array) => array.forEach((item) => set.add(item)));

@@ -1,7 +1,16 @@
+/**
+ * Color picker form component with circular swatch design.
+ * @module Components/Form/FormColorComponent
+ */
 import Component from "../Component.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
 //import setupCSS from "!../../../sass/component--setup.scss?toString";
 
+/**
+ * Color input component displaying selected color in a circular swatch.
+ * @class FormColorComponent
+ * @extends BaseInput
+ */
 class FormColorComponent extends BaseInput {
     static tag = "form-color";
 

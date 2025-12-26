@@ -1,12 +1,38 @@
+/**
+ * Graphic asset loader supporting images, canvases, and image data.
+ * Provides unified interface for loading different types of graphic assets.
+ * @module Asset/Graphic
+ */
+
 import { type } from "../Util/Core.mjs";
 import Canvas from "../Graphics/Canvas.mjs";
+
+/**
+ * GraphicAsset class for loading and managing graphic resources.
+ * Supports Image elements, Canvas, ImageData, and URL strings.
+ * @class GraphicAsset
+ */
 class GraphicAsset {
     width = 0;
     height = 0;
+
+    /**
+     * Creates a GraphicAsset from a source.
+     * @param {string|Image|HTMLCanvasElement|ImageData|Canvas} source - The graphic source
+     */
     constructor(source) {
         this.source = source;
     }
 
+    /**
+     * Loads the graphic asset and resolves with asset metadata.
+     * @returns {Promise<Object>} Promise resolving to {asset, width, height, type}
+     * @example
+     * const graphic = new GraphicAsset('image.png');
+     * graphic.load().then(({asset, width, height}) => {
+     *   console.log(`Loaded ${width}x${height} image`);
+     * });
+     */
     load() {
         const src = this.source;
         return new Promise((resolve, reject) => {

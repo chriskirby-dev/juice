@@ -1,4 +1,9 @@
 /**
+ * Array indexing utilities for fast lookups and sorted indexes.
+ * @module DataTypes/Index
+ */
+
+/**
  * Creates an index of an array of objects by a given property.
  * This index allows you to quickly look up an item by its property value.
  * @param {Array} array The array of objects.

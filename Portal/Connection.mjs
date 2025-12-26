@@ -1,6 +1,6 @@
 /**
- * Portal connection management for cross-context communication.
- * Provides classes for establishing and managing portal connections.
+ * Portal communication system for establishing connections between windows/contexts.
+ * Uses MessageChannel API for bidirectional communication with event-based messaging.
  * @module Portal/Connection
  */
 
@@ -15,8 +15,11 @@ import { type, empty } from "../Util/Core.mjs";
  * @extends EventEmitter
  */
 class Connection extends EventEmitter {
+    /** @type {*} Local endpoint */
     local;
+    /** @type {*} Remote endpoint */
     remote;
+    /** @type {MessagePort} Communication port */
     port;
 
     /**
@@ -38,11 +41,17 @@ class Connection extends EventEmitter {
  * @fires PortalConnection#close - Emitted when a portal closes
  */
 export class PortalConnection extends EventEmitter {
+    /** @type {string} Unique address for this connection */
     address;
+    /** @type {string} Name of this connection */
     name;
+    /** @type {Array} Active connections */
     connections = [];
+    /** @type {Array} Sent message IDs */
     sent = [];
+    /** @type {Object} Configuration options */
     options = {};
+    /** @type {Object<string, Function>} Action hooks */
     hooks = {};
 
     /**
@@ -76,9 +85,12 @@ export class PortalConnection extends EventEmitter {
     }
 
     /**
-     * Initiates a connection to a target window.
-     * @param {Window} [target=window] - The target window
-     * @fires PortalConnection#connect
+     * Establishes a connection to a target window or context.
+     * Creates a MessageChannel and initiates handshake protocol.
+     * @param {Window} [target=window] - The target window to connect to
+     * @fires PortalConnection#connect When connection is established
+     * @example
+     * connection.connect(iframe.contentWindow);
      */
     connect(target = window) {
         const channel = new MessageChannel();

@@ -1,8 +1,25 @@
+/**
+ * WebGL Texture management with event-based loading.
+ * @module Graphics/WebGL/Lib/Texture
+ */
+
 import Emitter from "../../../Event/Emitter.mjs";
 
+/**
+ * Texture class manages WebGL textures with image loading support.
+ * Extends Emitter to emit 'ready' event when texture is loaded.
+ * @class Texture
+ * @extends Emitter
+ */
 class Texture extends Emitter {
     static context = null;
 
+    /**
+     * Creates a texture from a data URL.
+     * @param {string} dataURL - The data URL containing the image
+     * @returns {Texture} New texture instance
+     * @static
+     */
     static fromDataUrl(dataURL) {
         const image = new Image();
         image.src = dataURL;

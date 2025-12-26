@@ -1,6 +1,37 @@
+/**
+ * BalancedProperty manages a property that auto-balances toward a center value.
+ * Provides acceleration, deceleration, and velocity-based movement with directional control.
+ * @module Animation/Properties/Balanced
+ */
+
+/**
+ * Represents a property that automatically balances toward a center value.
+ * Useful for smooth, physics-based animations with acceleration and deceleration.
+ * @class BalancedProperty
+ * @param {number} range - Maximum distance from center
+ * @param {Object} [options={}] - Configuration options
+ * @param {number} [options.value=0] - Initial value
+ * @param {number} [options.center=0] - Center point to balance toward
+ * @param {number} [options.maxSpeed=1] - Maximum velocity
+ * @param {number} [options.speed=0] - Initial velocity
+ * @param {number} [options.acceleration=0.01] - Acceleration rate
+ * @param {number} [options.deceleration=0.01] - Deceleration rate
+ * @example
+ * const prop = new BalancedProperty(100, {center: 0, maxSpeed: 2});
+ * prop.direction(1); // Move in positive direction
+ * prop.update(0.016); // Update with delta time
+ */
 class BalancedProperty {
+    /** @type {boolean} Whether animation is enabled */
     animate = true;
+    /** @type {number} Current movement direction (-1, 0, 1) */
     _direction = 0;
+    
+    /**
+     * Creates a new BalancedProperty instance.
+     * @param {number} range - Maximum distance from center
+     * @param {Object} [options={}] - Configuration options
+     */
     constructor(range, options = {}) {
         this.range = range;
         this.value = options.value || 0;
@@ -11,6 +42,10 @@ class BalancedProperty {
         this.deceleration = options.deceleration || 0.01;
     }
 
+    /**
+     * Sets the movement direction.
+     * @param {number} direction - Direction to move (-1 for negative, 0 for center, 1 for positive)
+     */
     direction(direction) {
         this._direction = direction;
         console.log("Direction", this._direction);

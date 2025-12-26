@@ -1,5 +1,16 @@
+/**
+ * Browser detection and vendor prefix utilities.
+ * Detects browser type, version, Flash support, and CSS vendor prefixes.
+ * @module Client/Browser
+ */
+
 import Tester from './Tester.mjs';
 
+/**
+ * Browser detection configuration array.
+ * @type {Array<Object>}
+ * @private
+ */
 const BROWSER_TYPES = [
     { string: navigator.userAgent, subString: "chrome", identity: "Chrome" },
     { string: navigator.userAgent, subString: "omniweb", versionSearch: "OmniWeb/", identity: "OmniWeb" },
@@ -16,7 +27,17 @@ const BROWSER_TYPES = [
     { string: navigator.userAgent, subString: "mozilla", identity: "Netscape", versionSearch: "Mozilla" }
 ];
 
+/**
+ * CSS vendor prefix list.
+ * @type {Array<string>}
+ * @private
+ */
 var vendors = 'Webkit Moz O ms Khtml'.split(' ');	
+
+/**
+ * Detected vendor prefix for JS and CSS.
+ * @type {{js: string|null, css: string|null}}
+ */
 const prefix = { js: null, css: null };
 
 (function( pre ){
@@ -32,7 +53,11 @@ const prefix = { js: null, css: null };
     }
 })( prefix );
 
-
+/**
+ * Detects Adobe Flash Player version.
+ * @returns {string|null} Flash version string or null
+ * @private
+ */
 function flashVersion(){
 		
     var version = null;
@@ -69,12 +94,32 @@ function flashVersion(){
     return version;
 };
 
+/**
+ * Browser detection utility providing name, version, and feature detection.
+ * @class ClientBrowser
+ * @example
+ * import Browser from './Client/Browser.mjs';
+ * console.log(Browser.name); // 'chrome'
+ * console.log(Browser.version); // { major: 120, full: '120.0.0' }
+ */
 class ClientBrowser {
+    /** @type {Object} Internal storage for detected values */
     static defined = {};
 
+    /**
+     * Gets detected browser name (cached).
+     * @type {string}
+     * @static
+     */
     static get name(){ 
         return this.defined.name || ( this.defined.name = Tester.testData( BROWSER_TYPES ) || "unknown" ).toLowerCase();
     }
+    
+    /**
+     * Gets detected browser version.
+     * @type {{major: number, full: string}}
+     * @static
+     */
     static get version(){ 
         if( this.defined.version ) return this.defined.version;
         let major, full;

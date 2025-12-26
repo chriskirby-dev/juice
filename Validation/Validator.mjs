@@ -1,3 +1,9 @@
+/**
+ * Validation module providing field validation with rules and error management.
+ * Supports various validation rules with event-based error tracking and resolution.
+ * @module Validation/Validator
+ */
+
 import Presets from "./Presets.mjs";
 import ValidationRules from "./Rules.mjs";
 import ValidationMessages from "./Messages.mjs";
@@ -5,16 +11,34 @@ import Emitter from "../Event/Emitter.mjs";
 import { ValidationErrors } from "./Errors.mjs";
 import { empty } from '../Util/Core.mjs';
 
-/*
-validateField is a class that can be used to validate a single field.
-#rules is a ValidationRules object that contains all the rules for the field.
-#errors is a ValidationErrors object that contains all the errors for the field.
-*/
-
+/**
+ * Validator instance managing validation rules and errors for fields.
+ * Emits events for validation state changes and error updates.
+ * @class ValidatorInstance
+ * @extends Emitter
+ * @param {Object|Array} rules - Validation rules configuration
+ * @param {Object} [scope] - Scope object for validation context
+ * @fires ValidatorInstance#error When validation error occurs
+ * @fires ValidatorInstance#resolve When error is resolved
+ * @fires ValidatorInstance#invalid When field becomes invalid
+ * @fires ValidatorInstance#valid When all fields become valid
+ * @fires ValidatorInstance#property:invalid When specific property becomes invalid
+ * @fires ValidatorInstance#property:valid When specific property becomes valid
+ * @example
+ * const validator = new ValidatorInstance({
+ *   email: 'required|email',
+ *   age: 'required|min:18'
+ * });
+ * validator.on('error', (property, error) => {
+ *   console.log(`${property}: ${error.message}`);
+ * });
+ */
 class ValidatorInstance extends Emitter {
-
+    /** @type {ValidationRules} Private validation rules instance */
     #rules;
+    /** @type {Object} Validation scope */
     scope;
+    /** @type {ValidationErrors} Private errors collection */
     #errors;
 
     constructor(rules, scope) {
@@ -31,6 +55,12 @@ class ValidatorInstance extends Emitter {
         this.#rules.on("change", this.onRuleErrorsChange );
     }
 
+    /**
+     * Handles rule error changes from ValidationRules.
+     * @param {string} property - Property name
+     * @param {Object} diff - Changes with added and removed errors
+     * @private
+     */
     onRuleErrorsChange(property, diff){
         if (!empty(diff.added)) {
             this.updateErrors(property, diff.added);
@@ -41,18 +71,31 @@ class ValidatorInstance extends Emitter {
        // debug('VALIDATOR RULE CHANGE',property, diff, this.errorsOf(property));
     }
 
-    // New methods to update errors list and delete its elements
+    /**
+     * Updates errors list with newly added error types.
+     * @param {string} property - Property name
+     * @param {Array<string>} addedTypes - Array of added error types
+     * @private
+     */
     updateErrors( property, addedTypes  ) {
         this.#rules.errorsOf(property).filter((err) => addedTypes.includes(err.type)).forEach((err) => this.errors.set(property, err));
     }
 
-    //Resolve all errors
-
+    /**
+     * Removes resolved errors from property.
+     * @param {string} property - Property name
+     * @param {Array<string>} removed - Array of removed error types
+     * @private
+     */
     removeErrors(property, removed) {
         this.errors.resolve(property, removed);
     }
 
-    // Add a new rule to a field
+    /**
+     * Adds validation rule(s) to a property.
+     * @param {string} property - Property name
+     * @param {string} [rules=''] - Rule string (e.g., 'required|email')
+     */
     addRule(property, rules = "") {
         this.#rules.add(property, rules);
     }

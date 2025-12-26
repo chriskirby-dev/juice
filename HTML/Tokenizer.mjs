@@ -1,3 +1,9 @@
+/**
+ * HTML template tokenizer with variable substitution and includes.
+ * Supports templates, layouts, each loops, and dynamic content rendering.
+ * @module HTML/Tokenizer
+ */
+
 import Attributes from "../Dom/Attributes.mjs";
 import fs from "fs";
 import path from "path";
@@ -19,6 +25,11 @@ const TOKENIZER_CACHE = {};
 
 const tokenizerCache = {};
 
+/**
+ * Template tokenizer with support for includes, layouts, variables, and loops.
+ * Processes template syntax and renders dynamic content.
+ * @class Tokenizer
+ */
 class Tokenizer {
     data;
     source = "";
@@ -31,6 +42,12 @@ class Tokenizer {
     incIndex = 0;
     count = 0;
 
+    /**
+     * Parses a raw token string into a structured token object.
+     * @param {string} raw - The raw token string to parse
+     * @returns {Object} Parsed token with type, key, and args
+     * @static
+     */
     static parseRawToken(raw) {
         console.log("parseRawToken", raw);
         const result = raw.match(REGEX.tag);
@@ -69,6 +86,12 @@ class Tokenizer {
         return _token;
     }
 
+    /**
+     * Creates a tokenizer for the given template string and data.
+     * @param {string} string - The template string to tokenize
+     * @param {Object} data - Data to use for rendering
+     * @param {Object} [options={}] - Options including root path
+     */
     constructor(string, data, options = {}) {
         console.log(data, options);
         if (options.root) {

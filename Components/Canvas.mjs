@@ -1,9 +1,24 @@
+/**
+ * Canvas component for HTML5 canvas rendering.
+ * @module Components/Canvas
+ */
+
 import Component from "./Component.mjs";
 import { random } from "../Util/Math.mjs";
 import PropertyArray from "../DataTypes/PropertyArray.mjs";
 import Canvas from "../Graphics/Canvas.mjs";
 
+/**
+ * CanvasImageData stores canvas pixel data.
+ * @class CanvasImageData
+ */
 class CanvasImageData {
+    /**
+     * Creates new canvas image data.
+     * @param {number} width - Width of the image
+     * @param {number} height - Height of the image
+     * @param {Uint8ClampedArray} data - Pixel data
+     */
     constructor(width, height, data) {
         this.data = data;
         this.width = width;

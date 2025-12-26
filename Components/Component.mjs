@@ -1,3 +1,8 @@
+/**
+ * Component system for creating custom web components.
+ * @module Components/Component
+ */
+
 import { default as Styles, StyleSheet } from "../Style/Styles.mjs";
 import ObjUtil from "../Util/Object.mjs";
 import Emitter from "../Event/Emitter.mjs";
@@ -24,7 +29,17 @@ const Defined = {};
 
 const CUSTOM_INSTANCES = {};
 
+/**
+ * ComponentIndex provides access to component instances by ID.
+ * @class ComponentIndex
+ */
 export class ComponentIndex {
+    /**
+     * Gets a component instance by ID.
+     * @param {string} id - The component ID
+     * @returns {Component|null} The component instance or null
+     * @static
+     */
     static get(id) {
         return CUSTOM_INSTANCES[id] || null;
     }

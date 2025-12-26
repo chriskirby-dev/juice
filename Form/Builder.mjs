@@ -1,7 +1,18 @@
+/**
+ * Form builder for generating form inputs from schemas and virtual DOM.
+ * Provides utilities for creating labels, inputs, and mapping schema types to input types.
+ * @module Form/Builder
+ */
+
 import { vElement, render } from "../VirtualDom/VirtualDom.mjs";
 import { ucwords } from "../Util/String.mjs";
 import { type } from "../Util/Core.mjs";
 
+/**
+ * Maps data types to HTML input types.
+ * @type {Object<string, Array<string>>}
+ * @private
+ */
 const InputTypes = {
     text: ["string", "varchar", "txt"],
     select: ["array", "set", "options"],
@@ -11,7 +22,19 @@ const InputTypes = {
     hidden: ["password", "hash", "salt", "token", "key"],
 };
 
+/**
+ * Builds form elements from schemas and names.
+ * @class FormBuilder
+ * @example
+ * const input = FormBuilder.text('username', '', { type: 'text' });
+ */
 class FormBuilder {
+    /**
+     * Parses input name into structured format with ID and label.
+     * @param {string} name - Input name
+     * @returns {{name: string, id: string, label: string}} Parsed name data
+     * @static
+     */
     static parseName(name) {
         return {
             name: name,
@@ -20,6 +43,14 @@ class FormBuilder {
         };
     }
 
+    /**
+     * Determines input type from schema configuration.
+     * @param {Object} [schema={}] - Schema definition
+     * @param {string} schema.type - Data type
+     * @param {boolean} schema.readOnly - Whether field is read-only
+     * @returns {string} HTML input type
+     * @static
+     */
     static typeFromSchema(schema = {}) {
         let type = "text";
         console.log("SChema", schema);
@@ -39,6 +70,13 @@ class FormBuilder {
         return type;
     }
 
+    /**
+     * Creates a label virtual DOM element.
+     * @param {string} inputId - Input ID to associate with
+     * @param {string} label - Label text
+     * @returns {Object} Virtual DOM label element
+     * @static
+     */
     static label(inputId, label) {
         return vElement(
             "label",
@@ -49,6 +87,16 @@ class FormBuilder {
         );
     }
 
+    /**
+     * Creates a text input virtual DOM element.
+     * @param {string} name - Input name
+     * @param {string} value - Initial value
+     * @param {Object} [params={}] - Additional parameters
+     * @param {string} [params.type='text'] - Input type
+     * @param {Object} [params.events] - Event handlers
+     * @returns {Object} Virtual DOM input element
+     * @static
+     */
     static text(name, value, params = {}) {
         name = this.parseName(name);
         const vdom = vElement("input", {

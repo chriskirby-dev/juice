@@ -1,7 +1,15 @@
+/**
+ * Style management module for CSS styling and vendor prefixing.
+ * @module Style/Styles
+ */
 import browser from "../Client/Browser.mjs";
 import CssParser from "./Parser.mjs";
 import { type } from "../Util/Core.mjs";
 
+/**
+ * Manages CSS style properties with text output formatting.
+ * @class StyleProperties
+ */
 export class StyleProperties {
     props = {};
 

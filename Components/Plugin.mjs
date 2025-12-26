@@ -1,6 +1,19 @@
+/**
+ * Plugin system for extending component functionality.
+ * @module Components/Plugin
+ */
+
+/**
+ * ComponentPlugin base class for creating component plugins.
+ * @class ComponentPlugin
+ */
 class ComponentPlugin {
     static strategy = "copy";
 
+    /**
+     * Creates a new component plugin.
+     * @param {Component} host - The host component to extend
+     */
     constructor(host) {
         this.host = host;
         this.apply();

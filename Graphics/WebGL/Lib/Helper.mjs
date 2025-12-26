@@ -1,3 +1,13 @@
+/**
+ * WebGL helper utilities for texture loading and program creation.
+ * @module Graphics/WebGL/Lib/Helper
+ */
+
+/**
+ * Checks if a value is a power of 2.
+ * @param {number} value - The value to check
+ * @returns {boolean} True if the value is a power of 2
+ */
 export function isPowerOf2(value) {
     return (value & (value - 1)) == 0;
 }

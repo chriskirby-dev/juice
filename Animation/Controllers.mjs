@@ -1,4 +1,19 @@
+/**
+ * Animation controllers for throttle, ramp, and other control mechanisms.
+ * @module Animation/Controllers
+ */
+
+/**
+ * ThrottleController manages acceleration/deceleration for throttle-style controls.
+ * @class ThrottleController
+ */
 export class ThrottleController {
+    /**
+     * Creates a new ThrottleController.
+     * @param {number} [accelerationRate=0.001] - Rate of acceleration
+     * @param {number} [deceleratonRate=0.5] - Rate of deceleration
+     * @param {Object} [options={}] - Additional options including idle value
+     */
     constructor(accelerationRate = 0.001, deceleratonRate = 0.5, options = {}) {
         this.power = 0;
         this.value = 0;

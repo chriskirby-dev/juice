@@ -1,9 +1,18 @@
+/**
+ * Animation stage component providing a container for animated elements with physics properties.
+ * @module Components/Animation/Stage
+ */
 import Component from "../Component.mjs";
 import Timeline from "../../Animation/Timeline.mjs";
 import { Position } from "../../Animation/Properties/Core.mjs";
 import { Vector2D } from "../../Animation/Properties/Vector.mjs";
 import { parseAnchor } from "../../Animation/Anchor.mjs";
 
+/**
+ * Stage component for managing animated elements with configurable physics.
+ * @class AnimationStage
+ * @extends Component.HTMLElement
+ */
 class AnimationStage extends Component.HTMLElement {
     static tag = "animation-stage";
 

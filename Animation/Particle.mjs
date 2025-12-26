@@ -1,11 +1,36 @@
+/**
+ * Particle system for animation effects.
+ * Provides particle behavior with position, size, opacity, and lifetime management.
+ * @module Animation/Particle
+ */
+
 import { Vector2D } from "./Properties/Vector.mjs";
 import AnimationStepper from "./Stepper.mjs";
 import AnimationValue from "./Properties/Value.mjs";
 
+/**
+ * Particle class for creating animated particles.
+ * Supports DOM and canvas rendering with various properties.
+ * @class Particle
+ */
 export class Particle {
     size = 1;
     color = "white";
 
+    /**
+     * Creates a new particle with the given options.
+     * @param {Object} [options={}] - Particle configuration
+     * @param {string} [options.type='circle'] - Particle shape type
+     * @param {number} options.x - Initial X position
+     * @param {number} options.y - Initial Y position
+     * @param {number} [options.age=0] - Initial age
+     * @param {number} [options.lifetime=10] - Particle lifetime
+     * @param {number} [options.size=0] - Initial size
+     * @param {string} [options.color='#FFF'] - Particle color
+     * @param {number} [options.opacity=1] - Initial opacity
+     * @param {number} [options.rotation=0] - Initial rotation
+     * @param {string} [options.as] - Render mode ('dom' or canvas)
+     */
     constructor(options = {}) {
         //Set Initial Properties
         this.type = options.type || "circle";
@@ -29,23 +54,42 @@ export class Particle {
         this.build();
     }
 
+    /**
+     * Gets the absolute X position (start + offset).
+     * @returns {number} Absolute X coordinate
+     */
     get x() {
         return this.start.x + this.position.x;
     }
 
+    /**
+     * Gets the absolute Y position (start + offset).
+     * @returns {number} Absolute Y coordinate
+     */
     get y() {
         return this.start.y + this.position.y;
     }
 
+    /**
+     * Updates particle state for the given time delta.
+     * @param {number} delta - Time elapsed since last update
+     */
     update(delta) {
         this.age += delta;
         this.progress = this.age / this.lifetime;
     }
 
+    /**
+     * Removes the particle and cleans up resources.
+     */
     remove() {
         if (this.body) this.body.remove();
     }
 
+    /**
+     * Builds the particle's visual representation.
+     * @private
+     */
     build() {
         const { options } = this;
         switch (options.as) {

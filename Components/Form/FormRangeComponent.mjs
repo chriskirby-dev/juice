@@ -1,7 +1,17 @@
+/**
+ * Range input form component with slider UI.
+ * @module Components/Form/FormRangeComponent
+ */
+
 import Component from "../Component.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
 //import setupCSS from "!../../../sass/component--setup.scss?toString";
 
+/**
+ * FormRangeComponent provides a range slider with min/max labels and value display.
+ * @class FormRangeComponent
+ * @extends BaseInput
+ */
 class FormRangeComponent extends BaseInput {
     static tag = "form-range";
 
