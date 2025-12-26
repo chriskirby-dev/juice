@@ -1,9 +1,33 @@
+/**
+ * Web Worker wrapper with job queueing and event handling.
+ * Manages worker lifecycle, message passing, and task distribution.
+ * @module Workers/JuiceWorker
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 import { getAvailableCores } from "./Helper.js";
 
 const cores = getAvailableCores();
 
+/**
+ * Enhanced Web Worker with queue management and event emission.
+ * @class JuiceWorker
+ * @extends EventEmitter
+ * @param {string} path - Worker script path or blob URL
+ * @param {Object} [options={}] - Worker options
+ * @param {string} [options.type='module'] - Worker type
+ * @example
+ * const worker = new JuiceWorker('./worker.mjs');
+ * worker.queue({ task: 'process', data: [1, 2, 3] })
+ *   .then(result => console.log(result));
+ */
 class JuiceWorker extends EventEmitter {
+    /**
+     * Creates worker blob URL from function.
+     * @param {Function} _worker - Worker function
+     * @returns {string} Blob URL
+     * @static
+     */
     static fromFunction(_worker) {
         const blob = new Blob([` self.onmessage = ${_worker.toString()}; `], { type: "application/javascript" });
         return URL.createObjectURL(blob);
@@ -17,12 +41,20 @@ class JuiceWorker extends EventEmitter {
         this._queue = [];
     }
 
+    /**
+     * Queues message for worker processing.
+     * @param {*} message - Message to send to worker
+     * @returns {Promise<*>} Promise resolving with worker response
+     */
     queue(message) {
         return new Promise((resolve, reject) => {
             this._queue.push({ message, resolve, reject });
         });
     }
 
+    /**
+     * Triggers workers to process queued jobs.
+     */
     work() {
         if (this._queue.length) {
             for (const worker of this.workers) {
@@ -31,6 +63,9 @@ class JuiceWorker extends EventEmitter {
         }
     }
 
+    /**
+     * Spawns a new worker instance.
+     */
     spawn() {
         if (!this.options.type) this.options.type = "module";
         const worker = new Worker(this.path, this.options);
