@@ -1,3 +1,9 @@
+/**
+ * HTML content manager with template loading and token replacement.
+ * Supports file loading, includes, and dynamic content rendering.
+ * @module HTML/Content
+ */
+
 import { type } from "../Util/Core.mjs";
 import { METHOD_CALL, NUMERIC } from "../Util/Regex.mjs";
 import Assert from "../Util/Assert.mjs";
@@ -5,6 +11,12 @@ import Tokenizer from "./Tokenizer.mjs";
 import path from "path";
 import fs from "fs";
 
+/**
+ * Checks if a string is a file path or URL.
+ * @private
+ * @param {string} input - String to check
+ * @returns {boolean} True if input is a path or URL
+ */
 function isPathOrURL(input) {
     // Regular expressions to match paths and URLs
     const pathRegex = /^(\/|\.\/|\.\.\/|[a-zA-Z]:\\|file:\/\/\/|[a-zA-Z]:\\|\\|\/\/).*/; // Matches paths
@@ -46,10 +58,20 @@ function loadExternalTemplate(path) {}
  *  {tpl [id {String}]{[pointer {Path}]}}
  */
 
+/**
+ * Content manager for loading and rendering HTML templates.
+ * Handles file loading, tokenization, and dynamic content replacement.
+ * @class Content
+ */
 class Content {
     tpls = {};
     tplRaw = {};
 
+    /**
+     * Creates a Content instance from a source path or HTML string.
+     * @param {string} src - File path or HTML string
+     * @param {Object} [options={}] - Options including dir, tokens
+     */
     constructor(src, options = {}) {
         this.options = options;
         if (Assert.isLocation(src)) {
@@ -123,6 +145,13 @@ class Content {
         console.log("Initialization complete, ready set to true.");
     }
 
+    /**
+     * Creates a Content instance from a template element in the DOM.
+     * @param {string} id - Template element ID
+     * @param {Object} data - Data for token replacement
+     * @returns {string} Rendered content
+     * @static
+     */
     static fromTemplate(id, data) {
         const template = document.getElementById(id);
         const content = new Content(template.innerHTML);
@@ -131,6 +160,13 @@ class Content {
 
     parseConditional(string) {}
 
+    /**
+     * Replaces tokens in content with actual data values.
+     * @param {Object} data - Data to use for token replacement
+     * @param {string} [content] - Content to replace tokens in (uses tokenized if not provided)
+     * @param {boolean} [internal] - Internal flag for nested calls
+     * @returns {string} Content with tokens replaced
+     */
     replaceTokens(data, content, internal) {
         content = this.tokenized.render(data);
 
