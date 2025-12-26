@@ -1,21 +1,47 @@
+/**
+ * HTTP request handling with XMLHttpRequest wrapper and event-based responses.
+ * Provides promise-based and event-based HTTP communication with response type handling.
+ * @module HTTP/Request
+ */
+
 import Emitter from '../Event/Emitter.mjs';
 import Util from '../Util/Core.mjs';
 import ObjUtil from '../Util/Object.mjs';
 
+/**
+ * Represents an HTTP response with automatic content type detection and parsing.
+ * @class HttpResponce
+ * @param {string} source - Response body content
+ * @param {string} [contentType] - Content-Type header value
+ * @example
+ * const response = new HttpResponce(data, 'application/json');
+ * const content = response.content(); // Parsed JSON
+ */
 class HttpResponce {
-
+    /** @type {string} Response type ('text' or 'json') */
     type = 'text';
+    /** @type {string} Response body */
     source = "";
+    /** @type {number} HTTP status code */
     code;
+    
     constructor( source, contentType ) {
         this.source = source;
         if(contentType) this.setType( contentType );
     }
 
+    /**
+     * Sets the HTTP status code.
+     * @param {number} code - HTTP status code
+     */
     setCode( code ){
         this.code = code;
     }
 
+    /**
+     * Sets response type based on Content-Type header.
+     * @param {string} contentType - Content-Type header value
+     */
     setType( contentType ){
         let type = "text";
         if( contentType.indexOf('json') !== -1 ){
@@ -24,6 +50,10 @@ class HttpResponce {
         this.type = type;
     }
 
+    /**
+     * Returns parsed response content based on type.
+     * @returns {*} Parsed JSON or raw text content
+     */
     content(){
         switch(this.type){
             case 'json':
@@ -36,20 +66,44 @@ class HttpResponce {
 
 }
 
+/**
+ * HTTP request wrapper with event emitter for async operations.
+ * @class Request
+ * @extends Emitter
+ * @param {string} url - Request URL
+ * @fires Request#success When request succeeds
+ * @fires Request#error When request fails
+ * @fires Request#complete When request completes (success or error)
+ * @example
+ * const req = new Request('/api/data');
+ * req.on('success', (response) => console.log(response.content()));
+ * req.get();
+ */
 class Request extends Emitter {
-
-
+    /** @type {XMLHttpRequest} The underlying XMLHttpRequest object */
     request=null;
+    /** @type {string} Request URL */
     url=null;
+    /** @type {*} Request data */
     _data = null;
+    /** @type {string} HTTP method */
     method = 'GET';
+    /** @type {Object} Callback functions */
     callbacks = {};
+    /** @type {Object} Request options */
     _options = {};
+    /** @type {string} Current request state */
     state = 'initial';
+    /** @type {boolean} Debug mode */
     debug = false;
 
+    /** @type {Object} Common options for all requests */
     static common = {};
 
+    /**
+     * Sets common options for all Request instances.
+     * @static
+     */
     static setCommon( ){
 
     }

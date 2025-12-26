@@ -1,3 +1,16 @@
+/**
+ * Keyboard key code constants mapping key names to their numeric codes.
+ * Provides easy access to keyboard event keyCodes for common keys.
+ * @module Control/KeyCodes
+ * @example
+ * import KeyCodes from './Control/KeyCodes.mjs';
+ * if (event.keyCode === KeyCodes.Enter) { ... }
+ */
+
+/**
+ * Mapping of key names to their numeric key codes.
+ * @type {Object<string, number>}
+ */
 export default {
     Backspace: 8,
     Tab: 9,
