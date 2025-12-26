@@ -4,7 +4,7 @@ import CanvasBuffer from "../../Graphics/Canvas/Buffer.mjs";
 import * as vForm from "../../Form/VirtualBuilder.mjs";
 import ParticleWorld from "../../Animation/Particles/World.mjs";
 import VirtualDom from "../../VirtualDom/VirtualDom.mjs";
-import Form from "../../Form/Form.mjs";
+import Form from "../Form/Form.mjs";
 import formsCSS from "../../../../css/forms.css?inline";
 import { random, randomInt, round, floor, randomBetween } from "../../Util/Math.mjs";
 import PropertyArray from "../../DataTypes/PropertyArray.mjs";

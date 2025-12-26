@@ -8,6 +8,12 @@ import Arr from "../../Util/Array.mjs";
 const { _filename, dir: _dirname } = currentFile(import.meta);
 
 class Form extends Emitter {
+    static fromVDom(vdom, container) {
+        const form = new Form(container);
+        form.append(render(vdom));
+        return form;
+    }
+
     static fromSchema(schema, container) {
         console.log(schema);
         const form = new Form(container);
@@ -86,6 +92,11 @@ class Form extends Emitter {
                 this.inputs[name] = input;
             }
         });
+    }
+
+    append(...children) {
+        this.container.append(...children);
+        this.updateInputs();
     }
 
     initialize() {
