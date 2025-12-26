@@ -10,13 +10,9 @@ import PortalMessage from "./Message.mjs";
 import { type, empty } from "../Util/Core.mjs";
 
 /**
- * Represents a basic connection between two endpoints.
+ * Represents a connection between two portals.
  * @class Connection
  * @extends EventEmitter
- * @param {MessagePort} port - The message port for communication
- * @param {*} remote - The remote endpoint
- * @param {*} local - The local endpoint
- * @private
  */
 class Connection extends EventEmitter {
     /** @type {*} Local endpoint */
@@ -26,23 +22,23 @@ class Connection extends EventEmitter {
     /** @type {MessagePort} Communication port */
     port;
 
+    /**
+     * Creates a new Connection instance.
+     * @param {MessagePort} port - The message port
+     * @param {Object} remote - Remote connection info
+     * @param {Object} local - Local connection info
+     */
     constructor(port, remote, local) {}
 }
 
 /**
  * Manages portal connections for cross-context communication.
- * Handles connection establishment, message routing, and lifecycle management.
+ * Handles connection requests, handshakes, and message routing.
  * @class PortalConnection
  * @extends EventEmitter
- * @param {string} name - Unique name for this connection
- * @param {Object} [options={}] - Configuration options
- * @fires PortalConnection#connect When a new portal connection is established
- * @example
- * const connection = new PortalConnection('main-worker');
- * connection.on('connect', (portal) => {
- *   portal.send('hello', 'world');
- * });
- * connection.connect(workerWindow);
+ * @fires PortalConnection#connect - Emitted when a portal connects
+ * @fires PortalConnection#message - Emitted when a message is received
+ * @fires PortalConnection#close - Emitted when a portal closes
  */
 export class PortalConnection extends EventEmitter {
     /** @type {string} Unique address for this connection */
@@ -59,9 +55,10 @@ export class PortalConnection extends EventEmitter {
     hooks = {};
 
     /**
-     * Creates a new PortalConnection instance.
-     * @param {string} name - Unique name for this connection
-     * @param {Object} [options={}] - Configuration options
+     * Creates a new PortalConnection.
+     * @param {string} name - The connection name
+     * @param {Object} [options={}] - Connection options
+     * @param {string} [options.origin] - Target origin for postMessage
      */
     constructor(name, options = {}) {
         super();
@@ -74,12 +71,10 @@ export class PortalConnection extends EventEmitter {
     }
 
     /**
-     * Registers or retrieves an action hook.
+     * Registers or retrieves a hook function for an action.
      * @param {string} action - The action name
-     * @param {Function} [fn] - The hook function (if registering)
-     * @returns {Function|undefined} The hook function if retrieving
-     * @example
-     * connection.hook('authenticate', (data) => { ... });
+     * @param {Function} [fn] - The hook function (if setting)
+     * @returns {Function|undefined} The hook function if getting
      */
     hook(action, fn) {
         if (fn) {
@@ -128,6 +123,10 @@ export class PortalConnection extends EventEmitter {
         target.postMessage(message, this.options.origin || "*", [remotePort]);
     }
 
+    /**
+     * Returns identity information for this connection.
+     * @returns {{time: number, address: string, name: string}} Identity object
+     */
     identity() {
         return {
             time: Date.now(),
@@ -136,10 +135,22 @@ export class PortalConnection extends EventEmitter {
         };
     }
 
+    /**
+     * Stores active portals in localStorage.
+     */
     storeActivePortals() {
         localStorage.setItem("portal:connections", JSON.stringify(this.connections));
     }
 
+    /**
+     * Handles portal connection requests.
+     * Sets up handshake and authentication flow.
+     * @param {MessagePort} port - The message port
+     * @param {Object} request - The connection request
+     * @fires PortalConnection#connect
+     * @fires PortalConnection#message
+     * @fires PortalConnection#close
+     */
     onPortalRequest(port, request) {
         console.log("portal request", request);
 
@@ -206,6 +217,12 @@ export class PortalConnection extends EventEmitter {
         return;
     }
 
+    /**
+     * Handles incoming messages.
+     * @param {MessageEvent} event - The message event
+     * @param {Object|string} message - The message data
+     * @fires PortalConnection#message
+     */
     onMessage(event, message) {
         console.log("Portal Message", event, message);
         const command = type(message, "string") ? message : message.type;
@@ -218,6 +235,10 @@ export class PortalConnection extends EventEmitter {
         this.emit("message", event, message);
     }
 
+    /**
+     * Initializes the portal connection by setting up message listeners.
+     * @protected
+     */
     initialize() {
         console.log("initialize native");
         const connections = JSON.parse(localStorage.getItem("portal:connections"));
@@ -230,7 +251,17 @@ export class PortalConnection extends EventEmitter {
     }
 }
 
+/**
+ * Portal connection for Electron environments.
+ * Extends PortalConnection with Electron-specific IPC handling.
+ * @class ElectronPortalConnection
+ * @extends PortalConnection
+ */
 export class ElectronPortalConnection extends PortalConnection {
+    /**
+     * Initializes the Electron portal connection with IPC handlers.
+     * @protected
+     */
     initialize() {
         console.log("initialize electron");
         const { ipcRenderer } = require("electron");

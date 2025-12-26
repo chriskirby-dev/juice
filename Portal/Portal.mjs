@@ -79,7 +79,7 @@ class Portal extends EventEmitter {
     }
 
     /**
-     * Initializes the portal by setting up message and lifecycle event handlers.
+     * Initializes the portal by setting up message and error handlers.
      * @private
      */
     initialize() {

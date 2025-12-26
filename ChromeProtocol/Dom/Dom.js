@@ -1,13 +1,35 @@
+/**
+ * DOM management for Chrome DevTools Protocol.
+ * Provides high-level DOM manipulation and querying capabilities.
+ * @module ChromeProtocol/Dom/Dom
+ */
+
 import NodeRegistry from './Registry.js';
 import DomainWrapper from '../DomainWrapper.js';
 import VirtualDoc from './VirtualDoc.js';   
 
+/**
+ * Main DOM management class for Chrome DevTools Protocol.
+ * Handles document navigation, element querying, and DOM tree management.
+ * @class Dom
+ * @extends DomainWrapper
+ */
 class Dom extends DomainWrapper {
 
     state = 'idle';
 
+    /**
+     * Specifies which Chrome DevTools Protocol domains this class uses.
+     * @static
+     * @type {Array<string>}
+     */
     static uses = ['DOM', 'Page', 'Network', 'Runtime'];
 
+    /**
+     * Navigates to a URL and waits for content to be ready.
+     * @param {string} url - The URL to navigate to
+     * @returns {Promise<boolean>} Resolves when content is ready
+     */
     navigate(url){
 
         return new Promise((resolve, reject) => {
@@ -22,6 +44,11 @@ class Dom extends DomainWrapper {
         });
     }
 
+    /**
+     * Retrieves and registers a full element by node ID.
+     * @param {number} nodeId - The node ID to pull
+     * @returns {Promise<Object>} The registered element
+     */
     async pullElement( nodeId ){
         const { DOM } = this.domains;
         const { node } = await DOM.describeNode({
@@ -34,6 +61,13 @@ class Dom extends DomainWrapper {
 
     }
 
+    /**
+     * Queries for a single element using a CSS selector.
+     * @param {string} selector - CSS selector string
+     * @param {number} [scope] - Optional scope node ID to query within
+     * @param {boolean} [asElement=false] - Whether to return element object or node ID
+     * @returns {Promise<Object|number>} The element or node ID
+     */
     async querySelector( selector, scope, asElement = false ){
         const { DOM } = this.domains;
         const { nodeId } = await DOM.querySelector({
@@ -51,6 +85,13 @@ class Dom extends DomainWrapper {
         return asElement ? element : nodeId;
     }
 
+    /**
+     * Queries for all elements matching a CSS selector.
+     * @param {string} selector - CSS selector string
+     * @param {number} [scope] - Optional scope node ID to query within
+     * @param {boolean} [asElement=false] - Whether to return element objects or node IDs
+     * @returns {Promise<Array<number>>} Array of node IDs
+     */
     async querySelectorAll( selector, scope, asElement = false ){
         const { DOM } = this.domains;
         const {nodeIds} = await DOM.querySelectorAll({
@@ -60,6 +101,11 @@ class Dom extends DomainWrapper {
         return nodeIds;
     }
 
+    /**
+     * Resets the content ready event timer.
+     * Used to detect when DOM mutations have settled.
+     * @private
+     */
     resetContentReadyEvent(){
         clearTimeout(this.contentEvent);
         this.contentEvent = setTimeout(() => {
@@ -69,6 +115,10 @@ class Dom extends DomainWrapper {
         }, 1000 );
     }
 
+    /**
+     * Initializes the DOM manager and sets up event listeners.
+     * @returns {Promise<void>}
+     */
     async initialize(){
 
         const self = this;
