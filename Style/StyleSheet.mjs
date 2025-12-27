@@ -1,5 +1,15 @@
+/**
+ * StyleSheet management for dynamic CSS injection.
+ * Manages stylesheet creation and manipulation in the DOM.
+ * @module Style/StyleSheet
+ */
+
 const head = document.getElementsByTagName('head')[0];
 
+/**
+ * Individual stylesheet manager.
+ * @class StyleSheet
+ */
 class StyleSheet {
 
     constructor( id, scope ){

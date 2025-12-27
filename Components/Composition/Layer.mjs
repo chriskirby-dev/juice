@@ -1,7 +1,18 @@
+/**
+ * Layer component for composition rendering.
+ * Individual layer within a composition with canvas support.
+ * @module Components/Composition/Layer
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import Canvas from "../../Graphics/Canvas.mjs";
 
+/**
+ * Layer for rendering content within a composition.
+ * @class Layer
+ * @extends Component.HTMLElement
+ */
 class Layer extends Component.HTMLElement {
     static tag = "juice-layer";
 

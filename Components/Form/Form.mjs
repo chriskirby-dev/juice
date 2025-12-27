@@ -1,3 +1,9 @@
+/**
+ * Form class for managing form elements and inputs.
+ * Provides form building, rendering, and event handling.
+ * @module Components/Form/Form
+ */
+
 import FormInputs from "./FormInputs.mjs";
 import Emitter from "../../Event/Emitter.mjs";
 import { render } from "../../VirtualDom/VirtualDom.mjs";
@@ -7,6 +13,11 @@ import Arr from "../../Util/Array.mjs";
 
 const { _filename, dir: _dirname } = currentFile(import.meta);
 
+/**
+ * Form manager for building and handling form interactions.
+ * @class Form
+ * @extends Emitter
+ */
 class Form extends Emitter {
     static fromVDom(vdom, container) {
         const form = new Form(container);

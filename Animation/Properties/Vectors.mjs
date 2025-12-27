@@ -1,5 +1,18 @@
+/**
+ * Vector classes with dirty tracking for animation properties.
+ * Alternative vector implementation with Float32Array storage and change detection.
+ * @module Animation/Properties/Vectors
+ */
+
 import DistinctArray from "../../DataTypes/DistinctArray.mjs";
 
+/**
+ * 2D vector with dirty tracking for detecting changes.
+ * @class Vector2D
+ * @example
+ * const vec = new Vector2D(10, 20);
+ * vec.x = 15; // Marks x as dirty
+ */
 export class Vector2D {
     constructor(x = 0, y = 0) {
         this.data = new Float32Array(2);

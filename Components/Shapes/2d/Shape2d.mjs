@@ -1,9 +1,21 @@
+/**
+ * Base 2D shape component with positioning and styling.
+ * Foundation for all 2D shape custom elements.
+ * @module Components/Shapes/2d/Shape2d
+ */
+
 import Component from "../../Component.mjs";
 import { Vector2D } from "../../../Animation/Properties/Vector.mjs";
 import { Scale } from "../../../Animation/Properties/Scale.mjs";
 import { Rotation } from "../../../Animation/Properties/Rotation.mjs";
 import StyleProperties from "../../../Style/Styles.mjs";
 
+/**
+ * Converts CSS object to inline style string.
+ * @private
+ * @param {Object} styles - CSS properties object
+ * @returns {string} CSS string
+ */
 function cssObjectToString(styles) {
     return Object.entries(styles)
         .map(([k, v]) => `${k}:${v}`)

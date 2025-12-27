@@ -1,7 +1,18 @@
+/**
+ * Page domain wrapper for Chrome DevTools Protocol.
+ * Manages page navigation, screenshots, frame injection, and lifecycle.
+ * @module ChromeProtocol/Page/Page
+ */
 
 import DomainWrapper from '../DomainWrapper.js';
 import Frame from './Frame.js';
 
+/**
+ * Wrapper for Chrome DevTools Protocol Page domain.
+ * Provides page manipulation, navigation, and screenshot capabilities.
+ * @class Page
+ * @extends DomainWrapper
+ */
 class Page extends DomainWrapper {
 
     static uses = ['Page', 'Runtime', 'Dom' ];

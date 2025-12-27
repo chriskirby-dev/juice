@@ -1,8 +1,19 @@
+/**
+ * Electron window wrapper extending BaseWindow.
+ * Manages Electron windows with view support and configuration.
+ * @module Electron/Base/ElectronWindow
+ */
+
 import { BaseWindow, WebContentsView } from "electron";
 import ElectronView from "./ElectronView.js";
 
 const DEFAULT_HOMEPAGE = "about:blank";
 
+/**
+ * Electron window with view management.
+ * @class ElectronWindow
+ * @extends BaseWindow
+ */
 class ElectronWindow extends BaseWindow {
     static instances = [];
     // static preload = null;

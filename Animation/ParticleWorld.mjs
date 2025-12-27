@@ -1,3 +1,9 @@
+/**
+ * Particle world system for managing and animating large collections of particles.
+ * Provides particle physics, repel forces, image-based particle generation, and worker-based calculations.
+ * @module Animation/ParticleWorld
+ */
+
 import geom from "../Util/Geometry.mjs";
 import { random, randomInt } from "../Util/Math.mjs";
 import Canvas from "../Graphics/Canvas.mjs";
@@ -11,6 +17,12 @@ const { angle, distance, lerp, clamp, norm, pointDiff, diff } = geom;
 
 const PARTICLE_PROPS = ["state", "x", "y", "vx", "vy", "bx", "by", "td", "alpha", "random"];
 
+/**
+ * Calculates distances between particles using a web worker for performance.
+ * @private
+ * @param {PropertyArray} particles - The particle property array
+ * @returns {Promise<PropertyArray>} Updated particles with calculated distances
+ */
 function distanceWorker(particles) {
     return new Promise((resolve) => {
         const sourceData = [];
@@ -44,6 +56,15 @@ function distanceWorker(particles) {
     });
 }
 
+/**
+ * Manages a world of particles with physics, repel forces, and animation.
+ * Supports image-based particle generation, worker-based calculations, and various particle behaviors.
+ * @class ParticleWorld
+ * @example
+ * const world = new ParticleWorld(canvas, { maxParticles: 1000 });
+ * world.createFromImage(imageData);
+ * world.update();
+ */
 export default class ParticleWorld {
     configuration = {
         density: 1,

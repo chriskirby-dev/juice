@@ -1,6 +1,16 @@
+/**
+ * Base class for WebGL shader variables.
+ * Foundation for attribute, uniform, and varying variables.
+ * @module Graphics/WebGL/Variables/VariableBase
+ */
+
 import { checkGLError } from "../Lib/Helper.mjs";
 import VariableSettings from "./VariableSettings.mjs";
 
+/**
+ * Storage qualifier constants for GLSL variables.
+ * @type {Object}
+ */
 export const StorageQualifiers = {
     ATTRIBUTE: "attribute",
     UNIFORM: "uniform",

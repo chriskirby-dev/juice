@@ -1,3 +1,9 @@
+/**
+ * Animation math utilities and constants.
+ * Provides common math functions, constants, and helpers for animations.
+ * @module Components/Animation/Utils
+ */
+
 "use strict";
 
 const {

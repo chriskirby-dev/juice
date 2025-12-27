@@ -1,3 +1,9 @@
+/**
+ * Particle world component wrapper for ParticleWorld animation system.
+ * Custom element integrating ParticleWorld with WebGL/Canvas rendering.
+ * @module Components/Animation/ParticleWorld
+ */
+
 import Component from "../Component.mjs";
 import Canvas from "../../Graphics/Canvas.mjs";
 import CanvasBuffer from "../../Graphics/Canvas/Buffer.mjs";

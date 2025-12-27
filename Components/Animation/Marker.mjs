@@ -1,6 +1,17 @@
+/**
+ * Animation marker component for position tracking.
+ * Simple marker element with x/y positioning.
+ * @module Components/Animation/Marker
+ */
+
 import Component from "../Component.mjs";
 import { Vector2D } from "../../Animation/Properties/Vector.mjs";
 
+/**
+ * Marker for tracking positions in animation viewer.
+ * @class Marker
+ * @extends Component.HTMLElement
+ */
 class Marker extends Component.HTMLElement {
     static tag = "animation-marker";
     static config = {

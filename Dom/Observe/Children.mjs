@@ -1,5 +1,21 @@
+/**
+ * MutationObserver wrapper for child element changes.
+ * Monitors additions and removals of child elements in the DOM tree.
+ * @module Dom/Observe/Children
+ */
+
 import Emitter from "../../Event/Emitter.mjs";
 
+/**
+ * Observes changes to an element's children.
+ * @class ObserveChildren
+ * @extends Emitter
+ * @param {Element} element - Element to observe
+ * @param {Function} [callback] - Callback function for changes
+ * @example
+ * const observer = new ObserveChildren(container);
+ * observer.on('update', () => console.log('Children changed'));
+ */
 class ObserveChildren extends Emitter {
     observer;
 

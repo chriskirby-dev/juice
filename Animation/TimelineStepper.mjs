@@ -1,3 +1,17 @@
+/**
+ * Timeline stepper for keyframe-based animations with easing.
+ * Animates element properties through defined keyframes over time.
+ * @module Animation/TimelineStepper
+ */
+
+/**
+ * Manages keyframe-based animations for DOM elements.
+ * @class TimelineStepper
+ * @param {HTMLElement} element - The element to animate
+ * @example
+ * const stepper = new TimelineStepper(element);
+ * stepper.addKeyframe({opacity: 1}, 1000, 'easeInQuad').start();
+ */
 class TimelineStepper {
     constructor(element) {
         this.element = element;

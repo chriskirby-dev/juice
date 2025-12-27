@@ -1,9 +1,20 @@
+/**
+ * Animation container component for grouping animated elements.
+ * Custom element that acts as a container with 3D transform properties.
+ * @module Components/Animation/Container
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import { Rotation, Vector3D, AnimationValue } from "../../Animation/Properties/Core.mjs";
 import { parseAnchor } from "../../Animation/Anchor.mjs";
 import { radians } from "../../Util/Geometry.mjs";
 
+/**
+ * Container for grouping and transforming multiple animation bodies.
+ * @class AnimationContainer
+ * @extends Component.HTMLElement
+ */
 class AnimationContainer extends Component.HTMLElement {
     static tag = "animation-container";
 

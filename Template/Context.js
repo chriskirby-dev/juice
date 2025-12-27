@@ -1,3 +1,13 @@
+/**
+ * Template context for variable resolution.
+ * Manages template variable scoping and value resolution.
+ * @module Template/Context
+ */
+
+/**
+ * Flattens a nested object into dot notation paths.
+ * @private
+ */
 function flatten(obj, prefix = "") {
     return Object.keys(obj).reduce((acc, key) => {
         const path = prefix == "" ? key : prefix + "." + key;

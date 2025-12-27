@@ -1,3 +1,13 @@
+/**
+ * GLSL shader code builder.
+ * Programmatically constructs shader source code with proper structure.
+ * @module Graphics/WebGL/Lib/ShaderBuilder
+ */
+
+/**
+ * Builder for constructing GLSL shader code.
+ * @class ShaderBuilder
+ */
 class ShaderBuilder {
     head = [];
     definitions = [];

@@ -1,3 +1,9 @@
+/**
+ * IntersectionObserver wrapper for viewport intersection detection.
+ * Simplifies creation and management of intersection observers.
+ * @module Dom/Observe/Intersection
+ */
+
 import Util from '../Util/Core.mjs';
 import ObserveTools from './Tools.mjs';
 

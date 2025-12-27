@@ -1,3 +1,9 @@
+/**
+ * SQLite worker client for multi-threaded database operations.
+ * Manages worker threads for async database queries.
+ * @module DB/SQLite/WorkerClient
+ */
+
 // main.js
 import { MessageChannel } from "node:worker_threads"; // Only for types; not used if running in browser or bun
 import { Worker } from "node:worker_threads"; // Optional replacement for real web Worker (Node only)

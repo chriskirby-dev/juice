@@ -1,5 +1,20 @@
+/**
+ * Draggable element implementation with mouse event handling.
+ * Makes DOM elements draggable with visual feedback and event emission.
+ * @module Dom/Draggable
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 
+/**
+ * Makes an element draggable with mouse events.
+ * @class Draggable
+ * @extends EventEmitter
+ * @param {HTMLElement} element - The element to make draggable
+ * @example
+ * const draggable = new Draggable(myElement);
+ * draggable.on('drag', (change) => console.log(change));
+ */
 class Draggable extends EventEmitter {
 
     element;

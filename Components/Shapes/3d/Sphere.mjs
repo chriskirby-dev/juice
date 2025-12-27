@@ -1,5 +1,16 @@
+/**
+ * 3D sphere shape component.
+ * Renders a sphere with 3D transformations.
+ * @module Components/Shapes/3d/Sphere
+ */
+
 import Shape3d from "./Shape3d.mjs";
 
+/**
+ * Sphere custom element extending Shape3d.
+ * @class Sphere
+ * @extends Shape3d
+ */
 class Sphere extends Shape3d {
     static tag = "shape-sphere";
 

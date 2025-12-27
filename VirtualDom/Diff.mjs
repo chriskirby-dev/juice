@@ -1,3 +1,9 @@
+/**
+ * Virtual DOM diffing algorithm for efficient DOM updates.
+ * Compares old and new virtual DOM trees and generates patches for minimal DOM changes.
+ * @module VirtualDom/Diff
+ */
+
 import render from "./Render.mjs";
 import { type, empty, equals } from '../Util/Core.mjs';
 

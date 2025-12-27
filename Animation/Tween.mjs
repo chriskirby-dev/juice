@@ -4,7 +4,7 @@
  * @module Animation/Tween
  */
 
-import Easing from "./Easinig.mjs";
+import Easing from "./Easing.mjs";
 
 import EventEmitter from "../Event/Emitter.mjs";
 

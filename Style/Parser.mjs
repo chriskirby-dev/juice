@@ -1,3 +1,16 @@
+/**
+ * CSS/Style parsing utilities for converting between camelCase and dashed property names.
+ * Provides parsers for style strings, CSS rules, and style object conversions.
+ * @module Style/Parser
+ */
+
+/**
+ * Converts a camelCase string to dashed-case.
+ * @param {string} str - The camelCase string to convert
+ * @returns {string} The dashed-case string
+ * @example
+ * toDashed("backgroundColor") // returns "background-color"
+ */
 function toDashed( str ){
 	return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 }

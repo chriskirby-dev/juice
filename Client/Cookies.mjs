@@ -1,7 +1,17 @@
+/**
+ * Browser cookie management utilities.
+ * Provides methods for reading, writing, and parsing browser cookies.
+ * @module Client/Cookies
+ */
 
-
-
-
+/**
+ * Cookie manager for browser cookie operations.
+ * @class Cookies
+ * @example
+ * const cookies = new Cookies();
+ * cookies.set('name', 'value');
+ * const value = cookies.get('name');
+ */
 class Cookies {
 
     data = {};

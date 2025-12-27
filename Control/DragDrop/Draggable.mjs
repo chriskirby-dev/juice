@@ -1,6 +1,18 @@
+/**
+ * Draggable element wrapper with position tracking and state management.
+ * Makes elements draggable with mouse/touch event handling.
+ * @module Control/DragDrop/Draggable
+ */
+
 import Emitter from "../../Event/Emitter.mjs";
 import { cancel } from "../../Event/Event.mjs";
 
+/**
+ * Draggable element with drag state and position tracking.
+ * @class Draggable
+ * @example
+ * const draggable = Draggable.make(element);
+ */
 class Draggable {
     static make(el) {
         return new Draggable(el);

@@ -1,5 +1,16 @@
+/**
+ * Async database connection with message-based communication.
+ * Manages asynchronous database operations through message ports.
+ * @module DB/AsyncConnection
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 
+/**
+ * Asynchronous connection for database operations.
+ * @class AsyncConnection
+ * @extends EventEmitter
+ */
 class AsyncConnection extends EventEmitter {
 
     port = null;

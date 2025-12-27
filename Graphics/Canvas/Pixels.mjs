@@ -1,3 +1,13 @@
+/**
+ * Canvas pixel data processor.
+ * Extracts and processes pixel data from canvas for analysis.
+ * @module Graphics/Canvas/Pixels
+ */
+
+/**
+ * Pixel data processor for canvas operations.
+ * @class CanvasPixels
+ */
 class CanvasPixels {
     constructor(canvas) {
         this.filled = new Float32Array();

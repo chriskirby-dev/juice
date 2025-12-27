@@ -1,7 +1,18 @@
+/**
+ * Form input utilities and virtual DOM builders.
+ * Provides functions for creating form input elements from schemas.
+ * @module Components/Form/FormInputs
+ */
+
 import { VirtualDom, vElement } from "../../VirtualDom/VirtualDom.mjs";
 import Str from "../../Util/String.mjs";
 import { last, first, intersect } from "../../Util/Array.mjs";
 import InputName from "./InputName.mjs";
+
+/**
+ * Creates a datalist element.
+ * @returns {Object} Virtual DOM datalist element
+ */
 export function datalist() {
     const list = vElement("datalist", {}, []);
 }

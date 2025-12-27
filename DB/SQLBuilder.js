@@ -1,3 +1,9 @@
+/**
+ * SQL query builder with fluent API for constructing SQL statements.
+ * Supports SELECT, INSERT, UPDATE, DELETE with WHERE, JOIN, ORDER BY, etc.
+ * @module DB/SQLBuilder
+ */
+
 import { empty, type } from "../Util/Core.mjs";
 /*
 This is a JavaScript class definition for a SQL builder, which helps construct SQL queries in a programmatic way. Here's a succinct explanation of what each class method does:

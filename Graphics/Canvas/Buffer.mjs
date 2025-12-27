@@ -1,3 +1,13 @@
+/**
+ * Canvas buffer management for image data.
+ * Provides buffer creation and manipulation for canvas operations.
+ * @module Graphics/Canvas/Buffer
+ */
+
+/**
+ * Canvas buffer for managing ImageData.
+ * @class CanvasBuffer
+ */
 class CanvasBuffer {
     buffer;
     constructor(canvas) {

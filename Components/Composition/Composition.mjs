@@ -1,6 +1,17 @@
+/**
+ * Composition component for layered content management.
+ * Container for managing multiple layers with visibility and state control.
+ * @module Components/Composition/Composition
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 
+/**
+ * Composition container for managing multiple layers.
+ * @class Composition
+ * @extends Component.HTMLElement
+ */
 class Composition extends Component.HTMLElement {
     static tag = "juice-composition";
 

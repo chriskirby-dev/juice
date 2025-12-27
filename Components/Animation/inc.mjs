@@ -1,3 +1,9 @@
+/**
+ * Animation components module aggregator.
+ * Imports all animation component classes for registration.
+ * @module Components/Animation/inc
+ */
+
 import "./Viewer.mjs";
 import "./Stage.mjs";
 import "./Body.mjs";

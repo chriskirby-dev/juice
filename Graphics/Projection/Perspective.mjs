@@ -1,5 +1,15 @@
+/**
+ * Perspective projection matrix for 3D rendering.
+ * Creates projection matrices for WebGL perspective rendering.
+ * @module Graphics/Projection/Perspective
+ */
+
 import { mat4 } from "../Matrix/Mat4.mjs";
 
+/**
+ * Perspective projection for 3D graphics.
+ * @class PerspectiveProjection
+ */
 class PerspectiveProjection {
     constructor(fov, aspect, near, far) {
         this.fov = fov;

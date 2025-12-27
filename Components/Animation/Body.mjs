@@ -1,3 +1,9 @@
+/**
+ * Animation body component with 3D transformations and physics properties.
+ * Custom element for animated bodies with position, rotation, velocity, and scale.
+ * @module Components/Animation/Body
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
@@ -11,6 +17,12 @@ import "./Marker.mjs";
 import AnimationStage from "./Stage.mjs";
 import AnimationSprite from "./Sprite.mjs";
 
+/**
+ * Converts CSS object to inline style string.
+ * @private
+ * @param {Object} styles - CSS properties object
+ * @returns {string} CSS string
+ */
 function cssObjectToString(styles) {
     return Object.entries(styles)
         .map(([k, v]) => `${k}:${v}`)

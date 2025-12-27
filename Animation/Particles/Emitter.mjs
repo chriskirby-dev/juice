@@ -1,3 +1,20 @@
+/**
+ * Particle emitter for spawning particles at a specified rate.
+ * Emits particles with configurable direction, speed, spread, and lifespan.
+ * @module Animation/Particles/Emitter
+ */
+
+/**
+ * Particle emitter that creates particles continuously at a specified rate.
+ * @class ParticleEmitter
+ * @example
+ * const emitter = new ParticleEmitter({
+ *   x: 100, y: 100,
+ *   particlesPerSecond: 50,
+ *   direction: Math.PI / 2,
+ *   speed: 100
+ * });
+ */
 class ParticleEmitter {
     constructor({
         x,

@@ -1,3 +1,9 @@
+/**
+ * SQLite Web Worker for database operations in separate thread.
+ * Handles database queries asynchronously to prevent UI blocking.
+ * @module DB/SQLite/Worker
+ */
+
 // sqliteWorker.js
 import Database from "better-sqlite3";
 

@@ -1,3 +1,9 @@
+/**
+ * SQLite database implementation with worker support and migrations.
+ * Extends base Database class with SQLite-specific functionality.
+ * @module DB/SQLite/Database
+ */
+
 import BetterSQLite3 from "better-sqlite3";
 import { STORAGE_TYPES, TYPE_ALIASES } from "./Constants.mjs";
 import Database from "../Database.js";
@@ -8,6 +14,11 @@ import SQLBuilder from "../SQLBuilder.js";
 
 global.debug = console.log;
 
+/**
+ * SQLite database implementation with migrations and worker thread support.
+ * @class SQLiteDatabase
+ * @extends Database
+ */
 class SQLiteDatabase extends Database {
     source = null;
     useWorker = false;

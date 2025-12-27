@@ -1,3 +1,9 @@
+/**
+ * Particle world system with lifecycle states and property-based particle management.
+ * Alternative particle system implementation with state-based transitions.
+ * @module Animation/Particles/World
+ */
+
 import { sortedIndex } from "../../DataTypes/Index.mjs";
 import PropertyArray from "../../DataTypes/PropertyArray.mjs";
 import geom from "../../Util/Geometry.mjs";

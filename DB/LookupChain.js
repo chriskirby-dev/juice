@@ -1,5 +1,18 @@
+/**
+ * Fluent query builder for database lookups with method chaining.
+ * Provides SELECT, WHERE, ORDER BY, LIMIT, and other SQL operations.
+ * @module DB/LookupChain
+ */
+
 import Collection from "./Model/Collection.mjs";
 
+/**
+ * Query builder class using method chaining pattern.
+ * @class LookupChain
+ * @example
+ * const chain = new LookupChain(UserModel);
+ * chain.select(['name', 'email']).where({active: 1}).limit(10).get();
+ */
 class LookupChain {
     chain = {
         columns: ["*"],

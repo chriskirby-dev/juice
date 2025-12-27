@@ -1,5 +1,21 @@
+/**
+ * MutationObserver wrapper for DOM change detection.
+ * Monitors DOM mutations including attributes, children, and subtree changes.
+ * @module Dom/Observe/Mutation
+ */
+
 import Emitter from '../../Event/Emitter.mjs';
 
+/**
+ * Wrapper for MutationObserver with event emission.
+ * @class Mutation
+ * @extends Emitter
+ * @param {Element} el - Element to observe
+ * @param {Object} [config={}] - MutationObserver configuration
+ * @example
+ * const mutation = new Mutation(element, { attributes: true, childList: true });
+ * mutation.on('update', (type) => console.log('Mutation:', type));
+ */
 class Mutation extends Emitter {
 
     observer;

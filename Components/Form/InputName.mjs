@@ -1,5 +1,15 @@
+/**
+ * Input name utilities for form field ID and label generation.
+ * Converts text to valid HTML IDs and labels.
+ * @module Components/Form/InputName
+ */
+
 import Str from "../../Util/String.mjs";
 
+/**
+ * Utility class for managing form input names and IDs.
+ * @class InputName
+ */
 class InputName {
     text;
     label;

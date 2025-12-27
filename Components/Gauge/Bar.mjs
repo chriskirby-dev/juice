@@ -1,6 +1,17 @@
+/**
+ * Bar gauge component for displaying progress or values.
+ * Visual indicator with horizontal or vertical orientation.
+ * @module Components/Gauge/Bar
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 
+/**
+ * Bar gauge custom element for value visualization.
+ * @class BarGauge
+ * @extends Component.HTMLElement
+ */
 export class BarGauge extends Component.HTMLElement {
     static tag = "gauge-bar";
 

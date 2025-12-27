@@ -1,3 +1,9 @@
+/**
+ * Chrome DevTools Protocol client wrapper providing access to browser debugging APIs.
+ * Aggregates DOM, Network, Page, Debugger, and other protocol domains.
+ * @module ChromeProtocol/ChromeProtocol
+ */
+
 import CDP from "chrome-remote-interface";
 import Network from "./Network/Network.js";
 import Dom from "./Dom/Dom.js";

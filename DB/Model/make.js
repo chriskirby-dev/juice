@@ -1,6 +1,18 @@
+/**
+ * Model file generator for creating model classes from templates.
+ * CLI utility for scaffolding database models.
+ * @module DB/Model/make
+ */
+
 import fs, { writeFileSync } from "node:fs";
 import path from "path";
 
+/**
+ * Converts camelCase string to snake_case plural.
+ * @private
+ * @param {string} str - String to convert
+ * @returns {string} snake_case plural string
+ */
 function toSnakePlural(str) {
     return (
         str

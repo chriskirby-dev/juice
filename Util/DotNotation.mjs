@@ -1,4 +1,10 @@
 /**
+ * Dot notation utilities for accessing nested object properties.
+ * Provides fast path parsing and property access with caching.
+ * @module Util/DotNotation
+ */
+
+/**
  * Cache for parsed paths to improve performance on repeated accesses.
  * @type {Map<string, Array>}
  */

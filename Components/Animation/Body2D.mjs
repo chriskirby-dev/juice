@@ -1,9 +1,20 @@
+/**
+ * 2D animation body component with simplified transformations.
+ * Custom element for 2D animated bodies with position, rotation, and velocity.
+ * @module Components/Animation/Body2D
+ */
+
 import Velocity from "../../Animation/Properties/Velocity.mjs";
 import { parseAnchor } from "../../Animation/Anchor.mjs";
 import Component from "../Component.mjs";
 import { Vector2D } from "../../Animation/Properties/Vector.mjs";
 import Rotation from "../../Animation/Properties/Rotation.mjs";
 
+/**
+ * 2D animation body custom element with physics properties.
+ * @class Body2D
+ * @extends Component.HTMLElement
+ */
 class Body2D extends Component.HTMLElement {
     static tag = "animation-body2d";
 

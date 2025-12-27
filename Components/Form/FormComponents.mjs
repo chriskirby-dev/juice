@@ -1,3 +1,9 @@
+/**
+ * Form component classes and base input types.
+ * Provides base form input components with styling.
+ * @module Components/Form/FormComponents
+ */
+
 import Component from "../Component.mjs";
 import Request from "../../core/HTTP/Request.mjs";
 import String from "../../core/Util/String.mjs";
