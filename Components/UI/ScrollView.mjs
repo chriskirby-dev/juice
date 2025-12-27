@@ -1,9 +1,20 @@
+/**
+ * Scrollable view component with custom scrollbar.
+ * Container with smooth scrolling and overflow handling.
+ * @module Components/UI/ScrollView
+ */
+
 import Component from "../Component.mjs";
 import Observe from "../../Dom/Observe/Observe.mjs";
 import { lerp, diff, fixedClamp } from "../../Util/Math.mjs";
 import Timeline from "../../Animation/Timeline.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 import "./ScrollBar.mjs";
+
+/**
+ * Easing function for smooth scrolling.
+ * @private
+ */
 function easeInOutQuad(t, b, c, d) {
     t /= d / 2;
     if (t < 1) return (c / 2) * t * t + b;
