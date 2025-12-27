@@ -2,9 +2,6 @@
  * WebGL shader management for vertex, fragment, compute, and geometry shaders.
  * Provides shader compilation, uniform/attribute management, and shader builder integration.
  * @module Graphics/WebGL/Lib/Shader
- * @author Chris Kirby
- * @company Kirby Creative
- * @date 10/02/2024
  */
 
 import { Uniform } from "../Variables/Variables.mjs";
