@@ -1,14 +1,18 @@
 /**
+ * WebGL shader management for vertex, fragment, compute, and geometry shaders.
+ * Provides shader compilation, uniform/attribute management, and shader builder integration.
+ * @module Graphics/WebGL/Lib/Shader
  * @author Chris Kirby
- * @title Full Stack Developer
  * @company Kirby Creative
  * @date 10/02/2024
  */
+
 import { Uniform } from "../Variables/Variables.mjs";
 import InputAttribute from "../Variables/InputAttribute.mjs";
 import OutputAttribute from "../Variables/OutputAttribute.mjs";
 import ShaderBuilder from "./ShaderBuilder.mjs";
 import { objectFilter } from "../../../Util/Object.mjs";
+
 const SHADER_TYPES = ["vertex", "fragment", "compute", "geometry"];
 //The vertex shader is where the waving effect will be implemented
 //The fragment shader will handle texturing and coloring of the flag
