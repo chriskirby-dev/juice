@@ -1,5 +1,16 @@
+/**
+ * Content reader for template parsing.
+ * Reads and tokenizes template content for processing.
+ * @module Template/ContentReader
+ */
+
 import ReaderBase from "../Reader/ReaderBase.js";
 
+/**
+ * Reader for template content with tag and token extraction.
+ * @class ContentReader
+ * @extends ReaderBase
+ */
 class ContentReader extends ReaderBase {
     getTags() {
         const regex = /(<[^>]+>)/g;

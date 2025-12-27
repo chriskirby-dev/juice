@@ -1,3 +1,13 @@
+/**
+ * Variable settings for WebGL uniform configuration.
+ * Maps GLSL types to WebGL setter functions and argument types.
+ * @module Graphics/WebGL/Variables/VariableSettings
+ */
+
+/**
+ * Configuration for WebGL uniform variables.
+ * @type {Object}
+ */
 export const VariableSettings = {
     float: {
         setFn: "uniform1f",

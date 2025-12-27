@@ -1,9 +1,20 @@
+/**
+ * Collection of validation rules for a single property.
+ * Manages multiple rules and provides validation testing.
+ * @module Validation/Rules/RuleSet
+ */
+
 import Rule from "./Rule.mjs";
 import RuleParser from "./Parser.mjs";
 import Emitter from "../../Event/Emitter.mjs";
 import { DistinctArray } from "../../Symbol/Array.mjs";
 import { ValidationError } from '../Errors.mjs';
 
+/**
+ * Set of validation rules for a property with testing capabilities.
+ * @class RuleSet
+ * @extends Emitter
+ */
 //RuleSet stores a collection of rules for a single property
 //You can add rules to the set and test the rules against a value
 //Does not store the value or errors only the rules 

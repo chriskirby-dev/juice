@@ -1,9 +1,19 @@
+/**
+ * DOM content manager with template token extraction.
+ * Manages dynamic content in the DOM with variable substitution.
+ * @module Template/DomContent
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 import Token from "./Token.js";
 import Context from "./Context.js";
 import path from "node:path";
 import { type } from "node:os";
 
+/**
+ * DOM-based template content manager.
+ * @class DomContent
+ */
 class DomContent {
     static extract() {
         const tokens = { head: [] };

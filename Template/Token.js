@@ -1,3 +1,9 @@
+/**
+ * Template token for variable substitution and live updates.
+ * Manages template tokens with context binding and event handling.
+ * @module Template/Token
+ */
+
 import ContentReader from "./ContentReader.js";
 import TokenContent from "./Content.js";
 import fs from "fs";
@@ -5,6 +11,10 @@ import path from "path";
 import EventEmitter from "events";
 import { safeEval, findTokensInString } from "../Util/Eval.js";
 
+/**
+ * Generates a short random ID.
+ * @private
+ */
 function shortId(length = 8) {
     return Math.random()
         .toString(36)
