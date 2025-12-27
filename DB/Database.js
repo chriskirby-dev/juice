@@ -1,7 +1,19 @@
+/**
+ * Database management module providing connection handling, model registration, and table operations.
+ * Base database class for managing database connections and model instances.
+ * @module DB/Database
+ */
+
 import EventEmitter from "../Event/Emitter.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
+/**
+ * Base database class for managing database connections and models.
+ * Extends EventEmitter to provide event-based notifications for database operations.
+ * @class Database
+ * @extends EventEmitter
+ */
 class Database extends EventEmitter {
     models = {};
     tables = {};

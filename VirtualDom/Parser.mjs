@@ -1,3 +1,9 @@
+/**
+ * Virtual DOM parser for converting HTML strings, DOM elements, and plain text into virtual DOM representations.
+ * Provides bidirectional parsing between different content formats and virtual element structures.
+ * @module VirtualDom/Parser
+ */
+
 import vElement from "./Element.mjs";
 
 import { type, empty, default as Util } from "../Util/Core.mjs";
@@ -9,6 +15,11 @@ Parser.onText = ( text ) => {
 }
 */
 
+/**
+ * Parser for converting various content formats to virtual DOM.
+ * Supports HTML strings, DOM elements, plain text, and virtual DOM objects.
+ * @class Parser
+ */
 class Parser {
     static type(source) {
         if (type(source, "string")) {

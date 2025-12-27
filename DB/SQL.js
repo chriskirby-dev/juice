@@ -1,5 +1,15 @@
+/**
+ * SQL utilities and type definitions for database operations.
+ * Provides column type mappings, SQL builders, and query construction utilities.
+ * @module DB/SQL
+ */
+
 import { empty, type } from "../Util/Core.mjs";
 
+/**
+ * Column type definitions mapping JavaScript types to SQLite types.
+ * @type {Object<string, Array<string>>}
+ */
 export const ColumnDefinations = {
     INTEGER: ["int", "integeer", "boolean"],
     NUMERIC: ["number", "date", "datetime"],

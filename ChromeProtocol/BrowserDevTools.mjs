@@ -1,6 +1,18 @@
+/**
+ * Browser DevTools integration for Chrome DevTools Protocol.
+ * Manages browser viewport debugging and protocol connection lifecycle.
+ * @module ChromeProtocol/BrowserDevTools
+ */
+
 import EventEmitter from "events";
 import ChromeProtocol from "../Browser/Dev/ChromeProtocol.js";
 
+/**
+ * DevTools integration for browser viewports.
+ * Manages protocol connections and provides debugging capabilities.
+ * @class BrowserDevTools
+ * @extends EventEmitter
+ */
 class BrowserDevTools extends EventEmitter {
     viewport;
     attached;
