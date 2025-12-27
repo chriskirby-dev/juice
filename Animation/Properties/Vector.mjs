@@ -70,7 +70,155 @@ export class VectoX extends Float32Array {
         Object.defineProperty(this, accessor, { get: () => this[i], enumerable: true });
     }
 
-    //TODO: Add Other Vector Methods set, clone, add, sub, mul, div, dot, cross, length, normalize, lerp
+    /**
+     * Sets the components of this vector.
+     * @param {...number} values - The component values
+     * @returns {VectoX} This vector for chaining
+     */
+    set(...values) {
+        for (let i = 0; i < values.length && i < this.length; i++) {
+            this[i] = values[i];
+        }
+        return this;
+    }
+
+    /**
+     * Creates a copy of this vector.
+     * @returns {VectoX} A new vector with the same values
+     */
+    clone() {
+        return new this.constructor(...this);
+    }
+
+    /**
+     * Adds values to this vector's components.
+     * @param {...number} values - The values to add
+     * @returns {VectoX} This vector for chaining
+     */
+    add(...values) {
+        for (let i = 0; i < values.length && i < this.length; i++) {
+            this[i] += values[i];
+        }
+        return this;
+    }
+
+    /**
+     * Subtracts values from this vector's components.
+     * @param {...number} values - The values to subtract
+     * @returns {VectoX} This vector for chaining
+     */
+    sub(...values) {
+        for (let i = 0; i < values.length && i < this.length; i++) {
+            this[i] -= values[i];
+        }
+        return this;
+    }
+
+    /**
+     * Multiplies this vector's components by scalar or component-wise.
+     * @param {number|VectoX} scalar - Scalar value or vector for component-wise multiplication
+     * @returns {VectoX} This vector for chaining
+     */
+    mul(scalar) {
+        if (typeof scalar === 'number') {
+            for (let i = 0; i < this.length; i++) {
+                this[i] *= scalar;
+            }
+        } else {
+            for (let i = 0; i < this.length; i++) {
+                this[i] *= scalar[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Divides this vector's components by scalar or component-wise.
+     * @param {number|VectoX} scalar - Scalar value or vector for component-wise division
+     * @returns {VectoX} This vector for chaining
+     */
+    div(scalar) {
+        if (typeof scalar === 'number') {
+            for (let i = 0; i < this.length; i++) {
+                this[i] /= scalar;
+            }
+        } else {
+            for (let i = 0; i < this.length; i++) {
+                this[i] /= scalar[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Calculates the dot product with another vector.
+     * @param {VectoX} other - The other vector
+     * @returns {number} The dot product
+     */
+    dot(other) {
+        let result = 0;
+        for (let i = 0; i < this.length; i++) {
+            result += this[i] * other[i];
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the cross product with another 3D vector.
+     * Only valid for 3D vectors.
+     * @param {VectoX} other - The other vector
+     * @returns {VectoX} A new vector representing the cross product
+     */
+    cross(other) {
+        if (this.length !== 3 || other.length !== 3) {
+            throw new Error('Cross product only defined for 3D vectors');
+        }
+        return new this.constructor(
+            this[1] * other[2] - this[2] * other[1],
+            this[2] * other[0] - this[0] * other[2],
+            this[0] * other[1] - this[1] * other[0]
+        );
+    }
+
+    /**
+     * Calculates the length (magnitude) of this vector.
+     * @returns {number} The vector length
+     */
+    length() {
+        let sumOfSquares = 0;
+        for (let i = 0; i < this.length; i++) {
+            sumOfSquares += this[i] * this[i];
+        }
+        return Math.sqrt(sumOfSquares);
+    }
+
+    /**
+     * Normalizes this vector to unit length.
+     * @returns {VectoX} This vector for chaining
+     */
+    normalize() {
+        const len = this.length();
+        if (len > 0) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] /= len;
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Linear interpolation between this vector and another.
+     * @param {VectoX} other - The target vector
+     * @param {number} t - Interpolation factor (0-1)
+     * @returns {VectoX} A new interpolated vector
+     */
+    lerp(other, t) {
+        const result = new this.constructor(this.length);
+        for (let i = 0; i < this.length; i++) {
+            result[i] = this[i] + (other[i] - this[i]) * t;
+        }
+        return result;
+    }
 }
 
 /**
