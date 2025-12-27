@@ -1,5 +1,17 @@
+/**
+ * Input attribute for shader vertex inputs.
+ * Manages input vertex attributes with automatic indexing.
+ * @module Graphics/WebGL/Variables/InputAttribute
+ */
+
 import VariableSettings from "./VariableSettings.mjs";
 import VariableBase from "./VariableBase.mjs";
+
+/**
+ * Input attribute with automatic index tracking.
+ * @class InputAttribute
+ * @extends VariableBase
+ */
 class InputAttribute extends VariableBase {
     static index = -1;
     constructor(...args) {

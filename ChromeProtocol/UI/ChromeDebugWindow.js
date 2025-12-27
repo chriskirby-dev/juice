@@ -1,3 +1,9 @@
+/**
+ * Chrome debug window for DevTools Protocol debugging.
+ * Electron window specifically for Chrome DevTools debugging interface.
+ * @module ChromeProtocol/UI/ChromeDebugWindow
+ */
+
 import * as url from "url";
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
@@ -5,6 +11,11 @@ import path from "node:path";
 
 import FluxWindow from "../../Electron/Base/FluxWindow.mjs";
 
+/**
+ * Debug window for Chrome DevTools Protocol.
+ * @class ChromeDebugWindow
+ * @extends FluxWindow
+ */
 class ChromeDebugWindow extends FluxWindow {
     debug = true;
 

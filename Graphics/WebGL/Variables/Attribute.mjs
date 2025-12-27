@@ -1,6 +1,18 @@
+/**
+ * WebGL attribute variable for shader inputs.
+ * Manages vertex attribute data for WebGL shaders.
+ * @module Graphics/WebGL/Variables/Attribute
+ */
+
 import WebGL from "../Lib/WebGL.mjs";
 import VariableSettings from "../Lib/VariableSettings.mjs";
 import VariableBase from "../Lib/VariableBase.mjs";
+
+/**
+ * Attribute variable for vertex shader input.
+ * @class Attribute
+ * @extends VariableBase
+ */
 export class Attribute extends VariableBase {
     constructor(name, type, value) {
         super("in", name, type, value);

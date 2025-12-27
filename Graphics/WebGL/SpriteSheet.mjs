@@ -1,7 +1,18 @@
+/**
+ * WebGL sprite sheet renderer for 2D sprite animation.
+ * Manages texture atlases and sprite rendering with WebGL.
+ * @module Graphics/WebGL/SpriteSheet
+ */
+
 import Shader from "./Lib/Shader.mjs";
 import Program from "./Lib/Program.mjs";
 import Texture from "./Lib/Texture.mjs";
 import * as WebGLHelper from "./Lib/Helper.mjs";
+
+/**
+ * Vertex shader source for sprite rendering.
+ * @private
+ */
 const vertexShaderSource = `
     attribute vec2 a_position;
     attribute vec2 a_texCoord;

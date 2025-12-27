@@ -1,3 +1,13 @@
+/**
+ * Canvas asset for image and graphic loading.
+ * Manages asset loading and positioning for canvas rendering.
+ * @module Components/Animation/Canvas/Asset
+ */
+
+/**
+ * Asset for canvas rendering with position and dimensions.
+ * @class CanvasAsset
+ */
 class CanvasAsset {
     loading = false;
     width = 1;

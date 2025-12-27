@@ -1,3 +1,9 @@
+/**
+ * WebGL particle system with GPU acceleration.
+ * Implements particle physics using transform feedback for GPU computation.
+ * @module Graphics/WebGL/Particles
+ */
+
 import { createProgram } from "./Lib/Helper.mjs";
 import { random, randomInt, randomBetween, diff } from "../../Util/Math.mjs";
 import WebGL from "./Lib/WebGL.mjs";
@@ -8,6 +14,11 @@ import Particles from "../Particles/Particles.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 import TransformFeedback from "./Lib/TransformFeedback.mjs";
 import WebGLDebugUtils from "./debug/webgl-debug.js";
+
+/**
+ * Checks for WebGL errors.
+ * @private
+ */
 function checkGLError(gl, operation) {
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
