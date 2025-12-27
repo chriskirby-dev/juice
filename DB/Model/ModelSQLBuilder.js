@@ -1,5 +1,16 @@
+/**
+ * Model-specific SQL builder extending base SQLBuilder.
+ * Provides model-aware query building with schema integration.
+ * @module DB/Model/ModelSQLBuilder
+ */
+
 import SQLBuilder from "../SQLBuilder.js";
 
+/**
+ * SQL builder for model-based queries.
+ * @class ModelSQLBuilder
+ * @extends SQLBuilder
+ */
 class ModelSQLBuilder extends SQLBuilder {
     constructor(Model) {
         super(Model.tableName);

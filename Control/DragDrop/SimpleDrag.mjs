@@ -1,6 +1,16 @@
+/**
+ * Simple drag implementation for basic drag functionality.
+ * Lightweight drag handler without drop zones.
+ * @module Control/DragDrop/SimpleDrag
+ */
+
 import Emitter from "../Event/Emitter.mjs";
 
-
+/**
+ * Simple drag handler for element dragging.
+ * @class SimpleDrag
+ * @extends Emitter
+ */
 class SimpleDrag extends Emitter {
 
     constructor(element, options) {
