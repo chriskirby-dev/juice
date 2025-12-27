@@ -1,4 +1,10 @@
 /**
+ * Class utilities and protected scope management.
+ * Provides protected property scoping and class-related helpers.
+ * @module Util/Class
+ */
+
+/**
  * ProtectedScope class provides a protected scope container for class instances.
  * Used to manage protected properties that should not be directly accessible.
  * @class ProtectedScope

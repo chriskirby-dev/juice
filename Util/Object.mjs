@@ -1,3 +1,9 @@
+/**
+ * Object manipulation and comparison utilities.
+ * Provides deep comparison, diff, merge, and transformation functions.
+ * @module Util/Object
+ */
+
 import ArrayUtil from "./Array.mjs";
 
 /**

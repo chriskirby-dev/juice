@@ -1,3 +1,9 @@
+/**
+ * Validation error messages and message templates.
+ * Provides localized error messages for validation rules.
+ * @module Validation/Messages
+ */
+
 import Util from '../Util/Core.mjs';
 const ALIASES = {
 
