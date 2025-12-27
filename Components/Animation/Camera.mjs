@@ -1,4 +1,20 @@
+/**
+ * Camera controller for animation viewer with target following and filters.
+ * Manages viewport position and applies visual filters to the stage.
+ * @module Components/Animation/Camera
+ */
+
 import Filters from "./filters/Filters.mjs";
+
+/**
+ * Camera for controlling viewport position and applying filters.
+ * @class Camera
+ * @param {Object} viewer - The animation viewer instance
+ * @example
+ * const camera = new Camera(viewer);
+ * camera.follow(target);
+ * camera.filter.start('shake', {intensity: 5});
+ */
 class Camera {
     width = 0;
     height = 0;

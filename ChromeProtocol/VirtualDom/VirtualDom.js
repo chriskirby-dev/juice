@@ -1,3 +1,9 @@
+/**
+ * Virtual DOM manager for Chrome DevTools Protocol.
+ * Manages virtual DOM tree, node indexing, and DOM operations.
+ * @module ChromeProtocol/VirtualDom/VirtualDom
+ */
+
 import { Node, TextNode, Document, Frame } from "./Node.js";
 import DomainWrapper from "../DomainWrapper.js";
 import Helper from "./Helper.js";
@@ -5,6 +11,11 @@ import Tree from "./Tree.js";
 
 import { createDelay } from "../../Util/Timers.mjs";
 
+/**
+ * Virtual DOM wrapper for Chrome DevTools Protocol DOM domain.
+ * @class VirtualDom
+ * @extends DomainWrapper
+ */
 class VirtualDom extends DomainWrapper {
     static uses = ["DOM", "Page", "DOMDebugger", "Runtime"];
 

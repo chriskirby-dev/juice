@@ -1,5 +1,15 @@
+/**
+ * Helper utilities for Chrome DevTools Protocol Virtual DOM.
+ * Provides selector generation and node identification utilities.
+ * @module ChromeProtocol/VirtualDom/Helper
+ */
+
 let Node;
 
+/**
+ * Helper class for Virtual DOM selector generation and utilities.
+ * @class Helper
+ */
 class Helper {
     static async makeSelector(node) {
         if (!Node) {

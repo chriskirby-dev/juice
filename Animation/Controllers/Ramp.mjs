@@ -1,5 +1,18 @@
+/**
+ * Ramp controller for smooth value accumulation and transitions.
+ * Provides accumulator and ramp classes for animated value changes.
+ * @module Animation/Controllers/Ramp
+ */
+
 import Easing from "../Easing.mjs";
 
+/**
+ * Accumulator for incrementing values over time with optional easing curves.
+ * @class Accumulator
+ * @example
+ * const acc = new Accumulator(0.1, 0);
+ * acc.add(5); // value becomes 5
+ */
 class Accumulator {
     index = -1;
     value = 0;

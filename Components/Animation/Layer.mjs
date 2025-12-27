@@ -1,3 +1,9 @@
+/**
+ * Animation layer component for layered rendering with camera support.
+ * Custom element that provides a canvas or DOM-based rendering layer.
+ * @module Components/Animation/Layer
+ */
+
 import Component from "../Component.mjs";
 import Timeline from "../../Animation/Timeline.mjs";
 import { Vector3D, Vector2D } from "../../Animation/Properties/Vector.mjs";
@@ -6,6 +12,11 @@ import AnimationBody from "./Body.mjs";
 import AnimationSprite from "./Sprite.mjs";
 import Camera from "./Camera.mjs";
 
+/**
+ * Layer for rendering animated content with camera and stage management.
+ * @class AnimationLayer
+ * @extends Component.HTMLElement
+ */
 export class AnimationLayer extends Component.HTMLElement {
     static tag = "animation-layer";
 
