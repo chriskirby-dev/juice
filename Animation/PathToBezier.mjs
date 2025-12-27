@@ -1,3 +1,16 @@
+/**
+ * SVG path data to Bezier curve converter.
+ * Parses SVG path commands and converts them to Bezier curve representations.
+ * @module Animation/PathToBezier
+ */
+
+/**
+ * Converts SVG path data string to an array of Bezier curve objects.
+ * @param {string} pathData - SVG path data string (e.g., "M 0 0 L 100 100 C...")
+ * @returns {Array<Object>} Array of Bezier curve objects with control points
+ * @example
+ * pathDataToBezier("M 0 0 L 100 100") // Returns array of curve objects
+ */
 function pathDataToBezier(pathData) {
     let commands = pathData.match(/[a-zA-Z][^a-zA-Z]*/g);
     let currentPos = { x: 0, y: 0 };

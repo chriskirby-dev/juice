@@ -1,3 +1,9 @@
+/**
+ * Form input component with validation and event handling.
+ * Wraps native form inputs with additional functionality.
+ * @module Components/Form
+ */
+
 import Component from "./Component.mjs";
 
 /**
