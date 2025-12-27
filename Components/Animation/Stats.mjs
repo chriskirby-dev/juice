@@ -1,5 +1,17 @@
+/**
+ * Animation statistics display component.
+ * Shows FPS, time, and memory usage for animation viewer.
+ * @module Components/Animation/Stats
+ */
+
 import Component from "../Component.mjs";
 import StringUtil from "../../Util/String.mjs";
+
+/**
+ * Statistics display for animation performance monitoring.
+ * @class AnimationStats
+ * @extends Component.HTMLElement
+ */
 class AnimationStats extends Component.HTMLElement {
     static tag = "animation-stats";
 
