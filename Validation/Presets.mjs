@@ -1,3 +1,9 @@
+/**
+ * Validation presets and error type mappings.
+ * Maps validation rule types to their corresponding error classes.
+ * @module Validation/Presets
+ */
+
 import Util from '../Util/Core.mjs';
 import { EmailValidationError, PhoneValidationError, AddressValidationError, PostalValidationError, TypeValidationError, InvalidTimestamp, MinLengthError, MaxLengthError, NotEqualError, ValueRequiredError, InSetError } from './Errors.mjs';
 import { empty } from '../Util/Core.mjs';

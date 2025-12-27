@@ -1,3 +1,9 @@
+/**
+ * Base model class with ORM capabilities.
+ * Provides CRUD operations, relationships, validation, and event emission.
+ * @module DB/Model/Model
+ */
+
 import EventEmitter from "../../Event/Emitter.mjs";
 import Collection from "./Collection.mjs";
 import DistinctArray from "../../DataTypes/DistinctArray.mjs";
@@ -8,6 +14,16 @@ import Watch from "../../Proxy/Watch.mjs";
 import ModelSQLBuilder from "./ModelSQLBuilder.js";
 import FormBuilder from "../../Form/Builder.mjs";
 
+/**
+ * Base ORM model class with CRUD operations, relationships, and validation.
+ * @class Model
+ * @extends EventEmitter
+ * @example
+ * class User extends Model {
+ *   static tableName = 'users';
+ *   static fields = { name: 'string', email: 'string' };
+ * }
+ */
 class Model extends EventEmitter {
     static key = null;
     static tableName = "";
