@@ -1,3 +1,13 @@
+/**
+ * 4x4 matrix operations for 3D transformations.
+ * Provides matrix math for WebGL operations including transformations and projections.
+ * @module Graphics/Matrix/Mat4
+ */
+
+/**
+ * 4x4 matrix utilities.
+ * @namespace mat4
+ */
 // A mat4 is a flat array with 16 elements
 export const mat4 = {
     create: function () {

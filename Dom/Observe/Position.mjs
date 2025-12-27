@@ -1,8 +1,19 @@
+/**
+ * Position observer for tracking element position changes.
+ * Monitors element position relative to viewport with timeline integration.
+ * @module Dom/Observe/Position
+ */
+
 import Emitter from "../../Event/Emitter.mjs";
 import ObserveTools from "./Tools.mjs";
 import Timeline from "../../Animation/Timeline.mjs";
 import DomUtil from "../../Util/Dom.mjs";
 
+/**
+ * Target for position observation.
+ * @class PositionObserverTarget
+ * @private
+ */
 class PositionObserverTarget {
     element;
     rect;

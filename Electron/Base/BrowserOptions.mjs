@@ -1,3 +1,9 @@
+/**
+ * Electron browser window options and configuration.
+ * Provides default options for Electron BrowserWindow instances.
+ * @module Electron/Base/BrowserOptions
+ */
+
 import fs from "node:fs";
 import path from "path";
 import * as url from "url";

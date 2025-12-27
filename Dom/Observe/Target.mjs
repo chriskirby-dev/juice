@@ -1,7 +1,16 @@
+/**
+ * Observer target for combining multiple observation types.
+ * Manages position and resize observers for a single element.
+ * @module Dom/Observe/Target
+ */
+
 import PositionObserver from "./Position.mjs";
 import ResizeObserver  from "./Resize.mjs";
 
-
+/**
+ * Target combining multiple observers for an element.
+ * @class ObserverTarget
+ */
 class ObserverTarget {
 
     target;

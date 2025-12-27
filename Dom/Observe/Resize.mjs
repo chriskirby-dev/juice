@@ -1,7 +1,18 @@
+/**
+ * ResizeObserver wrapper for monitoring element size changes.
+ * Provides resize detection with event emission.
+ * @module Dom/Observe/Resize
+ */
+
 import Emitter from "../../Event/Emitter.mjs";
 
 let ResizeObserverInstance;
 
+/**
+ * Factory for creating resize observers.
+ * @class ResizeObserverFactory
+ * @private
+ */
 class ResizeObserverFactory {
     index = 0;
     workers = [];
