@@ -1,3 +1,9 @@
+/**
+ * DOM observation utilities aggregator.
+ * Provides convenient access to ResizeObserver, MutationObserver, and other observers.
+ * @module Dom/Observe/Observe
+ */
+
 import ResizeObserver from "./Resize.mjs";
 import PositionObserver from "./Position.mjs";
 import Mutation from "./Mutation.mjs";
@@ -5,6 +11,10 @@ import ChildObserver from "./Children.mjs";
 import Util from "../../Util/Core.mjs";
 import ObserveTarget from "./Target.mjs";
 
+/**
+ * Centralized observer utilities for DOM monitoring.
+ * @class Observe
+ */
 class Observe {
     static resize(el, callback) {
         const resize = new ResizeObserver(el);

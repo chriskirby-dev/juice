@@ -1,9 +1,24 @@
+/**
+ * Base animation component for animated UI elements.
+ * Provides position, rotation, scale, and velocity properties for animations.
+ * @module Components/Animation/AnimationComponent
+ */
+
 import { type } from "../../Util/Core.mjs";
 import Component from "../Component.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 import { Rotation3D } from "../../Animation/Properties/Rotation.mjs";
 import { Vector3D, Vector2D } from "../../Animation/Properties/Vector.mjs";
 
+/**
+ * Base component class for animated elements with 3D transformation properties.
+ * @class AnimationComponent
+ * @extends Component.HTMLElement
+ * @example
+ * class MyAnimatedElement extends AnimationComponent {
+ *   // Custom animation logic
+ * }
+ */
 export class AnimationComponent extends Component.HTMLElement {
     static tag = "animation-body";
 

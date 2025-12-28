@@ -1,6 +1,21 @@
+/**
+ * Drag and drop event wrapper with metadata extraction.
+ * Provides convenient access to drag/drop event properties.
+ * @module Control/DragDrop/DragDropEvent
+ */
+
 import { cancel } from '../Event/Event.mjs';
+
+/**
+ * Mouse button names for drag operations.
+ * @private
+ */
 const BUTTONS = ['left', 'middle', 'right'];
 
+/**
+ * Drag and drop event wrapper.
+ * @class DragDropEvent
+ */
 class DragDropEvent {
     
     event;

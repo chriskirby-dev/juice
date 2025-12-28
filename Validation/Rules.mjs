@@ -1,3 +1,9 @@
+/**
+ * Validation rules engine for form and data validation.
+ * Provides rule parsing, execution, and error handling.
+ * @module Validation/Rules
+ */
+
 import Util from '../Util/Core.mjs';
 import { default as RulePresets, ERROR_TYPES } from './Presets.mjs';
 import { ValidationError } from './Errors.mjs';

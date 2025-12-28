@@ -1,7 +1,19 @@
+/**
+ * WebGL shader variable classes (Attribute, Uniform, Varying).
+ * Provides typed variable wrappers for shader programming.
+ * @module Graphics/WebGL/Variables/Variables
+ */
+
 import VariableBase from "./VariableBase.mjs";
 
 import { checkGLError } from "../Lib/Helper.mjs";
 
+/**
+ * Attribute variable for vertex shader inputs.
+ * @class Attribute
+ * @extends VariableBase
+ * @private
+ */
 class Attribute extends VariableBase {
     constructor(...args) {
         super("attribute", ...args);

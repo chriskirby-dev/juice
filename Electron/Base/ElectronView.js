@@ -1,5 +1,16 @@
+/**
+ * Electron WebContentsView wrapper for managing views in Electron.
+ * Provides view management and registration for Electron applications.
+ * @module Electron/Base/ElectronView
+ */
+
 import { BaseWindow, WebContentsView } from "electron";
 
+/**
+ * Electron view wrapper with instance tracking.
+ * @class ElectronView
+ * @extends WebContentsView
+ */
 class ElectronView extends WebContentsView {
     browser;
     static instances = {};

@@ -1,9 +1,20 @@
+/**
+ * Custom scrollbar component with smooth scrolling.
+ * Provides styled scrollbar with animation support.
+ * @module Components/UI/ScrollBar
+ */
+
 import Component from "../Component.mjs";
 import Observe from "../../Dom/Observe/Observe.mjs";
 import { lerp, diff, fixedClamp } from "../../Util/Math.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 import { Ease, easeInOutQuad, easeOutSine } from "../../Animation/Easing.mjs";
 
+/**
+ * Custom scrollbar with animation and styling.
+ * @class ScrollBar
+ * @extends Component.HTMLElement
+ */
 class ScrollBar extends Component.HTMLElement {
     static tag = "scroll-bar";
 

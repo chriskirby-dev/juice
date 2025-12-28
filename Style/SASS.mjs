@@ -1,4 +1,15 @@
+/**
+ * SASS/SCSS compilation and loading utilities.
+ * Compiles and injects SASS stylesheets into the document.
+ * @module Style/SASS
+ */
+
 import * as sass from "sass";
+
+/**
+ * Fetches file contents from a URL.
+ * @private
+ */
 async function fetchFileContents(filePath) {
     if (filePath == null) {
         throw new Error("filePath cannot be null or undefined");

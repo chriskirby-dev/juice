@@ -1,4 +1,10 @@
 const MAX_WORKERS = navigator.hardwareConcurrency || 4;
+/**
+ * Worker pool management for distributed computing tasks.
+ * Provides utilities for spawning workers, distributing jobs, and collecting results.
+ * @module Workers/JuiceWorkers
+ */
+
 import JuiceWorker from "./JuiceWorker.mjs";
 class JuiceWorkers {
     results = [];

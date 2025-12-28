@@ -1,6 +1,16 @@
+/**
+ * Canvas shape rendering utilities.
+ * Provides shape drawing classes and utilities for canvas.
+ * @module Components/Animation/Canvas/Shapes
+ */
+
 import { type } from "../../../Util/Core.mjs";
 import Asset from "./Asset.mjs";
 
+/**
+ * Stroke style for canvas shapes.
+ * @class Stroke
+ */
 class Stroke {
     color = null;
     width = 0;

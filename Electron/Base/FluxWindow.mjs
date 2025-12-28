@@ -1,3 +1,9 @@
+/**
+ * Flux window base class for Electron applications.
+ * Extended BrowserWindow with enhanced functionality and plugin support.
+ * @module Electron/Base/FluxWindow
+ */
+
 import * as url from "url";
 import path from "path";
 const __filename = url.fileURLToPath(import.meta.url);
@@ -11,6 +17,11 @@ const DEFAULT_HOMEPAGE = path.resolve(__dirname, "../views/default.html");
 const DEFAULT_PRELOAD = path.resolve(__dirname, "../Renderer/preload.mjs");
 const PLUGINS_DIR = path.resolve(__dirname, "./plugins");
 
+/**
+ * Enhanced Electron window with plugin support.
+ * @class FluxWindow
+ * @extends BrowserWindow
+ */
 export default class FluxWindow extends BrowserWindow {
     frameSize = 0;
     ipc;

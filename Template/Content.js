@@ -1,3 +1,9 @@
+/**
+ * Template content management with token replacement.
+ * Handles template parsing, variable substitution, and live updates.
+ * @module Template/Content
+ */
+
 import EventEmitter from "node:events";
 import Token from "./Token.js";
 import Context from "./Context.js";
@@ -5,6 +11,10 @@ import path from "node:path";
 import fs from "node:fs";
 import { type } from "node:os";
 
+/**
+ * Generates a short random ID.
+ * @private
+ */
 function shortId(length = 8) {
     return Math.random()
         .toString(36)

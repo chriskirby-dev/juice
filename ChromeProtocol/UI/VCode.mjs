@@ -1,10 +1,24 @@
+/**
+ * Code viewer for Chrome DevTools Protocol UI.
+ * Provides syntax highlighting and display for DevTools elements.
+ * @module ChromeProtocol/UI/VCode
+ */
+
 import { ipcRenderer } from "electron";
 let resetting = false;
 
+/**
+ * Marks reset operation as complete.
+ * @returns {boolean} False to indicate reset is complete
+ */
 export function resetComplete() {
     return (resetting = false);
 }
 
+/**
+ * Creates a line element for code display.
+ * @private
+ */
 function line(content) {
     const l = document.createElement("div");
     l.innerHTML = content;

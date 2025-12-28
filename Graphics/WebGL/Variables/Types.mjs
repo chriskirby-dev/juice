@@ -1,3 +1,13 @@
+/**
+ * WebGL variable type constants.
+ * Defines GLSL data types for shader variables.
+ * @module Graphics/WebGL/Variables/Types
+ */
+
+/**
+ * GLSL variable type definitions.
+ * @type {Object}
+ */
 export const VariableTypes = {
     FLOAT: "float",
     FLOAT_VEC2: "vec2",

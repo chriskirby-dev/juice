@@ -1,5 +1,16 @@
+/**
+ * Migration history model for tracking database schema changes.
+ * Records migration versions and field schemas.
+ * @module DB/SQLite/MigrationHistory
+ */
+
 import Model from "../Model/Model.js";
 
+/**
+ * Model for tracking database migration history.
+ * @class MigrationHistory
+ * @extends Model
+ */
 class MigrationHistory extends Model {
     static tableName = "migration_history";
 

@@ -1,3 +1,13 @@
+/**
+ * WebGL plane geometry generator.
+ * Creates subdivided plane geometry for WebGL rendering.
+ * @module Graphics/WebGL/Lib/Plane
+ */
+
+/**
+ * Plane geometry with configurable subdivisions.
+ * @class Plane
+ */
 class Plane {
     constructor(width, height, subdivisionsX, subdivisionsY) {
         this.width = width;

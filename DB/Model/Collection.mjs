@@ -1,3 +1,9 @@
+/**
+ * Model collection class with array-like functionality.
+ * Extends Array to provide database query results with model methods.
+ * @module DB/Model/Collection
+ */
+
 import { default as Util, type, empty } from "../../Util/Core.mjs";
 import * as Condition from "../../Util/Condition.mjs";
 import DistinctArray from "../../DataTypes/DistinctArray.mjs";
@@ -12,6 +18,11 @@ const unStudly = Util.String.unStudly;
  * @extends Array
  */
 
+/**
+ * Collection of model instances with query and manipulation methods.
+ * @class SuperCollection
+ * @extends Array
+ */
 class SuperCollection extends Array {
     /**
      * Array of primary key names used for identifying models within the collection.

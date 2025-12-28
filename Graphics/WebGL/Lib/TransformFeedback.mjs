@@ -1,3 +1,9 @@
+/**
+ * WebGL Transform Feedback for capturing vertex shader output.
+ * Enables reading back vertex shader results for particle systems and computation.
+ * @module Graphics/WebGL/Lib/TransformFeedback
+ */
+
 import { VariableTypes } from "./Variable.mjs";
 import Shader from "./Shader.mjs";
 import VariableSettings from "../Variables/VariableSettings.mjs";
@@ -8,6 +14,10 @@ import { Uniform } from "../Variables/Variables.mjs";
 import FeedbackAttribute from "../Variables/FeedbackAttribute.mjs";
 import { createProgram, createShader } from "./Helper.mjs";
 
+/**
+ * Transform feedback for GPU computation and particle systems.
+ * @class TransformFeedback
+ */
 class TransformFeedback {
     version = 2;
     _buffers = {};

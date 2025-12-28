@@ -1,4 +1,10 @@
 /**
+ * String manipulation and transformation utilities.
+ * Provides case conversion, formatting, and string analysis functions.
+ * @module Util/String
+ */
+
+/**
  * Splits a string into words based on spaces, hyphens, and underscores.
  * @param {string} string - The string to split
  * @returns {Array<string>} Array of words

@@ -1,7 +1,18 @@
+/**
+ * Animation canvas component for rendering animations.
+ * Custom element providing canvas-based animation rendering.
+ * @module Components/Animation/Canvas/AnimationCanvas
+ */
+
 import { type } from "../../../Util/Core.mjs";
 import Component from "../../Component.mjs";
 import AnimationValue from "../../../Animation/Properties/Value.mjs";
 
+/**
+ * Canvas component for animation rendering.
+ * @class AnimationCanvas
+ * @extends Component.HTMLElement
+ */
 class AnimationCanvas extends Component.HTMLElement {
     static tag = "animation-canvas";
 

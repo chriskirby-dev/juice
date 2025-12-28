@@ -1,3 +1,9 @@
+/**
+ * Animation viewer component with timeline and camera controls.
+ * Main container for animated scenes with stage, camera, and debug features.
+ * @module Components/Animation/Viewer
+ */
+
 import Component from "../Component.mjs";
 import Timeline from "../../Animation/Timeline.mjs";
 import { Vector3D, Vector2D } from "../../Animation/Properties/Vector.mjs";
@@ -6,6 +12,12 @@ import AnimationBody from "./Body.mjs";
 import AnimationSprite from "./Sprite.mjs";
 import AnimationStats from "./Stats.mjs";
 import Camera from "./Camera.mjs";
+
+/**
+ * Viewer component for displaying and controlling animations.
+ * @class AnimationViewer
+ * @extends Component.HTMLElement
+ */
 export class AnimationViewer extends Component.HTMLElement {
     static tag = "animation-viewer";
 

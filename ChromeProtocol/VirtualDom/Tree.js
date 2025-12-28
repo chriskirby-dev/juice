@@ -1,3 +1,13 @@
+/**
+ * Virtual DOM tree structure for Chrome DevTools Protocol.
+ * Manages hierarchical node structure for virtual DOM representation.
+ * @module ChromeProtocol/VirtualDom/Tree
+ */
+
+/**
+ * Tree structure for virtual DOM nodes.
+ * @class Tree
+ */
 class Tree {
     constructor(vdom) {
         this.children = [];

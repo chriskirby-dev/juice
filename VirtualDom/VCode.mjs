@@ -1,3 +1,13 @@
+/**
+ * Virtual DOM code viewer and syntax highlighter.
+ * Provides syntax highlighting and formatted display for virtual DOM structures.
+ * @module VirtualDom/VCode
+ */
+
+/**
+ * Creates a line element for code display.
+ * @private
+ */
 function line(content) {
     const l = document.createElement("div");
     l.innerHTML = content;

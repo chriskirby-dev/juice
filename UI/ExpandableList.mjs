@@ -1,6 +1,16 @@
+/**
+ * Expandable list renderer for hierarchical data display.
+ * Converts objects and lists into expandable tree structures.
+ * @module UI/ExpandableList
+ */
+
 import { type } from '../Util/Core.mjs';
 const TAB = '    ';
 
+/**
+ * Expandable list for displaying hierarchical data.
+ * @class ExpandableList
+ */
 class ExpandableList {
 
     fromObject(object){

@@ -1,7 +1,19 @@
+/**
+ * Database migration system for schema changes and versioning.
+ * Manages database schema migrations with automatic diff detection.
+ * @module DB/SQLite/Migration
+ */
+
 import Model from "../Model/Model.js";
 import { STORAGE_TYPES, TYPE_ALIASES } from "./Constants.mjs";
 import * as Condition from "../../Util/Condition.mjs";
 import MigrationHistory from "./MigrationHistory.js";
+
+/**
+ * Migration model for tracking and executing database schema changes.
+ * @class Migration
+ * @extends Model
+ */
 class Migration extends Model {
     static tableName = "migrations";
 

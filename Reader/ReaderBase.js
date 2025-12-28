@@ -1,4 +1,10 @@
 /**
+ * Base reader class for sequential string content navigation.
+ * Provides cursor-based reading with jump and search capabilities.
+ * @module Reader/ReaderBase
+ */
+
+/**
  * ReaderBase provides a stateful reader for string content with cursor-based navigation.
  * Allows sequential reading, jumping, and searching through content.
  * @class ReaderBase

@@ -1,5 +1,15 @@
+/**
+ * New WebGL program implementation with improved architecture.
+ * Alternative program class with enhanced shader management.
+ * @module Graphics/WebGL/Lib/ProgramNew
+ */
+
 import Shaders from "./Shader.mjs";
 
+/**
+ * Enhanced WebGL program manager.
+ * @class Program
+ */
 class Program {
     static fromCanvas(canvas) {
         const gl = canvas.getContext("webgl");

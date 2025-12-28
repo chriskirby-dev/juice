@@ -1,3 +1,9 @@
+/**
+ * Virtual DOM core module with rendering, diffing, and element creation.
+ * Main entry point for virtual DOM operations.
+ * @module VirtualDom/VirtualDom
+ */
+
 import Parser from "./Parser.mjs";
 import { default as _render, updateElement, renderWithRefs } from "./Render.mjs";
 import { default as vElement } from "./Element.mjs";

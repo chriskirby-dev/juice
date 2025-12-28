@@ -1,12 +1,20 @@
+/**
+ * Drag and drop system with event handling and state management.
+ * Manages draggable and droppable elements with event emission.
+ * @module Control/DragDrop/DragDrop
+ */
+
 import Emitter from '../Event/Emitter.mjs';
 import { cancel } from '../Event/Event.mjs';
 import Draggable from './Draggable.mjs';
 import Droppable from './Droppable.mjs';
 import DragDropEvent from './DragDropEvent.mjs';
 
-
-
-
+/**
+ * Main drag and drop manager with event coordination.
+ * @class DragDrop
+ * @extends Emitter
+ */
 class DragDrop extends Emitter{
 
     #defined = {};

@@ -1,3 +1,21 @@
+/**
+ * Simple particle class for particle system effects.
+ * Particles have position, velocity, size, lifespan, and can be rendered to canvas or DOM.
+ * @module Animation/Particles/Particle
+ */
+
+/**
+ * Represents a single particle with physics properties and rendering capabilities.
+ * @class Particle
+ * @param {number} x - Initial X position
+ * @param {number} y - Initial Y position
+ * @param {number} velocityX - X velocity
+ * @param {number} velocityY - Y velocity
+ * @param {number} size - Particle size
+ * @param {number} lifespan - Particle lifespan in seconds
+ * @param {Array<Object>} [forces=[]] - Forces to apply to particle
+ * @param {boolean} [useDOM=false] - Whether to render using DOM elements
+ */
 class Particle {
     constructor(x, y, velocityX, velocityY, size, lifespan, forces = [], useDOM = false) {
         this.x = x;

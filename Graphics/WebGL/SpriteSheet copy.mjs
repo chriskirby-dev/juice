@@ -1,3 +1,10 @@
+/**
+ * Alternative sprite sheet implementation for WebGL rendering.
+ * Alternative/backup version of sprite sheet renderer with different implementation.
+ * @module Graphics/WebGL/SpriteSheet copy
+ * @deprecated This appears to be a backup/alternate version. Consider consolidating with SpriteSheet.mjs
+ */
+
 import WebGL from "./Lib/WebGL.mjs";
 import { Shader, ShaderTypes } from "./Lib/Shader.mjs";
 import Program from "./Lib/ProgramNew.mjs";
@@ -5,6 +12,10 @@ import Texture from "./Lib/Texture.mjs";
 
 const { VariableTypes } = WebGL;
 
+/**
+ * Sprite sheet manager for texture atlas rendering.
+ * @class SpriteSheet
+ */
 class SpriteSheet {
     program = null;
     sources = [];

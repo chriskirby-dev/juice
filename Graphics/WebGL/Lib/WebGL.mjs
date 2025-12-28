@@ -1,3 +1,9 @@
+/**
+ * WebGL utilities and context management.
+ * Provides WebGL setup, shader management, and rendering utilities.
+ * @module Graphics/WebGL/Lib/WebGL
+ */
+
 import EventEmitter from "../../../Event/Emitter.mjs";
 import { Shaders } from "./Shaders.mjs";
 import { ShaderTypes } from "./Shader.mjs";

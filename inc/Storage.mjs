@@ -1,4 +1,10 @@
 /**
+ * Local storage wrapper with namespacing and type conversion.
+ * Provides enhanced localStorage with automatic serialization and caching.
+ * @module inc/Storage
+ */
+
+/**
  * JuiceStorage provides a wrapper around localStorage with support for namespaced storage,
  * type conversions, and caching functionality.
  * @class JuiceStorage

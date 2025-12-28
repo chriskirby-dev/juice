@@ -1,4 +1,10 @@
 /**
+ * Array utility functions and cursor iterator.
+ * Provides array manipulation utilities and traversal helpers.
+ * @module Util/Array
+ */
+
+/**
  * Cursor class provides an iterator-like interface for traversing arrays.
  * Maintains an internal index for sequential access to array elements.
  * @class Cursor

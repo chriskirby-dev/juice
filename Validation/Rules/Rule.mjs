@@ -1,7 +1,17 @@
+/**
+ * Validation rule representation for a single validation constraint.
+ * Stores rule type, arguments, and validation function.
+ * @module Validation/Rules/Rule
+ */
+
 import RulePresets from '../Presets.mjs';
 import Messages from '../Messages.mjs';
 import { ValidationError } from '../Errors.mjs';
 
+/**
+ * Single validation rule for property validation.
+ * @class Rule
+ */
 //Rule stores a single rule for a single property
 
 class Rule {

@@ -1,6 +1,16 @@
+/**
+ * Validation rule parser for converting strings to Rule objects.
+ * Parses validation rule syntax into structured rule objects.
+ * @module Validation/Rules/Parser
+ */
+
 import Util from '../../Util/Core.mjs';
 import Rule from './Rule.mjs';
 
+/**
+ * Parser for validation rule strings and arrays.
+ * @class RuleParser
+ */
 //RuleParser is a static class that parses a string or array of rules into an array of Rule objects
 class RuleParser {
 

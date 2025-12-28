@@ -1,8 +1,18 @@
+/**
+ * Droppable zone for accepting dragged elements.
+ * Manages drop targets with event handling and visual feedback.
+ * @module Control/DragDrop/Droppable
+ */
+
 import Emitter from '../Event/Emitter.mjs';
 import { cancel } from '../Event/Event.mjs';
 import DragDropEvent from './DragDropEvent.mjs';
 
-
+/**
+ * Droppable zone that accepts draggable elements.
+ * @class Droppable
+ * @extends Emitter
+ */
 class Droppable extends Emitter {
 
     wrapper;

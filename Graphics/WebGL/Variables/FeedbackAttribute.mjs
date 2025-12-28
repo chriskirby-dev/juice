@@ -1,4 +1,16 @@
+/**
+ * Feedback attribute for transform feedback operations.
+ * Manages attributes used in WebGL transform feedback with location binding.
+ * @module Graphics/WebGL/Variables/FeedbackAttribute
+ */
+
 import VariableBase from "./VariableBase.mjs";
+
+/**
+ * Attribute variable for transform feedback operations.
+ * @class FeedbackAttribute
+ * @extends VariableBase
+ */
 class FeedbackAttribute extends VariableBase {
     constructor(...args) {
         super("in", ...args);

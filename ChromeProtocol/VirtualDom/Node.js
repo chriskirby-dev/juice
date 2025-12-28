@@ -1,3 +1,9 @@
+/**
+ * Virtual DOM node representation for Chrome DevTools Protocol.
+ * Provides node classes with attributes, children, and manipulation methods.
+ * @module ChromeProtocol/VirtualDom/Node
+ */
+
 import DomHelper from "../Dom/Helper.js";
 import Helper from "./Helper.js";
 
@@ -14,6 +20,12 @@ NODE_TYPES[9] = "Document";
 NODE_TYPES[10] = "DocumentType";
 NODE_TYPES[11] = "DocumentFragment";
 
+/**
+ * Array-based class list for node class manipulation.
+ * @class ClassList
+ * @extends Array
+ * @private
+ */
 class ClassList extends Array {
     node;
 

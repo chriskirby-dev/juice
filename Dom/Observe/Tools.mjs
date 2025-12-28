@@ -1,5 +1,15 @@
+/**
+ * Observer utility tools for calculations and configurations.
+ * Provides helper functions for IntersectionObserver and other observers.
+ * @module Dom/Observe/Tools
+ */
+
 import Util from "../../Util/Core.mjs";
 
+/**
+ * Utility tools for DOM observers.
+ * @class ObserverTools
+ */
 class ObserverTools {
     static rootMarginFromRect(rootRect, activeRect) {
         const margin = {

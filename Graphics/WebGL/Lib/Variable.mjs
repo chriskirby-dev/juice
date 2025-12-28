@@ -1,8 +1,13 @@
+/**
+ * WebGL variable types and management.
+ * Defines attribute, uniform, and varying variable types for shaders.
+ * @module Graphics/WebGL/Lib/Variable
+ */
+
 import { checkGLError } from "./Helper.mjs";
 import VariableSettings from "../Variables/VariableSettings.mjs";
 /**
- * 
-Variable Type	Purpose	            Stage(s) Used	                    Data Scope	Data Changes	Example
+ * Variable Type	Purpose	            Stage(s) Used	                    Data Scope	Data Changes	Example
 attribute	    Per-vertex data	    Vertex Shader only	                Individual vertices	Changes per vertex	Vertex position, normals
 uniform	        Global constant	    Both Vertex and Fragment Shaders	Constant across a draw call	Doesn't change during a draw call	Transformation matrices, light position
 varying	        Interpolated data	From Vertex to Fragment Shader	    Interpolated per fragment	Interpolates between vertices	Texture coordinates, colors
@@ -12,8 +17,7 @@ attribute: Used to supply per-vertex data to the vertex shader. Attributes vary 
 
 uniform: Holds constant data (per draw call) that is available to both the vertex and fragment shaders. Uniforms are useful for data that remains the same across all vertices and fragments, such as matrices or global lighting settings.
 Examples of uniform variables include transformation matrices, lighting parameters, or texture samplers.
-
-
+ */
 varying: Used to pass interpolated data from the vertex shader to the fragment shader. These values are calculated per vertex, but interpolated across the surface of primitives and used to shade individual pixels.
  */
 

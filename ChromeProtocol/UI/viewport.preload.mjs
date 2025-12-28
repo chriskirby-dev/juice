@@ -1,3 +1,10 @@
+/**
+ * Viewport preload script for Chrome DevTools Protocol UI.
+ * Initializes viewport context, manages virtual DOM updates, and sets up IPC communication
+ * between the renderer process and main process for DevTools integration.
+ * @module ChromeProtocol/UI/viewport.preload
+ */
+
 let _webContents, content;
 const cdp = new EventEmitter();
 import VDom from "JUICE_PATH/VirtualDom/VDom.mjs";
@@ -8,6 +15,10 @@ let vd;
 
 let currentTab = null;
 
+/**
+ * Dynamically loads a tab module by name.
+ * @param {string} name - The name of the tab to load
+ */
 function loadTab(name) {
     const tabPath = path.join("JUICE_PATH/", "ChromeProtocol/UI", `/tabs/${name}.mjs`);
     console.log("loadTab", tabPath);
@@ -20,6 +31,10 @@ function loadTab(name) {
     });
 }
 
+/**
+ * Navigate to a specific tab in the DevTools UI.
+ * @param {string} tab - The tab identifier to navigate to
+ */
 cdp.nav = (tab) => {
     if (tab == "fupdate") {
         return resetVDom();
@@ -32,6 +47,11 @@ let nodes = [];
 let busyElement;
 let rootContent = { tag: "div" };
 
+/**
+ * Retrieves a DOM node by its ID from the nodes index or DOM query.
+ * @param {string|number} id - The node ID to retrieve
+ * @returns {Element|null} The DOM element or null if not found
+ */
 function getNode(id) {
     let node = nodes[id];
     if (!node) {
@@ -40,6 +60,10 @@ function getNode(id) {
     return node;
 }
 
+/**
+ * Sets up IPC listeners for virtual DOM updates from the main process.
+ * Handles various DOM operations including resets, attribute changes, insertions, and removals.
+ */
 function setupDomListeners() {
     ipcRenderer.on("vdom:reset", (e, data) => {
         state.busy = true;

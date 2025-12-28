@@ -1,9 +1,19 @@
+/**
+ * Base 3D shape component with 3D transformations.
+ * Foundation for all 3D shape custom elements.
+ * @module Components/Shapes/3d/Shape3d
+ */
+
 import Component from "../../Component.mjs";
 import { Vector3D } from "../../../Animation/Properties/Vector.mjs";
 import { Scale } from "../../../Animation/Properties/Scale.mjs";
 import { Rotation3D } from "../../../Animation/Properties/Rotation.mjs";
 import { Size3D } from "../../../Animation/Properties/Size.mjs";
 
+/**
+ * Converts CSS object to inline style string.
+ * @private
+ */
 function cssObjectToString(styles) {
     return Object.entries(styles)
         .map(([k, v]) => `${k}:${v}`)

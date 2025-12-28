@@ -1,4 +1,10 @@
 /**
+ * Queue management system for sequential item processing.
+ * Provides multiple named queues with iteration and batch processing.
+ * @module inc/Queues
+ */
+
+/**
  * JuiceQueue represents a single queue with sequential item access.
  * Provides methods to iterate through items one by one or in batches.
  * @class JuiceQueue

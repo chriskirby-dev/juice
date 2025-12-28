@@ -1,4 +1,10 @@
 /**
+ * DOM element wrapper for Chrome DevTools Protocol.
+ * Represents a DOM element in the Chrome debugging context.
+ * @module ChromeProtocol/Dom/Element
+ */
+
+/**
  * Represents a DOM element in the Chrome DevTools Protocol.
  * Wrapper class for DOM element nodes.
  * @class Element

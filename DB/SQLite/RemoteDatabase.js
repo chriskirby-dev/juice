@@ -1,10 +1,20 @@
+/**
+ * Remote SQLite database with network capabilities.
+ * Extends base database for remote database connections.
+ * @module DB/SQLite/RemoteDatabase
+ */
+
 import BetterSQLite3 from 'better-sqlite3';
 import { STORAGE_TYPES, TYPE_ALIASES } from './Constants.mjs'
 
 import Database from '../Database.js';
 import { SQL, SQLStatement } from '../SQL.js';
 
-
+/**
+ * SQLite database with remote connection support.
+ * @class SQLiteDatabase
+ * @extends Database
+ */
 class SQLiteDatabase extends Database {
 
     source = null;

@@ -1,6 +1,16 @@
+/**
+ * Shader collection and factory for common shader types.
+ * Provides predefined shaders and shader creation utilities.
+ * @module Graphics/WebGL/Lib/Shaders
+ */
+
 import { VariableTypes } from "./Variable.mjs";
 import { Shader } from "./Shader.mjs";
 
+/**
+ * Shader type constants.
+ * @type {Object}
+ */
 export const ShaderTypes = {
     VERTEX: "VERTEX_SHADER",
     FRAGMENT: "FRAGMENT_SHADER",
