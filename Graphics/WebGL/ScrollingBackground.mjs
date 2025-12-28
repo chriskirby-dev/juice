@@ -1,7 +1,17 @@
+/**
+ * Scrolling background renderer using WebGL.
+ * Creates parallax scrolling effects with texture offset animation.
+ * @module Graphics/WebGL/ScrollingBackground
+ */
+
 import Shader from "./Lib/Shader.mjs";
 import Program from "./Lib/Program.mjs";
 import Texture from "./Lib/Texture.mjs";
 
+/**
+ * Vertex shader source for scrolling background.
+ * @private
+ */
 const vertexShaderSource = `
     attribute vec2 a_position;
     attribute vec2 a_texCoord;

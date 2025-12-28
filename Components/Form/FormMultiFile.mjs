@@ -1,5 +1,16 @@
+/**
+ * Multi-file upload form component.
+ * Provides file input with multiple file selection support.
+ * @module Components/Form/FormMultiFile
+ */
+
 import Component from "../Component.mjs";
 
+/**
+ * Form component for multiple file uploads.
+ * @class FormMultiFile
+ * @extends Component.HTMLElement
+ */
 class FormMultiFile extends Component.HTMLElement {
     static tag = "form-files";
 

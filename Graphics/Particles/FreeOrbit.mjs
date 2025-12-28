@@ -1,3 +1,9 @@
+/**
+ * Free orbit particle behavior shader code.
+ * GLSL code fragment for orbital particle motion around a target.
+ * @module Graphics/Particles/FreeOrbit
+ */
+
      /************************/
             /*** Orbit Freefly ***/
             /************************/

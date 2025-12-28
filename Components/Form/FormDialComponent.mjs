@@ -1,3 +1,9 @@
+/**
+ * Form dial component for rotary input control.
+ * Provides a circular dial input with draggable rotation.
+ * @module Components/Form/FormDialComponent
+ */
+
 import Component from "../Component.mjs";
 import { BaseInput } from "./FormBaseComponents.mjs";
 import Obj from "../../Util/Object.mjs";
@@ -5,6 +11,11 @@ import Obj from "../../Util/Object.mjs";
 import MathGeom from "../../Util/Geometry.mjs";
 import Draggable from "../../Control/DragDrop/Draggable.mjs";
 
+/**
+ * Dial input component for rotary value selection.
+ * @class FormDialComponent
+ * @extends BaseInput
+ */
 class FormDialComponent extends BaseInput {
     static tag = "form-dial";
 
