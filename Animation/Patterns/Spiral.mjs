@@ -1,3 +1,17 @@
+/**
+ * Spiral animation pattern for creating spiral motion paths.
+ * Generates positions along a spiral trajectory based on time and angular velocity.
+ * @module Animation/Patterns/Spiral
+ */
+
+/**
+ * Creates spiral animation with configurable center, radius, and growth.
+ * @class SpiralAnimation
+ * @example
+ * const spiral = new SpiralAnimation(100, 100, 10, 0.05, 0.1);
+ * spiral.start();
+ * const position = spiral.getSpiralPosition(performance.now());
+ */
 class SpiralAnimation {
     constructor(centerX, centerY, initialRadius, angleIncrement = 0.05, spiralRadiusIncrement = 0.1) {
         this.centerX = centerX; // Center X position for the spiral

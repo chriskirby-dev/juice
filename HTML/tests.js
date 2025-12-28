@@ -1,3 +1,9 @@
+/**
+ * HTML utility tests.
+ * Test suite for HTML processing utilities.
+ * @module HTML/tests
+ */
+
 import Template from "./Template.mjs";
 
 const loaderFromFileSystem = (filePath) => {

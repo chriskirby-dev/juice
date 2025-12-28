@@ -1,5 +1,15 @@
+/**
+ * Target input form component with crosshair selector.
+ * Provides visual target selection with drag-and-drop crosshair interface.
+ * @module Form/CustomInputs/TargetInput
+ */
+
 import { vElement } from "../VirtualBuilder.mjs";
 
+/**
+ * Crosshair element for target selection.
+ * @private
+ */
 const crossHair = vElement("div", { class: "crosshair round" }, [
     div({ class: "line vertical w-1px h-120 centered" }),
     div({ class: "line horzontal h-1px w-120 centered" }),
