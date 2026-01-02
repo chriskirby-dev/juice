@@ -218,7 +218,10 @@ export class AnimationBody extends Component.HTMLElement {
 
     _offset = { x: 0, y: 0 };
 
-    //scale = 1;
+    constructor(options = {}) {
+        super();
+        this.options = options;
+    }
 
     freezeAt(x, y, z) {
         this.freeze = new Vector3D(x, y, z);
@@ -262,7 +265,8 @@ export class AnimationBody extends Component.HTMLElement {
         this.visible = true;
         this.rotation = new Rotation3D(-90, 0, 0);
         this.rotation.OFFSET.x = 90;
-        this.position = new Vector3D(0, 0, 0);
+        this._freezable = this.options?.freezable || false;
+        this.position = new Vector3D(0, 0, 0, { freezable: this._freezable || false, history: 3 });
         this.velocity = new Vector3D(0, 0, 0);
         this.s = new AnimationValue(1, {
             min: 0
@@ -347,14 +351,22 @@ export class AnimationBody extends Component.HTMLElement {
 
         if (!this.visible) return;
 
-        if (this.velocity.dirty()) {
+        if (this.velocity.dirty) {
             this.position.add(this.velocity);
             this.velocity.clean();
         }
 
-        if (this.rotation.dirty()) {
+        if (this.rotation.dirty) {
         }
     }
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Called every frame to update the component's rendering.
+     * Will not be called if the component is not currently visible.
+     *
+     * @param {number} time - The current time in milliseconds.
+     */
+    /*******  d3fd7c3f-b1e3-4889-81c2-3771fff8ba05  *******/
     render(time) {
         if (!this.visible) return;
 
@@ -371,7 +383,7 @@ export class AnimationBody extends Component.HTMLElement {
             this.h.save();
         }
 
-        if (this.position.dirty()) {
+        if (this.position.dirty) {
             updates["--x"] = this.position.x + "px";
             updates["--y"] = this.position.y + "px";
             updates["--z"] = this.position.z + "px";
@@ -382,7 +394,7 @@ export class AnimationBody extends Component.HTMLElement {
             }
         }
 
-        if (this.rotation.dirty("x")) {
+        if (this.rotation.isDirty("x")) {
             updates["--rotation"] = `${this.rotation.x}deg`;
             this.rotation.clean("x");
 

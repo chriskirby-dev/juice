@@ -140,17 +140,19 @@ class Timeline {
     lastFrame = 0;
     animators = {
         updaters: [],
-        renderers: [],
+        renderers: []
     };
     constructor(scope = this, options = {}) {
         if (scope) this.scope = scope;
         this.options = options;
         if (options.fps) this.fps = options.fps;
+
+        this._afterUpdate = [];
+
         this.time = new AnimationTime({ max: options.stop, fps: options.fps || Infinity });
 
         if (options.stats) {
-            this.stats = document.createElement("animation-stats");
-            document.body.appendChild(this.stats);
+            this.debug();
         }
 
         Timeline.instances.push(this);
@@ -160,14 +162,36 @@ class Timeline {
         }
     }
 
+    debug(parent = document.body) {
+        if (!this._stats) {
+            this._stats = document.createElementNS("http://www.w3.org/1999/xhtml", "animation-stats");
+            parent.appendChild(this._stats);
+        }
+    }
+
     start() {
         this.active = true;
         this.paused = false;
         this.started = true;
     }
 
+    cancel() {
+        this._complete = true;
+        this.active = false;
+    }
+
     reset() {
         this.time.reset();
+    }
+
+    pause() {
+        this.paused = true;
+    }
+
+    play(duration) {
+        if (!this.started) this.start();
+        this.paused = false;
+        if (duration) setTimeout(() => this.pause(), duration);
     }
 
     get active() {
@@ -195,91 +219,72 @@ class Timeline {
         this._complete = fn.bind(this.scope);
     }
 
-    afterUpdate(fn) {
-        this._afterUpdate = fn.bind(this.scope);
+    afterUpdate(fn, options = {}) {
+        this._afterUpdate.push({ fn, scope: this.scope, ...options });
     }
 
-    debug(parent = document.body) {
-        if (!this._stats) {
-            this._stats = document.createElement("animation-stats");
-            parent.appendChild(this._stats);
+    _executeAfterUpdate(time) {
+        for (let i = 0; i < this._afterUpdate.length; i++) {
+            const { fn, scope, ...options } = this._afterUpdate[i];
+            fn.call(scope);
+            if (options.once) {
+                this._afterUpdate.splice(i, 1);
+                i--;
+            }
         }
-    }
-
-    cancel() {
-        this._complete = true;
-        this.active = false;
     }
 
     addUpdate(fn) {
-        this.animators.updaters.push(fn);
+        const updaters = this.animators.updaters;
+        if (updaters.indexOf(fn) === -1) {
+            updaters.push(fn);
+        }
     }
 
     addRender(fn) {
-        this.animators.renderers.push(fn);
+        const renderers = this.animators.renderers;
+        if (renderers.indexOf(fn) === -1) {
+            renderers.push(fn);
+        }
     }
 
     addAnimator(animator) {
-        console.log("Add Animator", animator);
         animator._timeline = this;
-        const scope = animator;
+        const scope = animator.scope || animator;
+        const updaters = this.animators.updaters;
+        const renderers = this.animators.renderers;
         if (animator.animation) {
             animator = animator.animation;
         }
-        if (typeof animator.update == "function") {
-            this.animators.updaters.push(animator.update.bind(scope));
+        if (typeof animator.update === "function") {
+            updaters.push(animator.update.bind(scope));
         }
-
-        if (typeof animator.render == "function") {
-            this.animators.renderers.push(animator.render.bind(scope));
+        if (typeof animator.render === "function") {
+            renderers.push(animator.render.bind(scope));
         }
     }
 
     tick(ms) {
         if (this.paused) return;
 
-        if (this.fps && this.fps !== Infinity) {
-            const currentFPS = 1000 / (ms - this.lastFrame);
-            ///console.log("FPS", currentFPS);
-            if (currentFPS > this.fps) {
-                //   console.groupEnd();
-                return;
-            }
-        }
-        if (this.time.update(ms)) {
-            //if (this.stats) this.stats.update(this.time);
-            if (this._update) this._update(this.time);
-            if (this.animators.updaters.length) {
-                this.animators.updaters.forEach((updater) => updater(this.time));
-            }
+        const currentFPS = this.fps ? 1000 / (ms - this.lastFrame) : Infinity;
+        if (this.fps && currentFPS > this.fps) return;
+
+        const updated = this.time.update(ms);
+        if (updated) {
+            this._update && this._update(this.time);
+            this.animators.updaters.forEach((updater) => updater(this.time));
+
             //After Update Hook
-            if (this._afterUpdate) this._afterUpdate(this.time);
+            this._executeAfterUpdate(this.time);
 
-            if (this._render) this._render(this.time);
-            if (this.animators.renderers.length) {
-                this.animators.renderers.forEach((renderer) => renderer(this.time));
-            }
-
-            this.lastFrame = ms;
+            this._render && this._render(this.time);
+            this.animators.renderers.forEach((renderer) => renderer(this.time));
         } else {
-            if (this._complete && typeof this._complete == "function") {
-                this.active = false;
-                this._complete();
-            }
+            this._complete && typeof this._complete == "function" && ((this.active = false), this._complete());
         }
 
-        //console.log("Time:", this.time.seconds);
-        //console.groupEnd();
-    }
-
-    pause() {
-        this.paused = true;
-    }
-
-    play(duration) {
-        if (!this.started) this.start();
-        this.paused = false;
-        if (duration) setTimeout(() => this.pause(), duration);
+        this.lastFrame = ms;
     }
 }
 

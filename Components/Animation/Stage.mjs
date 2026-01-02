@@ -75,6 +75,16 @@ class AnimationStage extends Component.HTMLElement {
                     height: "100%",
                     left: 0,
                     top: 0
+                },
+                "#$parallax": {
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    top: 0,
+                    left: 0,
+                    overflow: "hidden",
+                    pointerEvents: "none",
+                    zIndex: 10
                 }
             }
         ];
@@ -82,13 +92,14 @@ class AnimationStage extends Component.HTMLElement {
 
     static html(data = {}) {
         return `
+        <slot ></slot>
+        </div>
         <div id="background"></div>
-        <slot></slot>
         `;
     }
 
     beforeCreate() {
-        this.position = new Position(0, 0, { history: 3 });
+        this.position = new Position(0, 0, { history: 3, trackDirty: true });
     }
 
     get dimentions() {
@@ -106,26 +117,6 @@ class AnimationStage extends Component.HTMLElement {
 
     move(x, y) {
         this.position.add(x, y);
-    }
-
-    update() {
-        if (this.backgrounds.length) {
-            this.backgrounds.forEach((background) => {
-                if (background.animate && background.update) {
-                    background.update();
-                }
-            });
-        }
-    }
-
-    render() {
-        if (this.backgrounds.length) {
-            this.backgrounds.forEach((background) => {
-                if (background.animate && background.render) {
-                    background.render();
-                }
-            });
-        }
     }
 
     onAttributeChanged(property, prevous, value) {
@@ -168,27 +159,54 @@ class AnimationStage extends Component.HTMLElement {
     backgrounds = [];
 
     addBackground(element, options = {}) {
-        this.ref("background").appendChild(element);
+        if (options.placement === "parallax") {
+            this.ref("parallax").appendChild(element);
+        } else {
+            this.ref("static").appendChild(element);
+        }
+
         this.backgrounds.push({
             element: element,
             ...options
         });
     }
 
-    update(data) {
+    update(time) {
+        this.queued = {};
         if (this.position.dirty) {
             this.queued.position = this.position.toObject();
-            this.position.save();
+        }
+
+        if (this.backgrounds.length) {
+            this.backgrounds.forEach((background) => {
+                if (background.animate && background.update) {
+                    background.update();
+                }
+            });
         }
     }
 
     render(data) {
         const { position } = this.queued;
-        if (this.viewer) {
-            if (position) {
-                const translate = `translate3d(${position.x}px, ${position.y}px,0)`;
-                this.style.transform = translate;
+        if (this.position.dirty) {
+            if (this.parallax) {
+                this.writeStyleVars({ "--stage-x": position.x, "--stage-y": position.y });
+            } else {
+                this.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
             }
+            this.position.save();
+        }
+
+        // Delta is a getter that returns difference from last saved state
+        const delta = this.position.delta;
+        console.log("Stage Delta:", delta.x, delta.y);
+
+        if (this.backgrounds.length) {
+            this.backgrounds.forEach((background) => {
+                if (background.animate && background.render) {
+                    background.render();
+                }
+            });
         }
     }
 
@@ -204,6 +222,9 @@ class AnimationStage extends Component.HTMLElement {
     }
 
     onFirstConnect() {
+        if (this.hasAttribute("parallax")) {
+            this.parallax = true;
+        }
         if (this.customChildren.length > 0) {
             alert("has custom children");
         }

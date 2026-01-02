@@ -253,12 +253,12 @@ export class Rotation3D extends Float32Array {
      * @param {...string} props - Axis names to check ('x', 'y', 'z')
      * @returns {boolean} True if specified axes (or any axis) are dirty
      */
-    dirty(...props) {
-        if (props.length) {
-            return props.some((prop) => this.dirt.includes(prop));
-        } else {
-            return this.dirt.length > 0;
-        }
+    get dirty() {
+        return this.dirt.length > 0;
+    }
+
+    isDirty(axis) {
+        return this.dirt.includes(axis);
     }
 
     /**

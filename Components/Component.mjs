@@ -289,7 +289,7 @@ function ComponentCompiler(name, BaseHTMLElement) {
 
             #renderers = [];
 
-            constructor() {
+            constructor(contents = null) {
                 super();
 
                 //Increment Component Index
@@ -324,6 +324,10 @@ function ComponentCompiler(name, BaseHTMLElement) {
                             "Shadow Dom not supported in this browser. You must set configuration property shadow to false."
                         );
                     }
+                }
+
+                if (contents) {
+                    this.appendChild(contents);
                 }
 
                 //Bind Emitter to element if config set true

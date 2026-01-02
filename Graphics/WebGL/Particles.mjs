@@ -9,7 +9,7 @@ import { random, randomInt, randomBetween, diff } from "../../Util/Math.mjs";
 import WebGL from "./Lib/WebGL.mjs";
 const { VariableTypes, ShaderTypes } = WebGL;
 import { mat4 } from "gl-matrix";
-import { Vector2D, Vector3D, Vector4D } from "../../Animation/Properties/Vectors.mjs";
+import { Vector2D, Vector3D, Vector4D } from "../../Animation/Properties/Vector.mjs";
 import Particles from "../Particles/Particles.mjs";
 import AnimationValue from "../../Animation/Properties/Value.mjs";
 import TransformFeedback from "./Lib/TransformFeedback.mjs";

@@ -46,10 +46,5 @@ export class Position3D extends Vector3D {
 export default {
     Position3D,
     Position2D,
-<<<<<<< Updated upstream
-    Position,
-};
-=======
     Position
 };
->>>>>>> Stashed changes

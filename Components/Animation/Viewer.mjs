@@ -55,16 +55,43 @@ export class AnimationViewer extends Component.HTMLElement {
                 },
                 slot: {
                     display: "block",
-                    position: "relative",
+                    position: "absolute",
                     width: "100%",
                     height: "100%"
+                },
+                "#background": {
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    overflow: "hidden",
+                    top: 0,
+                    left: 0,
+                    zIndex: -1
+                },
+                "#parallax": {
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    top: 0,
+                    left: 0,
+                    overflow: "hidden"
+                },
+                "#world": {
+                    position: "absolute",
+                    width: "var(--width, 100% )",
+                    height: "var( --height, 100% )"
                 }
             }
         ];
     }
 
     static html(data = {}) {
-        return `<slot></slot>`;
+        return `
+        <div id="background">
+            <div id="parallax"></div>
+            <div id="world"></div>
+        </div>
+        <slot></slot>`;
     }
 
     stage;
@@ -77,17 +104,13 @@ export class AnimationViewer extends Component.HTMLElement {
         if (!this.timeline) {
             this.timeline = new Timeline(this, { defer: true, fps: this.fps });
 
-            this.timeline.update = (time) => {
-                this.update(time);
+            this.timeline.update = this.update.bind(this);
 
-                this.camera.update();
-            };
+            this.timeline.afterUpdate((time) => {
+                this.updateCamera(time);
+            });
 
-            this.timeline.render = (time) => {
-                this.render(time);
-
-                this.camera.render();
-            };
+            this.timeline.render = this.render.bind(this);
 
             this.timeline.complete = () => {};
         }
@@ -123,7 +146,8 @@ export class AnimationViewer extends Component.HTMLElement {
 
         stage.onViewerConnect(this);
 
-        //this.onAssetAdded(stage);
+        // Add stage to timeline so its update/render methods are called
+        this.onAssetAdded(stage);
         console.log("Stage Added");
 
         this.dispatchEvent(new CustomEvent("stageconnect", { detail: { stage } }));
@@ -151,6 +175,10 @@ export class AnimationViewer extends Component.HTMLElement {
 
     cache = { stage_rect: "" };
 
+    updateCamera(time) {
+        this.camera.update(time);
+    }
+
     update(time) {
         if (this.stage) {
             const stageRect = this.stage.getBoundingClientRect();
@@ -165,7 +193,9 @@ export class AnimationViewer extends Component.HTMLElement {
         }
     }
 
-    render() {}
+    render() {
+        this.camera.render();
+    }
 
     onCustomChildConnect(child) {
         console.log("VIEWER CHILD", child);
@@ -205,9 +235,8 @@ export class AnimationViewer extends Component.HTMLElement {
         this.animatedAssets.push(asset);
         asset.viewer = this;
 
-        if (asset instanceof AnimationStage) {
+        if (!this.stage && asset instanceof AnimationStage) {
             console.log("AnimationStage");
-
             return this.onStageConnect(asset);
         }
 
@@ -238,9 +267,12 @@ export class AnimationViewer extends Component.HTMLElement {
         }
 
         this.onTimelineReady(this.timeline);
+        this.timelineReady = true;
     }
 
-    onTimelineReady() {}
+    onTimelineReady() {
+        return true;
+    }
 
     /***
      * ANIMATION LAYERS
