@@ -99,11 +99,11 @@ class VDom {
     }
 
     /**
-     * Prepare new content  to be loaded on next render call
-     * @param content {*}
-     * @returns
+     * Prepares new content to be loaded on next render call.
+     * Parses HTML or VDom objects and packages them into the staging area.
+     * @param {string|Object|Array} content - HTML string, VDom object, or array of VDom objects
+     * @returns {Object|Array} The staged virtual DOM structure
      */
-
     stage(content) {
         let stagedVdom;
 
@@ -116,8 +116,12 @@ class VDom {
         return stagedVdom;
     }
 
-    //Add element to one or more references.
-
+    /**
+     * Adds an element to one or more reference collections.
+     * References can be comma-separated to add to multiple collections.
+     * @param {HTMLElement} element - The DOM element to add
+     * @param {string} ref - Reference ID(s), comma-separated for multiple
+     */
     addReferences(element, ref) {
         const references = ref.includes(",") ? ref.split(",") : [ref];
         references.forEach((ref) => {
@@ -126,20 +130,39 @@ class VDom {
         });
     }
 
+    /**
+     * Checks if a reference ID exists and returns the count of elements.
+     * @param {string} ref - Reference ID to check
+     * @returns {number|boolean} Number of elements with this ref, or false if none
+     */
     hasRef(ref) {
         return this.#references[ref] ? this.#references[ref].length : false;
     }
 
+    /**
+     * Gets all elements with a specific reference ID.
+     * @param {string} ref - Reference ID to retrieve
+     * @returns {HTMLElement[]} Array of elements with this reference
+     */
     refs(ref) {
         return this.#references[ref] || [];
     }
 
+    /**
+     * Gets the first element with a specific reference ID.
+     * @param {string} ref - Reference ID to retrieve
+     * @returns {HTMLElement|null} First element with this reference, or null if not found
+     */
     ref(ref) {
         return (this.#references[ref] && this.#references[ref][0]) || null;
     }
 
-    /** Apply event handlers */
-
+    /**
+     * Applies event handlers to an element from a handler string.
+     * Handler format: "event::functionName(arg1, arg2)" separated by "||" for multiple.
+     * @param {HTMLElement} el - Element to attach handlers to
+     * @param {string} eventHandlers - Handler string(s) to parse and apply
+     */
     applyEventHandlers(el, eventHandlers) {
         const handlers = eventHandlers.split("||");
         handlers.forEach((handler) => {
@@ -174,8 +197,9 @@ class VDom {
         el.removeAttribute("event");
     }
     /**
-     * Index elements with an 'id' attribute in the staged VDom
-     * @param {Object} node - The node to index
+     * Recursively indexes elements with 'id' attributes in the virtual DOM.
+     * Creates an index map for fast lookups by ID.
+     * @param {Object} node - The virtual DOM node to index
      */
     indexVDom(node) {
         if (!node) return;
@@ -191,6 +215,12 @@ class VDom {
         }
     }
 
+    /**
+     * Renders the staged virtual DOM to actual DOM elements.
+     * Optionally stages new content before rendering. Uses diffing to efficiently update only changed elements.
+     * @param {string|Object|Array} [content] - Optional content to stage before rendering
+     * @returns {DocumentFragment|boolean} The root fragment, or false if nothing staged
+     */
     render(content) {
         if (content) this.stage(content);
 
@@ -224,6 +254,11 @@ class VDom {
         return this.rootFragment;
     }
 
+    /**
+     * Finds a virtual DOM element by ID and returns manipulation methods.
+     * @param {string} id - The ID of the element to find
+     * @returns {Object} Object with methods: replace, alter, children, append, prepend
+     */
     find(id) {
         if (!this.#staged) {
             this.#staged = JSON.parse(JSON.stringify(this.virtual));
@@ -253,14 +288,167 @@ class VDom {
         };
     }
 
+    /**
+     * Appends virtual DOM elements to the staged content.
+     * @param {...(Object|string)} elements - VDom objects or HTML strings to append
+     * @returns {VDom} This instance for chaining
+     */
+    append(...elements) {
+        if (!this.#staged) {
+            this.#staged = JSON.parse(JSON.stringify(this.currentVDom || this.virtual));
+        }
+
+        const parsed = elements
+            .map((el) => {
+                if (typeof el === "string") {
+                    return VDomParser.parse(el, this.scope);
+                }
+                return el;
+            })
+            .flat();
+
+        if (this.options.containerAsRoot) {
+            this.#staged.push(...parsed);
+        } else {
+            if (!this.#staged.children) {
+                this.#staged.children = [];
+            }
+            this.#staged.children.push(...parsed);
+        }
+
+        return this;
+    }
+
+    /**
+     * Prepends virtual DOM elements to the staged content.
+     * @param {...(Object|string)} elements - VDom objects or HTML strings to prepend
+     * @returns {VDom} This instance for chaining
+     */
+    prepend(...elements) {
+        if (!this.#staged) {
+            this.#staged = JSON.parse(JSON.stringify(this.currentVDom || this.virtual));
+        }
+
+        const parsed = elements
+            .map((el) => {
+                if (typeof el === "string") {
+                    return VDomParser.parse(el, this.scope);
+                }
+                return el;
+            })
+            .flat();
+
+        if (this.options.containerAsRoot) {
+            this.#staged.unshift(...parsed);
+        } else {
+            if (!this.#staged.children) {
+                this.#staged.children = [];
+            }
+            this.#staged.children.unshift(...parsed);
+        }
+
+        return this;
+    }
+
+    /**
+     * Inserts virtual DOM elements at a reference ID within the staged content.
+     * @param {string} refId - The ID of the reference element to insert at
+     * @param {string} position - Position relative to ref: 'before', 'after', 'prepend', 'append'
+     * @param {...(Object|string)} elements - VDom objects or HTML strings to insert
+     * @returns {VDom} This instance for chaining
+     */
+    insertAt(refId, position = "after", ...elements) {
+        if (!this.#staged) {
+            this.#staged = JSON.parse(JSON.stringify(this.currentVDom || this.virtual));
+        }
+
+        this.indexVDom(this.#staged);
+
+        const refNode = this.index?.ids?.[refId];
+        if (!refNode) {
+            console.warn(`Reference ID "${refId}" not found in virtual DOM`);
+            return this;
+        }
+
+        const parsed = elements
+            .map((el) => {
+                if (typeof el === "string") {
+                    return VDomParser.parse(el, this.scope);
+                }
+                return el;
+            })
+            .flat();
+
+        // Find parent and index of reference node
+        const findParentAndIndex = (node, target, parent = null) => {
+            if (node === target) {
+                return { parent, index: -1 };
+            }
+
+            if (node.children) {
+                const index = node.children.indexOf(target);
+                if (index !== -1) {
+                    return { parent: node, index };
+                }
+
+                for (const child of node.children) {
+                    const result = findParentAndIndex(child, target, node);
+                    if (result) return result;
+                }
+            }
+            return null;
+        };
+
+        const { parent, index } = findParentAndIndex(this.#staged, refNode) || {};
+
+        if (!parent || index === -1) {
+            console.warn(`Could not find parent of reference ID "${refId}"`);
+            return this;
+        }
+
+        switch (position) {
+            case "before":
+                parent.children.splice(index, 0, ...parsed);
+                break;
+            case "after":
+                parent.children.splice(index + 1, 0, ...parsed);
+                break;
+            case "prepend":
+                if (!refNode.children) refNode.children = [];
+                refNode.children.unshift(...parsed);
+                break;
+            case "append":
+                if (!refNode.children) refNode.children = [];
+                refNode.children.push(...parsed);
+                break;
+            default:
+                console.warn(`Invalid position "${position}". Use: before, after, prepend, or append`);
+        }
+
+        return this;
+    }
+
+    /**
+     * Converts the rendered virtual DOM to an HTML string.
+     * @returns {string} HTML representation of the root fragment
+     */
     toHTML() {
         return this.rootFragment.innerHTML;
     }
 
+    /**
+     * Returns the currently staged virtual DOM structure.
+     * @returns {Object|Array|null} The staged virtual DOM, or null if nothing staged
+     */
     toVDom() {
         return this.#staged;
     }
 
+    /**
+     * Initializes the VDom instance with empty stage and container setup.
+     * Sets up root fragment and container structure based on options.
+     * @private
+     */
     initialize() {
         // Initialize empty stage
         this.stage("");

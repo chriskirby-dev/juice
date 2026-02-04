@@ -34,6 +34,7 @@ class Camera {
         this.viewer = viewer;
         this.last = { x: 0, y: 0, z: 0 };
         this.delta = { x: 0, y: 0, z: 0 };
+        this.worldPosition = { x: 0, y: 0, z: 0 }; // Track actual world position of frozen targets
     }
 
     set x(value) {
@@ -97,28 +98,39 @@ class Camera {
         this.last = { x: this.x, y: this.y, z: this.z };
 
         if (this.target) {
-            // Follow target position
-            if (this.target.position) {
-                // Center camera on target
-                const targetX = this.target.position.x - this.width / 2;
-                const targetY = this.target.position.y - this.height / 2;
-
-                // Update camera position (which updates stage via setters)
-                this.x = targetX;
-                this.y = targetY;
-
-                if (this.target.position.z !== undefined) {
-                    this.z = this.target.position.z;
+            // Handle frozen target - track world position separately
+            if (this.target.frozen) {
+                // Accumulate velocity into world position tracker
+                if (this.target.velocity) {
+                    this.worldPosition.x += this.target.velocity.x || 0;
+                    this.worldPosition.y += this.target.velocity.y || 0;
+                    this.worldPosition.z += this.target.velocity.z || 0;
                 }
+
+                // Center camera on world position
+                this.x = this.worldPosition.x - this.width / 2;
+                this.y = this.worldPosition.y - this.height / 2;
+                this.z = this.worldPosition.z;
+
+                // Expose world position on target for external access
+                if (!this.target.worldPosition) {
+                    this.target.worldPosition = { x: 0, y: 0, z: 0 };
+                }
+                this.target.worldPosition.x = this.worldPosition.x;
+                this.target.worldPosition.y = this.worldPosition.y;
+                this.target.worldPosition.z = this.worldPosition.z;
             }
-            // Handle frozen target with velocity
-            else if (this.target.frozen && this.target.velocity && this.target.velocity.dirty) {
-                this.x += this.target.velocity.x;
-                this.y += this.target.velocity.y;
+            // Handle normal target with position
+            else if (this.target.position) {
+                // Sync world position with actual position
+                this.worldPosition.x = this.target.position.x;
+                this.worldPosition.y = this.target.position.y;
+                this.worldPosition.z = this.target.position.z || 0;
 
-                if (this.target.velocity.z !== undefined) {
-                    this.z += this.target.velocity.z;
-                }
+                // Center camera on target
+                this.x = this.target.position.x - this.width / 2;
+                this.y = this.target.position.y - this.height / 2;
+                this.z = this.target.position.z || 0;
             }
         }
 

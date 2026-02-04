@@ -148,7 +148,7 @@ export class VectoX extends Float32Array {
      * @returns {VectoX} This vector for chaining
      */
     mul(scalar) {
-        if (typeof scalar === 'number') {
+        if (typeof scalar === "number") {
             for (let i = 0; i < this.length; i++) {
                 this[i] *= scalar;
             }
@@ -166,7 +166,7 @@ export class VectoX extends Float32Array {
      * @returns {VectoX} This vector for chaining
      */
     div(scalar) {
-        if (typeof scalar === 'number') {
+        if (typeof scalar === "number") {
             for (let i = 0; i < this.length; i++) {
                 this[i] /= scalar;
             }
@@ -199,7 +199,7 @@ export class VectoX extends Float32Array {
      */
     cross(other) {
         if (this.length !== 3 || other.length !== 3) {
-            throw new Error('Cross product only defined for 3D vectors');
+            throw new Error("Cross product only defined for 3D vectors");
         }
         return new this.constructor(
             this[1] * other[2] - this[2] * other[1],
@@ -616,6 +616,16 @@ export class Vector2D extends Float32Array {
     }
 
     /**
+     * Updates the last position to current values for delta tracking.
+     * Call this each frame to make delta() return frame-to-frame changes.
+     * Only available when history option is enabled.
+     */
+    updateLast() {
+        if (!this._useHistory) return;
+        this.last = [this[0], this[1]];
+    }
+
+    /**
      * Gets the difference from a historical state.
      * @param {number} [i=0] - The history index (0 = most recent)
      * @returns {Vector2D} A new vector with the difference
@@ -627,10 +637,10 @@ export class Vector2D extends Float32Array {
     }
 
     /**
-     * Gets the difference from the last saved state.
+     * Gets the difference from the last position.
      * @returns {Vector2D} A new vector with the delta
      */
-    delta() {
+    get delta() {
         if (!this._useHistory) return new Vector2D(0, 0);
         return this.diff(this.last);
     }
@@ -1034,6 +1044,16 @@ export class Vector3D extends Float32Array {
         this.saved = [this[0], this[1], this[2]];
         this.history.unshift(this.saved);
         if (this._trackDirty) this.clean();
+    }
+
+    /**
+     * Updates the last position to current values for delta tracking.
+     * Call this each frame to make delta return frame-to-frame changes.
+     * Only available when history option is enabled.
+     */
+    updateLast() {
+        if (!this._useHistory) return;
+        this.last = [this[0], this[1], this[2]];
     }
 
     getChanges(i = 0) {
@@ -1574,6 +1594,16 @@ export class Vector4D extends Float32Array {
     }
 
     /**
+     * Updates the last position to current values for delta tracking.
+     * Call this each frame to make delta return frame-to-frame changes.
+     * Only available when history option is enabled.
+     */
+    updateLast() {
+        if (!this._useHistory) return;
+        this.last = [this[0], this[1], this[2], this[3]];
+    }
+
+    /**
      * Gets the changes from a specific history entry.
      * @param {number} [i=0] - History index (0 = most recent)
      * @returns {Vector4D} Difference vector
@@ -1584,7 +1614,7 @@ export class Vector4D extends Float32Array {
     }
 
     /**
-     * Gets the difference between current state and last saved state.
+     * Gets the difference between current state and last position.
      * @returns {Vector4D} Delta vector
      */
     get delta() {

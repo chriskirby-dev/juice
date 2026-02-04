@@ -17,7 +17,7 @@ attribute: Used to supply per-vertex data to the vertex shader. Attributes vary 
 
 uniform: Holds constant data (per draw call) that is available to both the vertex and fragment shaders. Uniforms are useful for data that remains the same across all vertices and fragments, such as matrices or global lighting settings.
 Examples of uniform variables include transformation matrices, lighting parameters, or texture samplers.
- */
+ 
 varying: Used to pass interpolated data from the vertex shader to the fragment shader. These values are calculated per vertex, but interpolated across the surface of primitives and used to shade individual pixels.
  */
 
@@ -29,7 +29,7 @@ export const StorageQualifier = {
     OUT: "out",
     INOUT: "inout",
     CONST: "const",
-    SHARED: "shared",
+    SHARED: "shared"
 };
 
 /**
@@ -104,7 +104,7 @@ export const VariableTypes = {
     FLOAT_MAT3: "mat3",
     FLOAT_MAT4: "mat4",
     SAMPLER_2D: "sampler2D",
-    MEDIUMP_FLOAT: "mediump",
+    MEDIUMP_FLOAT: "mediump"
 };
 
 export class Variable {

@@ -20,6 +20,10 @@ import { clamp } from "../../Util/Math.mjs";
  * console.log(rotation.toRadians());
  */
 export class Rotation extends AnimationValue {
+    // Class-level constants for shared access
+    static RAD_TO_DEG = 180 / Math.PI;
+    static DEG_TO_RAD = Math.PI / 180;
+
     OFFSET = 0;
     MIN = 0;
     MAX = 360;
@@ -39,15 +43,15 @@ export class Rotation extends AnimationValue {
     set value(v) {
         if (this.locked) return;
         if (this.LOOP) {
-            if (v >= this.MAX) {
-                v = this.MIN + (v % this.SPAN);
-            } else if (v <= this.MIN) {
-                v = this.MAX - Math.abs(v % this.SPAN);
+            // Normalize to [MIN, MAX) range
+            if (v < this.MIN || v >= this.MAX) {
+                v = this.MIN + ((((v - this.MIN) % this.SPAN) + this.SPAN) % this.SPAN);
             }
         } else {
-            v = clamp(this.MIN, this.MAX, v);
+            v = clamp(v, this.MIN, this.MAX);
         }
-        this._value = (v / this.STEP) * this.STEP;
+        // Apply step quantization only if STEP !== 0
+        this._value = this.STEP !== 0 ? Math.round(v / this.STEP) * this.STEP : v;
     }
 
     /**
@@ -80,7 +84,9 @@ export class Rotation extends AnimationValue {
      * @returns {boolean} True if equal
      */
     equals(v) {
-        return this._value === v % this.SPAN;
+        // Normalize both values to same range
+        const normalized = this.MIN + ((((v - this.MIN) % this.SPAN) + this.SPAN) % this.SPAN);
+        return Math.abs(this._value - normalized) < 0.001;
     }
 
     /**
@@ -96,7 +102,7 @@ export class Rotation extends AnimationValue {
      * @returns {number} Rotation in degrees
      */
     toDegrees() {
-        return (this._value * 180) / Math.PI;
+        return this._value * Rotation.RAD_TO_DEG;
     }
 
     /**
@@ -104,7 +110,7 @@ export class Rotation extends AnimationValue {
      * @returns {number} Rotation in radians
      */
     toRadians() {
-        return (this._value * Math.PI) / 180;
+        return this._value * Rotation.DEG_TO_RAD;
     }
 
     /**
@@ -222,19 +228,28 @@ export class Rotation3D extends Float32Array {
      * @private
      */
     setAxisValue(axis, value) {
-        const axies = ["x", "y", "z"];
-        const index = axies.indexOf(axis);
-        if (index === -1 || value === this[axis]) return;
+        // Map axis to index without array allocation
+        const index = axis === "x" ? 0 : axis === "y" ? 1 : 2;
+
+        // Early exit if value unchanged
+        if (value === this[index]) return;
+
+        const min = this.MIN[axis];
+        const max = this.MAX[axis];
+        const span = max - min;
+
         if (this.LOOP[axis]) {
-            if (value >= this.MAX[axis]) {
-                value = this.MIN[axis] + (value % this.MAX[axis]);
-            } else if (value <= this.MIN[axis]) {
-                value = this.MAX[axis] - Math.abs(value % this.MAX[axis]);
+            // Normalize to [min, max) range with proper wrapping
+            if (value < min || value >= max) {
+                value = min + ((((value - min) % span) + span) % span);
             }
         } else {
-            value = clamp(this.MIN[axis], this.MAX[axis], value);
+            value = clamp(value, min, max);
         }
-        if (this[index] == value) return;
+
+        // Final check after normalization
+        if (this[index] === value) return;
+
         this[index] = value;
         this.dirt.push(axis);
     }
@@ -283,8 +298,20 @@ export class Rotation3D extends Float32Array {
         return new Rotation(this[axis]);
     }
 
+    /**
+     * Converts rotation to array [x, y, z].
+     * @returns {number[]} Array of rotation values
+     */
     toArray() {
         return [this[0], this[1], this[2]];
+    }
+
+    /**
+     * Converts rotation to object {x, y, z}.
+     * @returns {Object} Object with x, y, z properties
+     */
+    toObject() {
+        return { x: this[0], y: this[1], z: this[2] };
     }
 }
 

@@ -268,6 +268,7 @@ export class AnimationBody extends Component.HTMLElement {
         this._freezable = this.options?.freezable || false;
         this.position = new Vector3D(0, 0, 0, { freezable: this._freezable || false, history: 3 });
         this.velocity = new Vector3D(0, 0, 0);
+        this.worldPosition = { x: 0, y: 0, z: 0 }; // Tracks actual world position (updated by camera)
         this.s = new AnimationValue(1, {
             min: 0
         });
@@ -358,6 +359,11 @@ export class AnimationBody extends Component.HTMLElement {
 
         if (this.rotation.dirty) {
         }
+
+        // Always sync worldPosition with position (Camera will override for frozen targets)
+        this.worldPosition.x = this.position.x;
+        this.worldPosition.y = this.position.y;
+        this.worldPosition.z = this.position.z;
     }
     /*************  ✨ Windsurf Command ⭐  *************/
     /**

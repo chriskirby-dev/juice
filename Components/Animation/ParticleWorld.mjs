@@ -48,7 +48,7 @@ const formVdom = vForm.container({}, [
                 setTimeout(() => {
                     window.addEventListener("click", onMouseClick);
                 }, 0);
-            }),
+            })
         ]),
         vForm.vector("repelPoint", [0, 0, 0], ["X", "Y", "Z"], { label: "Repel Point" }),
         vForm.range("repelPoint[3]", 0, {
@@ -58,20 +58,20 @@ const formVdom = vForm.container({}, [
             step: 0.001,
             value: 0.5,
             size: 10,
-            labelInline: true,
+            labelInline: true
         }),
         vForm.select("repelParams[x]", 0, {
             label: "Dimentions",
             value: 2,
-            options: { "2D": 2.0, "3D": 3.0 },
+            options: { "2D": 2.0, "3D": 3.0 }
         }),
 
         vForm.number("repelParams[z]", 0, {
             label: "Z",
             value: 0.5,
             step: 0.001,
-            value: 0.5,
-        }),
+            value: 0.5
+        })
     ]),
     vForm.fieldset("Orbit Options", [
         vForm.row("", [
@@ -104,7 +104,7 @@ const formVdom = vForm.container({}, [
                 setTimeout(() => {
                     window.addEventListener("click", onMouseClick);
                 }, 0);
-            }),
+            })
         ]),
         vForm.row(
             "Orbit Point",
@@ -115,7 +115,7 @@ const formVdom = vForm.container({}, [
                     min: -1,
                     max: 1,
                     step: 0.001,
-                    inline: true,
+                    inline: true
                 }),
                 vForm.number("orbitPoint[1]", 0, {
                     labelInline: true,
@@ -123,7 +123,7 @@ const formVdom = vForm.container({}, [
                     min: -1,
                     max: 1,
                     step: 0.001,
-                    inline: true,
+                    inline: true
                 }),
                 vForm.number("orbitPoint[2]", 0, {
                     labelInline: true,
@@ -131,8 +131,8 @@ const formVdom = vForm.container({}, [
                     min: -50.0,
                     max: -3.0,
                     step: 0.001,
-                    inline: true,
-                }),
+                    inline: true
+                })
             ],
             { inline: true }
         ),
@@ -143,26 +143,26 @@ const formVdom = vForm.container({}, [
             step: 0.001,
             value: 0.5,
             size: 10,
-            labelInline: true,
+            labelInline: true
         }),
         vForm.select("uOrbitParams[x]", 0, {
             label: "Dimentions",
             value: 3.0,
-            options: { "2D": 2.0, "3D": 3.0 },
+            options: { "2D": 2.0, "3D": 3.0 }
         }),
 
         vForm.number("uOrbitParams[z]", 0, {
             label: "Z",
             value: 0.5,
             step: 0.001,
-            value: 0.5,
-        }),
-    ]),
+            value: 0.5
+        })
+    ])
 ]);
 
 const CONTROL_SCHEMA = {
     repelGroup: {
-        type: "fieldset",
+        type: "fieldset"
     },
     repel: {
         type: "checkbox",
@@ -170,52 +170,52 @@ const CONTROL_SCHEMA = {
         value: 1,
         checked: false,
         attributes: {
-            "data-type": "int",
-        },
+            "data-type": "int"
+        }
     },
     "repelParams[x]": {
         label: "Dimentions",
         value: 2,
         type: "select",
-        options: ["2", "3"],
+        options: ["2", "3"]
     },
     orbit: {
         type: "checkbox",
         label: "Orbit",
         value: true,
-        checked: false,
+        checked: false
     },
     spawnrate: {
         type: "range",
         label: "Spawn Rate",
         min: 1,
         max: 100,
-        value: 5,
+        value: 5
     },
     gravity: {
         type: "range",
         min: 0.1,
-        max: 20,
+        max: 20
     },
     lifespan: {
         type: "range",
         label: "Lifespan",
         min: 0.1,
         max: 20,
-        value: 5,
+        value: 5
     },
     velocity: {
         type: "range",
         label: "Velocity",
         min: 0.1,
         max: 200,
-        value: 25,
+        value: 25
     },
     emitter: {
         type: "select",
         options: ["point", "map", "plane"],
-        value: "point",
-    },
+        value: "point"
+    }
 };
 
 const PARTICLE_CONFIG = {
@@ -224,8 +224,8 @@ const PARTICLE_CONFIG = {
     randomness: 1,
     mask: null,
     env: {
-        forces: [],
-    },
+        forces: []
+    }
 };
 
 class ParticleWorldComponent extends Component.HTMLElement {
@@ -241,13 +241,13 @@ class ParticleWorldComponent extends Component.HTMLElement {
             renderer: { type: "string", default: "canvas", linked: true },
             width: { type: "number", default: 100, unit: "percent", linked: true },
             height: { type: "number", default: 100, unit: "percent", linked: true },
-            depth: { type: "number", default: 100, unit: "percent", linked: true },
-        },
+            depth: { type: "number", default: 100, unit: "percent", linked: true }
+        }
     };
 
     static get observed() {
         return {
-            all: ["width", "height", "renderer"],
+            all: ["width", "height", "renderer"]
         };
     }
 
@@ -258,12 +258,12 @@ class ParticleWorldComponent extends Component.HTMLElement {
                 ":host": {
                     width: "100%",
                     height: "100%",
-                    position: "absolute",
+                    position: "absolute"
                 },
                 "#renderer": {
                     width: "100%",
                     height: "100%",
-                    position: "relative",
+                    position: "relative"
                 },
                 "#controls": {
                     position: "absolute",
@@ -273,12 +273,12 @@ class ParticleWorldComponent extends Component.HTMLElement {
                     height: "auto",
                     backgroundColor: "#999",
                     zIndex: 100,
-                    padding: "1rem",
+                    padding: "1rem"
                 },
                 "#controls h3": {
-                    margin: 0,
-                },
-            },
+                    margin: 0
+                }
+            }
         ];
     }
 
@@ -398,7 +398,7 @@ class ParticleWorldComponent extends Component.HTMLElement {
     }
 
     onFirstConnect() {
-        this.showControls();
+        //this.showControls();
 
         const canvas = this.ref("renderer");
         canvas.width = this.width;

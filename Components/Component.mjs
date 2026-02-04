@@ -369,6 +369,11 @@ function ComponentCompiler(name, BaseHTMLElement) {
                     this.#styles.default = new StyleSheet("default", this.root.querySelector("style"));
                 }
 
+                if(contents){
+                    this.#vdom.parseNodes(contents);
+                    
+                }
+
                 if (!this.render) {
                     this.render = this.#render;
                 }
