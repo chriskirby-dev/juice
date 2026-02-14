@@ -18,7 +18,7 @@ const aliases = {
     attributes: ["attrs"],
     ns: ["namespace"],
     tag: ["tagName"],
-    children: ["content"],
+    children: ["content"]
 };
 
 /**
@@ -104,7 +104,8 @@ const renderElement = (vNode, withRefs, refs = {}) => {
         return fragment;
     }
     let tag = vNode.tag;
-    const { attributes = {}, children = [], options = {} } = vNode;
+    const { attributes = {}, options = {} } = vNode;
+    let children = [];
     if (!tag && attributes) tag = "div";
     if (!tag) return "";
     const element = options.namespace ? document.createElementNS(options.namespace, tag) : document.createElement(tag);

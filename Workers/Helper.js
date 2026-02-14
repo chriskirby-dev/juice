@@ -18,8 +18,8 @@ export async function getAvailableCores() {
 
     // Node.js (modern): os.availableParallelism()
     try {
-        const os = await import("os");
-        os = os.default;
+        const osi = await import("os");
+        os = osi.default;
         if (typeof os.availableParallelism === "function") {
             return os.availableParallelism();
         }
