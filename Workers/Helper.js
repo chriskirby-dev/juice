@@ -18,7 +18,8 @@ export async function getAvailableCores() {
 
     // Node.js (modern): os.availableParallelism()
     try {
-        let os = await import("os");
+		if(window){        
+		let os = await import("os");
         os = os.default;
         if (typeof os.availableParallelism === "function") {
             return os.availableParallelism();
@@ -26,6 +27,9 @@ export async function getAvailableCores() {
         if (Array.isArray(os.cpus)) {
             return os.cpus().length;
         }
+		}else{
+			return 4;
+		}
     } catch (e) {
         // Likely not Node.js, or restricted environment
     }
