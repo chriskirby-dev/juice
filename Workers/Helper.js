@@ -18,7 +18,7 @@ export async function getAvailableCores() {
 
     // Node.js (modern): os.availableParallelism()
     try {
-		if(window){        
+		if(!window){        
 		let os = await import("os");
         os = os.default;
         if (typeof os.availableParallelism === "function") {
