@@ -1,0 +1,20 @@
+{
+  "name": "juicejs",
+  "version": "1.0.0",
+  "description": "Javascript Module Library",
+  "homepage": "https://github.com/chriskirby-dev/juice#readme",
+  "bugs": {
+    "url": "https://github.com/chriskirby-dev/juice/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chriskirby-dev/juice.git"
+  },
+  "license": "ISC",
+  "author": "Chris Kirby",
+  "type": "ES6",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
